@@ -27,12 +27,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FREE_MODELS = [
-    "openai/gpt-4o-mini",                     # The most famous "mini" model (very cheap/fast)
-    "openai/chatgpt-4o-latest",               # The latest flagship ChatGPT
-    "google/gemini-2.0-flash-exp:free",       # Google's top free model
-    "meta-llama/llama-3.1-405b-instruct:free",# Meta's massive open-source model
-    "mistralai/mistral-7b-instruct:free",     # Reliable and fast
-    "qwen/qwen-2-7b-instruct:free",           # Top-tier logic and math
+    # "openai/gpt-4o-mini",                      # OpenAI    - ChatGPT (Paid)
+    # "openai/chatgpt-4o-latest",                # OpenAI    - ChatGPT (paid)
+    "openai/gpt-oss-120b:free",
+    "google/gemini-2.0-flash-exp:free",          # Google    - Gemini
+    "google/gemma-3-27b-it:free",
+    "deepseek/deepseek-r1-0528:free",            # DeepSeek  - DeepSeek
+    "tngtech/deepseek-r1t2-chimera:free",
+    "meta-llama/llama-3.3-70b-instruct:free",    # Meta      - Llama
+    "mistralai/mistral-7b-instruct:free",        # MistralAI - Mistral
+    "mistralai/devstral-2512:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",       # Nvidia    - Nemotron
+    "qwen/qwen-2.5-vl-7b-instruct:free",
+    "xiaomi/mimo-v2-flash:free",
+    "tngtech/tng-r1t-chimera:free",
 ]
 
 SECRET_KEY = os.getenv("SECRET_KEY")
