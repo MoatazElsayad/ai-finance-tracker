@@ -19,6 +19,7 @@ function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [aiSummary, setAiSummary] = useState('');
+  const [aiModelUsed, setAiModelUsed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -52,11 +53,65 @@ function Dashboard() {
     try {
       const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
       setAiSummary(result.summary);
+      setAiModelUsed(result.model_used || null);
     } catch (error) {
       alert(error.message);
     } finally {
       setAiLoading(false);
     }
+  };
+
+  // Get model info (name and icon)
+  const getModelInfo = (modelId) => {
+    if (!modelId) return { name: 'AI Model', icon: '🤖', color: 'amber' };
+    
+    const modelLower = modelId.toLowerCase();
+    
+    if (modelLower.includes('gpt') || modelLower.includes('openai') || modelLower.includes('chatgpt')) {
+      return { 
+        name: modelLower.includes('mini') ? 'GPT-4o Mini' : 'ChatGPT-4o', 
+        icon: '🤖', 
+        color: 'emerald',
+        logo: '⚡'
+      };
+    } else if (modelLower.includes('gemini') || modelLower.includes('google')) {
+      return { 
+        name: 'Gemini 2.0', 
+        icon: '💎', 
+        color: 'blue',
+        logo: '✨'
+      };
+    } else if (modelLower.includes('llama') || modelLower.includes('meta')) {
+      return { 
+        name: 'Llama 3.1', 
+        icon: '🦙', 
+        color: 'purple',
+        logo: '🌟'
+      };
+    } else if (modelLower.includes('mistral')) {
+      return { 
+        name: 'Mistral 7B', 
+        icon: '🌊', 
+        color: 'cyan',
+        logo: '💫'
+      };
+    } else if (modelLower.includes('qwen')) {
+      return { 
+        name: 'Qwen 2', 
+        icon: '🔮', 
+        color: 'pink',
+        logo: '⭐'
+      };
+    }
+    
+    // Default fallback
+    const modelName = modelId.split('/').pop().split(':')[0].replace(/-/g, ' ');
+    return { 
+      name: modelName, 
+      icon: '🤖', 
+      color: 'amber',
+      logo: '✨'
+    };
   };
 
   const changeMonth = (direction) => {
@@ -80,42 +135,96 @@ function Dashboard() {
     if (!text) return null;
     const sections = text.split(/\*\*(.*?)\*\*/g);
     
+    let currentSection = null;
+    let sectionContent = [];
+    const formattedSections = [];
+    
+    sections.forEach((section, idx) => {
+      if (idx % 2 === 1) {
+        // This is a header
+        if (currentSection && sectionContent.length > 0) {
+          formattedSections.push({ title: currentSection, content: sectionContent.join('\n') });
+        }
+        currentSection = section;
+        sectionContent = [];
+      } else if (section.trim() && currentSection) {
+        sectionContent.push(section.trim());
+      }
+    });
+    
+    // Add the last section
+    if (currentSection && sectionContent.length > 0) {
+      formattedSections.push({ title: currentSection, content: sectionContent.join('\n') });
+    }
+    
+    const getSectionIcon = (title) => {
+      if (title.includes('Health') || title.includes('Financial Health')) return '💎';
+      if (title.includes('Win') || title.includes('Success') || title.includes('Positive')) return '✅';
+      if (title.includes('Concern') || title.includes('Warning') || title.includes('Alert')) return '⚠️';
+      if (title.includes('Action') || title.includes('Recommendation') || title.includes('Suggestion')) return '🎯';
+      if (title.includes('Summary') || title.includes('Overview')) return '📊';
+      if (title.includes('Trend') || title.includes('Pattern')) return '📈';
+      return '💡';
+    };
+    
+    const getSectionColor = (title) => {
+      if (title.includes('Health') || title.includes('Financial Health')) return 'from-emerald-500/20 to-green-500/20 border-emerald-500/30';
+      if (title.includes('Win') || title.includes('Success') || title.includes('Positive')) return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+      if (title.includes('Concern') || title.includes('Warning') || title.includes('Alert')) return 'from-red-500/20 to-rose-500/20 border-red-500/30';
+      if (title.includes('Action') || title.includes('Recommendation') || title.includes('Suggestion')) return 'from-amber-500/20 to-yellow-500/20 border-amber-500/30';
+      if (title.includes('Summary') || title.includes('Overview')) return 'from-blue-500/20 to-indigo-500/20 border-blue-500/30';
+      return 'from-purple-500/20 to-pink-500/20 border-purple-500/30';
+    };
+    
     return (
-      <div className="space-y-4">
-        {sections.map((section, idx) => {
-          if (idx % 2 === 1) {
-            return (
-              <h4 key={idx} className="font-bold text-white text-lg mt-4 flex items-center gap-2">
-                {section.includes('Health') && '💎'}
-                {section.includes('Win') && '✅'}
-                {section.includes('Concern') && '⚠️'}
-                {section.includes('Action') && '🎯'}
-                {section}
-              </h4>
-            );
-          }
-          if (section.trim()) {
-            if (section.includes('•') || section.includes('-')) {
-              const lines = section.split('\n').filter(line => line.trim());
-              return (
-                <ul key={idx} className="space-y-2 ml-4">
-                  {lines.map((line, i) => {
-                    if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+      <div className="space-y-6">
+        {formattedSections.map((section, idx) => {
+          const icon = getSectionIcon(section.title);
+          const colorClass = getSectionColor(section.title);
+          const hasList = section.content.includes('•') || section.content.includes('-');
+          
+          return (
+            <div
+              key={idx}
+              className={`bg-gradient-to-br ${colorClass} rounded-xl p-6 border backdrop-blur-sm shadow-lg hover:shadow-xl transition-all`}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl">
+                  {icon}
+                </div>
+                <h4 className="font-bold text-white text-xl">
+                  {section.title}
+                </h4>
+              </div>
+              
+              <div className="pl-12">
+                {hasList ? (
+                  <ul className="space-y-3">
+                    {section.content.split('\n').filter(line => line.trim()).map((line, i) => {
+                      if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+                        const cleanLine = line.replace(/^[•\-]\s*/, '').trim();
+                        return (
+                          <li key={i} className="flex items-start gap-3 text-slate-200 leading-relaxed">
+                            <span className="text-amber-400 font-bold mt-1 flex-shrink-0">▸</span>
+                            <span className="flex-1">{cleanLine}</span>
+                          </li>
+                        );
+                      }
                       return (
-                        <li key={i} className="flex items-start gap-2 text-slate-300">
-                          <span className="text-amber-400 font-bold">→</span>
-                          <span>{line.replace(/^[•\-]\s*/, '').trim()}</span>
-                        </li>
+                        <p key={i} className="text-slate-300 leading-relaxed mb-2">
+                          {line.trim()}
+                        </p>
                       );
-                    }
-                    return <p key={i} className="text-slate-300">{line}</p>;
-                  })}
-                </ul>
-              );
-            }
-            return <p key={idx} className="text-slate-300 leading-relaxed">{section.trim()}</p>;
-          }
-          return null;
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-slate-200 leading-relaxed text-base">
+                    {section.content}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
         })}
       </div>
     );
@@ -581,6 +690,34 @@ function Dashboard() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/5 rounded-full -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full -ml-24 -mb-24"></div>
             
+            {/* Model Badge - Top Right Corner */}
+            {aiModelUsed && (
+              <div className="absolute top-6 right-6 z-10">
+                {(() => {
+                  const modelInfo = getModelInfo(aiModelUsed);
+                  const colorMap = {
+                    emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
+                    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
+                    purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/50 text-purple-300',
+                    cyan: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300',
+                    pink: 'from-pink-500/20 to-rose-500/20 border-pink-400/50 text-pink-300',
+                    amber: 'from-amber-500/20 to-yellow-500/20 border-amber-400/50 text-amber-300'
+                  };
+                  const colorClass = colorMap[modelInfo.color] || colorMap.amber;
+                  
+                  return (
+                    <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5 hover:scale-105 transition-transform`}>
+                      <span className="text-xl">{modelInfo.logo || modelInfo.icon}</span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
+                        <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            
             <div className="relative p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -612,19 +749,31 @@ function Dashboard() {
               </div>
 
               {aiSummary ? (
-                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-6 shadow-2xl border border-slate-700">
-                  {formatAISummary(aiSummary)}
-                  <div className="mt-6 pt-4 border-t border-slate-700 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                      <span>AI Analysis Complete</span>
+                <div className="space-y-6">
+                  <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-slate-700/50">
+                    {formatAISummary(aiSummary)}
+                  </div>
+                  
+                  {/* Footer with actions */}
+                  <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-lg border border-green-500/30">
+                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        <span className="text-sm text-green-400 font-medium">Analysis Complete</span>
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        Generated {new Date().toLocaleTimeString('en-US', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </div>
                     </div>
                     <button
                       onClick={handleGenerateAI}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors"
+                      className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border border-slate-600 hover:border-amber-400/30"
                     >
                       <span>🔄</span>
-                      Refresh Analysis
+                      <span>Refresh Analysis</span>
                     </button>
                   </div>
                 </div>
