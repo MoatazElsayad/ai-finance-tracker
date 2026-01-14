@@ -20,6 +20,41 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #0a0e27;
+  color: #e2e8f0;
+}
+
+/* Dark Mode Finance Tracker Theme */
+:root {
+  --bg-primary: #0a0e27;
+  --bg-secondary: #1a1f3a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #1f2937;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent-gold: #fbbf24;
+  --accent-blue: #3b82f6;
+  --income-green: #10b981;
+  --expense-red: #ef4444;
+  --border-color: #334155;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-card);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
 }
 
 /* Toast animation */
@@ -36,4 +71,18 @@ body {
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+/* Glow effect for important elements */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+  }
+}
+
+.glow-gold {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
