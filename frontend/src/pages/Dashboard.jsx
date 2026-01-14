@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary } from '../api';
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6'];
 
@@ -140,6 +140,110 @@ function Dashboard() {
   // Recent 5 transactions
   const recentTransactions = transactions.slice(0, 5);
 
+  // Daily spending trend (last 30 days)
+  const getDailySpendingData = () => {
+    const dailyData = {};
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    transactions
+      .filter(txn => {
+        const txnDate = new Date(txn.date);
+        return txnDate >= thirtyDaysAgo && txnDate <= today && txn.amount < 0;
+      })
+      .forEach(txn => {
+        const date = new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        dailyData[date] = (dailyData[date] || 0) + Math.abs(txn.amount);
+      });
+
+    return Object.entries(dailyData)
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(-14); // Last 14 days
+  };
+
+  // Weekly spending pattern
+  const getWeeklyPatternData = () => {
+    const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weeklyData = dayOfWeek.map(day => ({ day, amount: 0 }));
+
+    transactions
+      .filter(txn => {
+        const txnDate = new Date(txn.date);
+        const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+        const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
+        return txnDate >= monthStart && txnDate <= monthEnd && txn.amount < 0;
+      })
+      .forEach(txn => {
+        const dayIndex = new Date(txn.date).getDay();
+        weeklyData[dayIndex].amount += Math.abs(txn.amount);
+      });
+
+    return weeklyData;
+  };
+
+  // Cumulative net savings trend
+  const getCumulativeSavingsData = () => {
+    const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+    const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
+    
+    const dailySavings = {};
+    let cumulative = 0;
+
+    transactions
+      .filter(txn => {
+        const txnDate = new Date(txn.date);
+        return txnDate >= monthStart && txnDate <= monthEnd;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .forEach(txn => {
+        const date = new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        cumulative += txn.amount;
+        dailySavings[date] = cumulative;
+      });
+
+    return Object.entries(dailySavings)
+      .map(([date, savings]) => ({ date, savings: Math.max(0, savings) }))
+      .slice(-14); // Last 14 days
+  };
+
+  // Monthly comparison (current vs previous month)
+  const getMonthlyComparisonData = () => {
+    const prevMonth = selectedMonth.month === 1 ? { year: selectedMonth.year - 1, month: 12 } : { year: selectedMonth.year, month: selectedMonth.month - 1 };
+    
+    const currentMonthIncome = analytics?.total_income || 0;
+    const currentMonthExpenses = analytics?.total_expenses || 0;
+    
+    // Calculate previous month from transactions
+    const prevMonthStart = new Date(prevMonth.year, prevMonth.month - 1, 1);
+    const prevMonthEnd = new Date(prevMonth.year, prevMonth.month, 0);
+    
+    let prevMonthIncome = 0;
+    let prevMonthExpenses = 0;
+    
+    transactions.forEach(txn => {
+      const txnDate = new Date(txn.date);
+      if (txnDate >= prevMonthStart && txnDate <= prevMonthEnd) {
+        if (txn.amount > 0) {
+          prevMonthIncome += txn.amount;
+        } else {
+          prevMonthExpenses += Math.abs(txn.amount);
+        }
+      }
+    });
+    
+    return [
+      { month: 'Previous', income: prevMonthIncome, expenses: prevMonthExpenses },
+      { month: 'Current', income: currentMonthIncome, expenses: currentMonthExpenses },
+    ];
+  };
+
+  const dailySpendingData = getDailySpendingData();
+  const weeklyPatternData = getWeeklyPatternData();
+  const cumulativeSavingsData = getCumulativeSavingsData();
+  const monthlyComparisonData = getMonthlyComparisonData();
+
   return (
     <div className="space-y-6">
       {/* Header with Month Selector */}
@@ -219,7 +323,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
@@ -271,6 +375,118 @@ function Dashboard() {
                 </Pie>
                 <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
               </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Charts Row 2 - Daily Spending Trend & Weekly Pattern */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Daily Spending Trend */}
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">📈</span>
+            Daily Spending Trend (Last 14 Days)
+          </h2>
+          {dailySpendingData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-gray-500">
+              No spending data available
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={dailySpendingData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+                <YAxis />
+                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Line 
+                  type="monotone" 
+                  dataKey="amount" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={{ fill: '#ef4444', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Weekly Spending Pattern */}
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">📅</span>
+            Weekly Spending Pattern
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={weeklyPatternData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+              <Bar dataKey="amount" radius={[8, 8, 0, 0]} fill="#8b5cf6">
+                {weeklyPatternData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Charts Row 3 - Monthly Comparison & Cumulative Savings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly Comparison */}
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">⚖️</span>
+            Monthly Comparison
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={monthlyComparisonData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+              <Legend />
+              <Bar dataKey="income" fill="#10b981" radius={[8, 8, 0, 0]} name="Income" />
+              <Bar dataKey="expenses" fill="#ef4444" radius={[8, 8, 0, 0]} name="Expenses" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Cumulative Savings Trend */}
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">💰</span>
+            Cumulative Savings Trend
+          </h2>
+          {cumulativeSavingsData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-gray-500">
+              No savings data available
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={cumulativeSavingsData}>
+                <defs>
+                  <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+                <YAxis />
+                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Area 
+                  type="monotone" 
+                  dataKey="savings" 
+                  stroke="#10b981" 
+                  fillOpacity={1} 
+                  fill="url(#colorSavings)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
