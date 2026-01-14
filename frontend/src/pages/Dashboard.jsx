@@ -245,39 +245,42 @@ function Dashboard() {
   const monthlyComparisonData = getMonthlyComparisonData();
 
   return (
-    <div className="space-y-6">
-      {/* Header with Month Selector */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Complete financial overview & insights</p>
-        </div>
+    <div className="overflow-x-hidden">
+      {/* Section 1: Header & Summary Cards */}
+      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto w-full">
+          {/* Header with Month Selector */}
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h1 className="text-5xl font-bold text-gray-900 mb-2">Dashboard</h1>
+              <p className="text-xl text-gray-600">Complete financial overview & insights</p>
+            </div>
 
-        {/* Month Navigator */}
-        <div className="flex items-center gap-3 bg-white rounded-xl shadow-sm px-4 py-2 border border-gray-200">
-          <button
-            onClick={() => changeMonth(-1)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            ◀
-          </button>
-          <span className="font-bold text-gray-900 min-w-[120px] text-center">
-            {new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
-              month: 'long',
-              year: 'numeric',
-            })}
-          </span>
-          <button
-            onClick={() => changeMonth(1)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            ▶
-          </button>
-        </div>
-      </div>
+            {/* Month Navigator */}
+            <div className="flex items-center gap-3 bg-white rounded-xl shadow-lg px-6 py-3 border border-gray-200">
+              <button
+                onClick={() => changeMonth(-1)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-xl"
+              >
+                ◀
+              </button>
+              <span className="font-bold text-gray-900 min-w-[160px] text-center text-lg">
+                {new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </span>
+              <button
+                onClick={() => changeMonth(1)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-xl"
+              >
+                ▶
+              </button>
+            </div>
+          </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-sm p-6 border border-green-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-green-700">Income</span>
@@ -321,10 +324,19 @@ function Dashboard() {
           </p>
           <p className="text-sm text-purple-600 mt-1">Of income saved</p>
         </div>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Section 2: Main Charts - Income vs Expenses & Category Breakdown */}
+      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-white">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">Financial Overview</h2>
+            <p className="text-xl text-gray-600">Income, expenses, and spending breakdown</p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Bar Chart */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -378,10 +390,19 @@ function Dashboard() {
             </ResponsiveContainer>
           )}
         </div>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Charts Row 2 - Daily Spending Trend & Weekly Pattern */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Section 3: Spending Trends & Patterns */}
+      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">Spending Trends</h2>
+            <p className="text-xl text-gray-600">Daily patterns and weekly insights</p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Daily Spending Trend */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -432,10 +453,19 @@ function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Charts Row 3 - Monthly Comparison & Cumulative Savings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Section 4: Monthly Comparison & Savings Trend */}
+      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-white">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">Progress & Comparison</h2>
+            <p className="text-xl text-gray-600">Monthly comparison and savings growth</p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Monthly Comparison */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -490,10 +520,14 @@ function Dashboard() {
             </ResponsiveContainer>
           )}
         </div>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      {/* AI Summary Card */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-600 rounded-2xl shadow-xl">
+      {/* Section 5: AI Financial Insights */}
+      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-600">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-600 rounded-3xl shadow-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full -ml-24 -mb-24"></div>
         
@@ -565,10 +599,19 @@ function Dashboard() {
             </div>
           )}
         </div>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+      {/* Section 6: Recent Activity */}
+      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">Recent Activity</h2>
+            <p className="text-xl text-gray-600">Your latest transactions</p>
+          </div>
+          
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <span className="text-2xl">📝</span>
@@ -621,7 +664,9 @@ function Dashboard() {
             ))}
           </div>
         )}
-      </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
