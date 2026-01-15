@@ -78,30 +78,7 @@ export default function Landing() {
               <div className="bg-slate-800/80 rounded-3xl shadow-2xl p-6 border border-slate-700 glow-gold relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent shimmer-animation pointer-events-none"></div>
 
-                {/* Mini Chart in Top Right */}
-                <div className="absolute top-4 right-4 w-20 h-12 bg-slate-900/60 rounded-lg border border-slate-600/50 p-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[
-                      { day: 1, value: 1800 },
-                      { day: 5, value: 1950 },
-                      { day: 10, value: 1850 },
-                      { day: 15, value: 2000 },
-                      { day: 20, value: 2100 },
-                      { day: 25, value: 2060 }
-                    ]}>
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#fbbf24"
-                        fill="#fbbf24"
-                        fillOpacity={0.3}
-                        strokeWidth={1.5}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="flex items-center justify-between mb-6 pr-24">
+                <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="font-bold text-white text-xl">Monthly Dashboard</h3>
                     <p className="text-sm text-slate-400">January {year}</p>
@@ -126,7 +103,7 @@ export default function Landing() {
                   </div>
                 </div>
 
-                <div className="bg-slate-700/50 p-5 rounded-2xl border-2 border-slate-600">
+                <div className="bg-slate-700/50 p-5 rounded-2xl border-2 border-slate-600 mb-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-2xl">🤖</span>
                     <p className="font-bold text-white">AI Financial Insight</p>
@@ -134,6 +111,33 @@ export default function Landing() {
                   <p className="text-sm text-slate-300">
                     <strong>Excellent progress!</strong> Your savings rate is strong. The AI suggests reviewing 'Eating Out' expenses.
                   </p>
+                </div>
+
+                {/* Mini Chart below AI box */}
+                <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-slate-400 font-medium">Savings Trend</p>
+                    <span className="text-xs text-amber-400 font-semibold">+12%</span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={60}>
+                    <AreaChart data={[
+                      { day: 1, value: 1800 },
+                      { day: 5, value: 1950 },
+                      { day: 10, value: 1850 },
+                      { day: 15, value: 2000 },
+                      { day: 20, value: 2100 },
+                      { day: 25, value: 2060 }
+                    ]}>
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#fbbf24"
+                        fill="#fbbf24"
+                        fillOpacity={0.3}
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
