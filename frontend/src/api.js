@@ -151,6 +151,46 @@ export const getMonthlyAnalytics = async (year, month) => {
 };
 
 // ============================================
+// BUDGETS
+// ============================================
+
+export const getBudgets = async (year, month) => {
+  const token = getToken();
+  const response = await authFetch(`/budgets?year=${year}&month=${month}&token=${token}`);
+  return handleResponse(response);
+};
+
+export const createBudget = async (categoryId, amount, month, year) => {
+  const token = getToken();
+  const response = await authFetch(`/budgets?token=${token}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      category_id: categoryId,
+      amount: parseFloat(amount),
+      month: parseInt(month),
+      year: parseInt(year),
+    }),
+  });
+
+  return handleResponse(response);
+};
+
+export const deleteBudget = async (budgetId) => {
+  const token = getToken();
+  const response = await authFetch(`/budgets/${budgetId}?token=${token}`, {
+    method: 'DELETE',
+  });
+
+  return handleResponse(response);
+};
+
+export const getBudgetComparison = async (year, month) => {
+  const token = getToken();
+  const response = await authFetch(`/budgets/comparison?year=${year}&month=${month}&token=${token}`);
+  return handleResponse(response);
+};
+
+// ============================================
 // AI
 // ============================================
 

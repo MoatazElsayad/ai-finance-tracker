@@ -793,17 +793,27 @@ class BudgetCreate(BaseModel):
     year: int
 
 @app.get("/budgets")
-def get_budgets(token: str, db: Session = Depends(get_db)):
-    """Get all budgets for current user"""
+def get_budgets(token: str, year: int = None, month: int = None, db: Session = Depends(get_db)):
+    """Get budgets for current user, optionally filtered by month/year"""
     user = get_current_user(token, db)
-    
-    budgets = db.query(Budget).filter(Budget.user_id == user.id).all()
-    
+
+    query = db.query(Budget).filter(Budget.user_id == user.id)
+
+    if year is not None and month is not None:
+        query = query.filter(Budget.year == year, Budget.month == month)
+
+    budgets = query.all()
+
     return [
         {
             "id": b.id,
             "category_id": b.category_id,
-            "category_name": b.category.name,
+            "category": {
+                "id": b.category.id,
+                "name": b.category.name,
+                "icon": b.category.icon,
+                "type": b.category.type
+            },
             "amount": b.amount,
             "month": b.month,
             "year": b.year

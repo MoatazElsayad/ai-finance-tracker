@@ -3,7 +3,7 @@
  * Dark Mode Finance Tracker - Professional budget management with AI insights
  */
 import { useState, useEffect } from 'react';
-import { getMonthlyAnalytics, getTransactions } from '../api';
+import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, deleteBudget, getCategories } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
 // Dark mode chart colors - professional finance palette
@@ -15,18 +15,9 @@ const CHART_COLORS = {
   categories: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
 };
 
-// Mock budget data - in real app, this would come from API
-const INITIAL_BUDGETS = [
-  { id: 1, category: 'Food & Dining', budgeted: 600, icon: '🍽️', color: '#3b82f6' },
-  { id: 2, category: 'Transportation', budgeted: 300, icon: '🚗', color: '#8b5cf6' },
-  { id: 3, category: 'Shopping', budgeted: 200, icon: '🛒', color: '#ec4899' },
-  { id: 4, category: 'Entertainment', budgeted: 150, icon: '🎬', color: '#f59e0b' },
-  { id: 5, category: 'Utilities', budgeted: 200, icon: '💡', color: '#10b981' },
-  { id: 6, category: 'Healthcare', budgeted: 100, icon: '🏥', color: '#6366f1' },
-];
-
 function BudgetPlanning() {
-  const [budgets, setBudgets] = useState(INITIAL_BUDGETS);
+  const [budgets, setBudgets] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +27,7 @@ function BudgetPlanning() {
   });
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
-  const [newBudget, setNewBudget] = useState({ category: '', budgeted: '', icon: '💰', color: '#3b82f6' });
+  const [newBudget, setNewBudget] = useState({ category_id: '', amount: '' });
 
   useEffect(() => {
     loadData();
@@ -45,12 +36,16 @@ function BudgetPlanning() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [analyticsData, transactionsData] = await Promise.all([
+      const [analyticsData, transactionsData, budgetsData, categoriesData] = await Promise.all([
         getMonthlyAnalytics(selectedMonth.year, selectedMonth.month),
-        getTransactions()
+        getTransactions(),
+        getBudgets(selectedMonth.year, selectedMonth.month),
+        getCategories()
       ]);
       setAnalytics(analyticsData);
       setTransactions(transactionsData);
+      setBudgets(budgetsData);
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -96,16 +91,27 @@ function BudgetPlanning() {
   // Prepare budget vs actual data
   const prepareBudgetData = () => {
     const actualSpending = getActualSpending();
-    return budgets.map(budget => ({
-      category: budget.category,
-      budgeted: budget.budgeted,
-      actual: actualSpending[budget.category] || 0,
-      icon: budget.icon,
-      color: budget.color,
-      percentage: actualSpending[budget.category] ? ((actualSpending[budget.category] / budget.budgeted) * 100).toFixed(1) : 0,
-      remaining: Math.max(0, budget.budgeted - (actualSpending[budget.category] || 0)),
-      overBudget: (actualSpending[budget.category] || 0) > budget.budgeted
-    }));
+    return budgets.map(budget => {
+      const categoryName = budget.category?.name || 'Unknown';
+      const actual = actualSpending[categoryName] || 0;
+      const budgeted = budget.amount;
+      const percentage = budgeted > 0 ? ((actual / budgeted) * 100).toFixed(1) : 0;
+      const remaining = Math.max(0, budgeted - actual);
+      const overBudget = actual > budgeted;
+
+      return {
+        id: budget.id,
+        category: categoryName,
+        budgeted: budgeted,
+        actual: actual,
+        icon: budget.category?.icon || '💰',
+        color: CHART_COLORS.categories[budgets.indexOf(budget) % CHART_COLORS.categories.length],
+        percentage: percentage,
+        remaining: remaining,
+        overBudget: overBudget,
+        category_id: budget.category_id
+      };
+    });
   };
 
   const budgetData = prepareBudgetData();
@@ -113,59 +119,76 @@ function BudgetPlanning() {
   const totalActual = budgetData.reduce((sum, b) => sum + b.actual, 0);
   const totalRemaining = budgetData.reduce((sum, b) => sum + b.remaining, 0);
 
-  const handleCreateBudget = () => {
-    if (newBudget.category && newBudget.budgeted) {
-      const budget = {
-        id: Date.now(),
-        category: newBudget.category,
-        budgeted: parseFloat(newBudget.budgeted),
-        icon: newBudget.icon,
-        color: newBudget.color
-      };
-      setBudgets([...budgets, budget]);
-      setNewBudget({ category: '', budgeted: '', icon: '💰', color: '#3b82f6' });
-      setShowBudgetForm(false);
+  const handleCreateBudget = async () => {
+    if (newBudget.category_id && newBudget.amount) {
+      try {
+        await createBudget(
+          parseInt(newBudget.category_id),
+          newBudget.amount,
+          selectedMonth.month,
+          selectedMonth.year
+        );
+        // Reload data to get updated budgets
+        const budgetsData = await getBudgets(selectedMonth.year, selectedMonth.month);
+        setBudgets(budgetsData);
+        setNewBudget({ category_id: '', amount: '' });
+        setShowBudgetForm(false);
+      } catch (error) {
+        console.error('Failed to create budget:', error);
+        alert(error.message);
+      }
     }
   };
 
   const handleEditBudget = (budget) => {
     setEditingBudget(budget);
     setNewBudget({
-      category: budget.category,
-      budgeted: budget.budgeted.toString(),
-      icon: budget.icon,
-      color: budget.color
+      category_id: budget.category_id.toString(),
+      amount: budget.amount.toString()
     });
     setShowBudgetForm(true);
   };
 
-  const handleUpdateBudget = () => {
-    if (editingBudget && newBudget.category && newBudget.budgeted) {
-      setBudgets(budgets.map(b =>
-        b.id === editingBudget.id
-          ? {
-              ...b,
-              category: newBudget.category,
-              budgeted: parseFloat(newBudget.budgeted),
-              icon: newBudget.icon,
-              color: newBudget.color
-            }
-          : b
-      ));
-      setEditingBudget(null);
-      setNewBudget({ category: '', budgeted: '', icon: '💰', color: '#3b82f6' });
-      setShowBudgetForm(false);
+  const handleUpdateBudget = async () => {
+    if (editingBudget && newBudget.category_id && newBudget.amount) {
+      try {
+        // Delete existing budget and create new one (since backend uses upsert)
+        await deleteBudget(editingBudget.id);
+        await createBudget(
+          parseInt(newBudget.category_id),
+          newBudget.amount,
+          selectedMonth.month,
+          selectedMonth.year
+        );
+        // Reload data
+        const budgetsData = await getBudgets(selectedMonth.year, selectedMonth.month);
+        setBudgets(budgetsData);
+        setEditingBudget(null);
+        setNewBudget({ category_id: '', amount: '' });
+        setShowBudgetForm(false);
+      } catch (error) {
+        console.error('Failed to update budget:', error);
+        alert(error.message);
+      }
     }
   };
 
-  const handleDeleteBudget = (id) => {
-    setBudgets(budgets.filter(b => b.id !== id));
+  const handleDeleteBudget = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this budget?')) return;
+
+    try {
+      await deleteBudget(id);
+      setBudgets(budgets.filter(b => b.id !== id));
+    } catch (error) {
+      console.error('Failed to delete budget:', error);
+      alert(error.message);
+    }
   };
 
   const cancelForm = () => {
     setShowBudgetForm(false);
     setEditingBudget(null);
-    setNewBudget({ category: '', budgeted: '', icon: '💰', color: '#3b82f6' });
+    setNewBudget({ category_id: '', amount: '' });
   };
 
   // Chart data for budget vs actual
@@ -380,34 +403,44 @@ function BudgetPlanning() {
           {showBudgetForm && (
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700 mb-8">
               <h3 className="text-lg font-bold text-white mb-4">
-                {editingBudget ? 'Edit Budget Category' : 'Create New Budget Category'}
+                {editingBudget ? 'Edit Budget' : 'Create New Budget'}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Category Name</label>
-                  <input
-                    type="text"
-                    value={newBudget.category}
-                    onChange={(e) => setNewBudget({...newBudget, category: e.target.value})}
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Category</label>
+                  <select
+                    value={newBudget.category_id}
+                    onChange={(e) => setNewBudget({...newBudget, category_id: e.target.value})}
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-400"
-                    placeholder="e.g., Food & Dining"
-                  />
+                  >
+                    <option value="">Select category</option>
+                    {categories
+                      .filter(cat => cat.type === 'expense') // Only expense categories for budgets
+                      .map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">Monthly Budget ($)</label>
                   <input
                     type="number"
-                    value={newBudget.budgeted}
-                    onChange={(e) => setNewBudget({...newBudget, budgeted: e.target.value})}
+                    step="0.01"
+                    min="0"
+                    value={newBudget.amount}
+                    onChange={(e) => setNewBudget({...newBudget, amount: e.target.value})}
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-400"
-                    placeholder="500"
+                    placeholder="500.00"
                   />
                 </div>
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={editingBudget ? handleUpdateBudget : handleCreateBudget}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all"
+                  disabled={!newBudget.category_id || !newBudget.amount}
+                  className="px-6 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingBudget ? 'Update Budget' : 'Create Budget'}
                 </button>
