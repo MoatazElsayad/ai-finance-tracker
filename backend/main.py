@@ -505,19 +505,18 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
 # AI ROUTES (OpenAI Integration with Real-time Updates)
 # ============================================
 
-def create_ai_progress_generator(db: Session, user_id: int, year: int, month: int):
-    """Generator that yields SSE events for AI model progress"""
+async def create_ai_progress_generator(db: Session, user_id: int, year: int, month: int):
+    """Async generator that yields SSE events for AI model progress"""
 
-    async def event_generator():
-        # Get rich context
-        context = build_rich_financial_context(db, user_id, year, month)
+    # Get rich context
+    context = build_rich_financial_context(db, user_id, year, month)
 
-        if context["current_month"]["transaction_count"] == 0:
-            yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
-            return
+    if context["current_month"]["transaction_count"] == 0:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
+        return
 
-        # Build comprehensive prompt
-        prompt_text = f"""You are a professional financial advisor analyzing a user's finances. Provide a comprehensive but concise analysis.
+    # Build comprehensive prompt
+    prompt_text = f"""You are a professional financial advisor analyzing a user's finances. Provide a comprehensive but concise analysis.
 
 📊 CURRENT MONTH ({month}/{year}):
 - Income: ${context['current_month']['income']:,.2f}
@@ -554,81 +553,91 @@ PROVIDE A CONCISE ANALYSIS (150-200 words max):
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
 
-        # AI Model Loop
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    # AI Model Loop
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:8000",
-            "X-Title": "Finance Tracker AI",
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Finance Tracker AI",
+    }
+
+    MODELS = FREE_MODELS.copy()
+    random.shuffle(MODELS)
+
+    for model_id in MODELS:
+        # Send "trying" event
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
+
+        payload = {
+            "model": model_id,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a financial advisor. Be CONCISE (150-200 words max). Use clear sections. Be specific with numbers and actionable."
+                },
+                {
+                    "role": "user",
+                    "content": prompt_text
+                }
+            ],
+            "max_tokens": 400,
+            "temperature": 0.7
         }
 
-        MODELS = FREE_MODELS.copy()
-        random.shuffle(MODELS)
+        async with httpx.AsyncClient(verify=False) as client:
+            try:
+                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
 
-        for model_id in MODELS:
-            # Send "trying" event
-            yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
+                if response.status_code == 200:
+                    result = response.json()
+                    summary = result['choices'][0]['message']['content']
 
-            payload = {
-                "model": model_id,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a financial advisor. Be CONCISE (150-200 words max). Use clear sections. Be specific with numbers and actionable."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt_text
-                    }
-                ],
-                "max_tokens": 400,
-                "temperature": 0.7
-            }
+                    # Send success event
+                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                    return
 
-            async with httpx.AsyncClient(verify=False) as client:
-                try:
-                    response = await client.post(url, headers=headers, json=payload, timeout=30.0)
-
-                    if response.status_code == 200:
-                        result = response.json()
-                        summary = result['choices'][0]['message']['content']
-
-                        # Send success event
-                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
-                        return
-
-                    elif response.status_code == 429:
-                        # Send failed event (rate limited)
-                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
-                        await asyncio.sleep(1)  # Brief pause before next model
-                        continue
-
-                except Exception as e:
-                    # Send failed event (error)
-                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
+                elif response.status_code == 429:
+                    # Send failed event (rate limited)
+                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                    await asyncio.sleep(1)  # Brief pause before next model
                     continue
 
-        # All models failed
-        yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
+            except Exception as e:
+                # Send failed event (error)
+                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
+                continue
 
-    return event_generator
+    # All models failed
+    yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
 
 @app.get("/ai/progress")
 async def ai_progress_stream(year: int, month: int, token: str, db: Session = Depends(get_db)):
     """Server-Sent Events endpoint for real-time AI model progress"""
+    print(f"SSE: Starting progress stream for user, year={year}, month={month}")
     user = get_current_user(token, db)
 
+    async def safe_generator():
+        try:
+            async for event in create_ai_progress_generator(db, user.id, year, month):
+                yield event
+        except Exception as e:
+            print(f"SSE Generator Error: {e}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Server error: {str(e)}'})}\n\n"
+
     return StreamingResponse(
-        create_ai_progress_generator(db, user.id, year, month),
+        safe_generator(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Cache-Control",
+            "Access-Control-Allow-Methods": "GET",
         }
     )
 
@@ -839,6 +848,27 @@ def get_budget_comparison_endpoint(
     comparison = get_budget_comparison(db, user.id, year, month)
     return {"comparison": comparison}
 
+
+# ============================================
+# TEST SSE ROUTE
+# ============================================
+
+@app.get("/test-sse")
+async def test_sse():
+    """Test SSE endpoint"""
+    async def test_generator():
+        yield "data: {\"type\": \"test\", \"message\": \"SSE working!\"}\n\n"
+        await asyncio.sleep(1)
+        yield "data: {\"type\": \"test\", \"message\": \"Test complete\"}\n\n"
+
+    return StreamingResponse(
+        test_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*",
+        }
+    )
 
 # ============================================
 # ROOT ROUTE

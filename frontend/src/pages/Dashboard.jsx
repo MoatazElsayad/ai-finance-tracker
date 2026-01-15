@@ -72,44 +72,94 @@ function Dashboard() {
 
     try {
       // Use Server-Sent Events for real-time progress
-      const eventSource = new EventSource(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${localStorage.getItem('token')}`
-      );
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      const eventSourceUrl = `${apiUrl}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
+
+      console.log('Connecting to SSE:', eventSourceUrl);
+
+      const eventSource = new EventSource(eventSourceUrl);
+      let hasReceivedMessage = false;
+
+      // Timeout for SSE connection
+      const timeout = setTimeout(() => {
+        if (!hasReceivedMessage) {
+          console.warn('SSE timeout, falling back to regular API');
+          eventSource.close();
+          fallbackToRegularAPI();
+        }
+      }, 5000); // 5 second timeout
+
+      const fallbackToRegularAPI = async () => {
+        try {
+          console.log('Using fallback API call');
+          const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
+          setAiSummary(result.summary);
+          setAiModelUsed(result.model_used || null);
+        } catch (fallbackError) {
+          console.error('Fallback API also failed:', fallbackError);
+          alert(fallbackError.message);
+        } finally {
+          setAiLoading(false);
+        }
+      };
 
       eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        hasReceivedMessage = true;
+        clearTimeout(timeout);
 
-        switch (data.type) {
-          case 'trying_model':
-            setCurrentTryingModel(data.model);
-            break;
-          case 'model_failed':
-            // Could show failed models differently if needed
-            console.log(`Model ${data.model} failed: ${data.reason}`);
-            break;
-          case 'success':
-            setAiSummary(data.summary);
-            setAiModelUsed(data.model);
-            setAiLoading(false);
-            eventSource.close();
-            break;
-          case 'error':
-            alert(data.message);
-            setAiLoading(false);
-            eventSource.close();
-            break;
+        console.log('SSE Message received:', event.data);
+        try {
+          const data = JSON.parse(event.data);
+
+          switch (data.type) {
+            case 'trying_model':
+              console.log('Trying model:', data.model);
+              setCurrentTryingModel(data.model);
+              break;
+            case 'model_failed':
+              console.log(`Model ${data.model} failed: ${data.reason}`);
+              // Could show failed models differently if needed
+              break;
+            case 'success':
+              console.log('AI Success with model:', data.model);
+              setAiSummary(data.summary);
+              setAiModelUsed(data.model);
+              setAiLoading(false);
+              eventSource.close();
+              break;
+            case 'error':
+              console.log('AI Error:', data.message);
+              alert(data.message);
+              setAiLoading(false);
+              eventSource.close();
+              break;
+          }
+        } catch (e) {
+          console.error('Failed to parse SSE data:', event.data, e);
         }
+      };
+
+      eventSource.onopen = () => {
+        console.log('SSE Connection opened');
       };
 
       eventSource.onerror = (error) => {
         console.error('SSE Error:', error);
-        setAiLoading(false);
+        console.error('SSE ReadyState:', eventSource.readyState);
+        clearTimeout(timeout);
+        if (!hasReceivedMessage) {
+          console.warn('SSE failed on connection, using fallback');
+          fallbackToRegularAPI();
+        } else {
+          setAiLoading(false);
+        }
         eventSource.close();
       };
 
     } catch (error) {
-      // Fallback to regular API call if SSE fails
-      console.warn('SSE failed, falling back to regular API call');
+      // Fallback to regular API call if SSE setup fails
+      console.warn('SSE setup failed, falling back to regular API call');
       try {
         const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
         setAiSummary(result.summary);
