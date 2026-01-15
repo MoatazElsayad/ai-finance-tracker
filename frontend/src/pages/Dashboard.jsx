@@ -100,62 +100,62 @@ function Dashboard() {
 
   // Get model info (name and icon)
   const getModelInfo = (modelId) => {
-    if (!modelId) return { name: 'AI Model', icon: '🤖', color: 'amber' };
+    if (!modelId) return { name: 'AI Model', logo: '🤖', color: 'amber' };
 
     const modelLower = modelId.toLowerCase();
 
     if (modelLower.includes('openai') || modelLower.includes('gpt')) {
       return {
         name: modelLower.includes('oss') ? 'GPT-OSS' : 'ChatGPT-4o',
-        icon: '🤖',
+        logo: '🤖',
         color: 'emerald'
       };
     } else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
       return {
         name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
-        icon: '💎',
+        logo: '💎',
         color: 'blue'
       };
     } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
       return {
         name: modelLower.includes('chimera') ? 'DeepSeek Chimera' : 'DeepSeek R1',
-        icon: '🧠',
+        logo: '🧠',
         color: 'cyan'
       };
     } else if (modelLower.includes('meta') || modelLower.includes('llama')) {
       return {
         name: 'Llama 3.3',
-        icon: '🦙',
+        logo: '🦙',
         color: 'purple'
       };
     } else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
       return {
         name: 'Nemotron',
-        icon: '🔧',
+        logo: '🔧',
         color: 'green'
       };
     } else if (modelLower.includes('mistral') || modelLower.includes('devstral')) {
       return {
         name: modelLower.includes('devstral') ? 'Devstral' : 'Mistral 7B',
-        icon: '🌊',
+        logo: '🌊',
         color: 'orange'
       };
     } else if (modelLower.includes('qwen')) {
       return {
         name: 'Qwen 2.5',
-        icon: '🔮',
+        logo: '🔮',
         color: 'pink'
       };
     } else if (modelLower.includes('xiaomi') || modelLower.includes('mimo')) {
       return {
         name: 'MiMo-V2',
-        icon: '📱',
+        logo: '📱',
         color: 'gray'
       };
     } else if (modelLower.includes('tngtech')) {
       return {
         name: 'TNG Chimera',
-        icon: '⚡',
+        logo: '⚡',
         color: 'yellow'
       };
     }
@@ -164,7 +164,7 @@ function Dashboard() {
     const modelName = modelId.split('/').pop().split(':')[0].replace(/-/g, ' ');
     return {
       name: modelName,
-      icon: '🤖',
+      logo: '🤖',
       color: 'amber'
     };
   };
@@ -762,7 +762,7 @@ function Dashboard() {
                   
                   return (
                     <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5 hover:scale-105 transition-transform`}>
-                      <span className="text-xl">{modelInfo.icon}</span>
+                      <span className="text-xl">{modelInfo.logo}</span>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
                         <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
@@ -844,7 +844,7 @@ function Dashboard() {
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border border-slate-700">
                   <div className="inline-block p-4 bg-amber-400/20 rounded-full mb-4 border border-amber-400/30">
                     {aiLoading && currentTryingModel ? (
-                      <span className="text-5xl animate-pulse-fast">{getModelInfo(currentTryingModel).logo || getModelInfo(currentTryingModel).icon}</span>
+                      <span className="text-5xl animate-pulse-fast">{getModelInfo(currentTryingModel).logo}</span>
                     ) : (
                       <span className="text-5xl">✨</span>
                     )}
@@ -874,14 +874,6 @@ function Dashboard() {
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
                         <span>Analyzing...</span>
-                        {currentTryingModel && (() => {
-                          const modelInfo = getModelInfo(currentTryingModel);
-                          return (
-                            <span className="ml-2 text-xs text-slate-400">
-                              ({modelInfo.logo || modelInfo.icon} {modelInfo.name})
-                            </span>
-                          );
-                        })()}
                       </div>
                     ) : 'Generate AI Insights'}
                   </button>
