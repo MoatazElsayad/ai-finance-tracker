@@ -52,8 +52,9 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY is missing! Check your .env file.")
 
 pwd_context = CryptContext(
-    schemes=["pbkdf2_sha256"],
-    deprecated=["bcrypt", "auto"]
+    schemes=["pbkdf2_sha256", "bcrypt"],
+    deprecated=["bcrypt"],
+    pbkdf2_sha256__default_rounds=600000
 )
 
 app = FastAPI(title="Simple Finance Tracker")
@@ -116,22 +117,7 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Check if password matches hash"""
-    # First try the main pbkdf2_sha256 context
-    try:
-        return pwd_context.verify(str(plain), hashed)
-    except Exception:
-        pass
-
-    # If that fails, check if it's an old bcrypt hash
-    if hashed.startswith("$2a$") or hashed.startswith("$2b$") or hashed.startswith("$2y$"):
-        try:
-            # Try to verify as bcrypt directly (with length limit)
-            import bcrypt
-            return bcrypt.checkpw(str(plain)[:71].encode('utf-8'), hashed.encode('utf-8'))
-        except Exception:
-            pass
-
-    return False
+    return pwd_context.verify(str(plain), hashed)
 
 def create_token(user_id: int) -> str:
     """Create JWT token for authentication"""
