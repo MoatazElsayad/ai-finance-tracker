@@ -74,9 +74,133 @@ function Dashboard() {
       // Use Server-Sent Events for real-time progress
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('❌ No token found in localStorage');
+        alert('Please log in again');
+        setAiLoading(false);
+        return;
+      }
+
       const eventSourceUrl = `${apiUrl}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
 
-      console.log('Connecting to SSE:', eventSourceUrl);
+      console.log('🔗 Attempting SSE connection to:', eventSourceUrl);
+      console.log('📝 Token exists:', !!token, 'Length:', token.length);
+
+      const eventSource = new EventSource(eventSourceUrl);
+      let hasReceivedMessage = false;
+
+      // Timeout for SSE connection
+      const timeout = setTimeout(() => {
+        if (!hasReceivedMessage) {
+          console.warn('SSE timeout, falling back to regular API');
+          eventSource.close();
+          fallbackToRegularAPI();
+        }
+      }, 5000); // 5 second timeout
+
+      const fallbackToRegularAPI = async () => {
+        try {
+          console.log('Using fallback API call');
+      const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
+          console.log('✅ Fallback API Response received:', result);
+      setAiSummary(result.summary);
+          setAiModelUsed(result.model_used || null);
+        } catch (fallbackError) {
+          console.error('Fallback API also failed:', fallbackError);
+          alert(fallbackError.message);
+        } finally {
+          setAiLoading(false);
+        }
+      };
+
+      eventSource.onmessage = (event) => {
+        hasReceivedMessage = true;
+        clearTimeout(timeout);
+
+        console.log('SSE Message received:', event.data);
+        try {
+          const data = JSON.parse(event.data);
+
+          switch (data.type) {
+            case 'trying_model':
+              console.log('Trying model:', data.model);
+              setCurrentTryingModel(data.model);
+              break;
+            case 'model_failed':
+              console.log(`Model ${data.model} failed: ${data.reason}`);
+              // Could show failed models differently if needed
+              break;
+            case 'success':
+              console.log('AI Success with model:', data.model);
+              setAiSummary(data.summary);
+              setAiModelUsed(data.model);
+              setAiLoading(false);
+              eventSource.close();
+              break;
+            case 'error':
+              console.log('AI Error:', data.message);
+              alert(data.message);
+              setAiLoading(false);
+              eventSource.close();
+              break;
+          }
+        } catch (e) {
+          console.error('Failed to parse SSE data:', event.data, e);
+        }
+      };
+
+      eventSource.onopen = () => {
+        console.log('SSE Connection opened');
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        console.error('SSE ReadyState:', eventSource.readyState);
+        clearTimeout(timeout);
+        if (!hasReceivedMessage) {
+          console.warn('SSE failed on connection, using fallback');
+          fallbackToRegularAPI();
+        } else {
+          setAiLoading(false);
+        }
+        eventSource.close();
+      };
+
+    } catch (error) {
+      // Fallback to regular API call if SSE setup fails
+      console.warn('SSE setup failed, falling back to regular API call');
+      try {
+        const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
+        console.log('✅ Fallback API Response received:', result);
+        setAiSummary(result.summary);
+        setAiModelUsed(result.model_used || null);
+      } catch (fallbackError) {
+        console.error('Fallback API also failed:', fallbackError);
+        alert(fallbackError.message);
+      } finally {
+        setAiLoading(false);
+      }
+    }
+
+    /*
+    // SSE CODE - COMMENTED OUT FOR DEBUGGING
+    try {
+      // Use Server-Sent Events for real-time progress
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('❌ No token found in localStorage');
+        alert('Please log in again');
+        setAiLoading(false);
+        return;
+      }
+
+      const eventSourceUrl = `${apiUrl}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
+
+      console.log('🔗 Attempting SSE connection to:', eventSourceUrl);
+      console.log('📝 Token exists:', !!token, 'Length:', token.length);
 
       const eventSource = new EventSource(eventSourceUrl);
       let hasReceivedMessage = false;
@@ -99,9 +223,9 @@ function Dashboard() {
         } catch (fallbackError) {
           console.error('Fallback API also failed:', fallbackError);
           alert(fallbackError.message);
-        } finally {
-          setAiLoading(false);
-        }
+    } finally {
+      setAiLoading(false);
+    }
       };
 
       eventSource.onmessage = (event) => {
@@ -170,6 +294,7 @@ function Dashboard() {
         setAiLoading(false);
       }
     }
+    */
   };
 
   // Get model info (name and icon)
@@ -313,7 +438,7 @@ function Dashboard() {
           const colorClass = getSectionColor(section.title);
           const hasList = section.content.includes('•') || section.content.includes('-');
           
-          return (
+            return (
             <div
               key={idx}
               className={`bg-gradient-to-br ${colorClass} rounded-xl p-6 border backdrop-blur-sm shadow-lg hover:shadow-xl transition-all`}
@@ -324,7 +449,7 @@ function Dashboard() {
                 </div>
                 <h4 className="font-bold text-white text-xl">
                   {section.title}
-                </h4>
+              </h4>
               </div>
               
               <div className="pl-12">
@@ -345,8 +470,8 @@ function Dashboard() {
                           {line.trim()}
                         </p>
                       );
-                    })}
-                  </ul>
+                  })}
+                </ul>
                 ) : (
                   <p className="text-slate-200 leading-relaxed text-base">
                     {section.content}
@@ -514,40 +639,40 @@ function Dashboard() {
       {/* Section 1: Header & Summary Cards */}
       <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0f172a]">
         <div className="max-w-7xl mx-auto w-full">
-          {/* Header with Month Selector */}
+      {/* Header with Month Selector */}
           <div className="flex items-center justify-between mb-12">
-            <div>
+        <div>
               <h1 className="text-5xl font-bold text-white mb-2 flex items-center gap-3">
                 <span className="text-amber-400">💼</span>
                 Financial Dashboard
               </h1>
               <p className="text-xl text-slate-400">Complete financial overview & insights</p>
-            </div>
+        </div>
 
-            {/* Month Navigator */}
+        {/* Month Navigator */}
             <div className="flex items-center gap-3 bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 border border-slate-700">
-              <button
-                onClick={() => changeMonth(-1)}
+          <button
+            onClick={() => changeMonth(-1)}
                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-xl text-slate-300 hover:text-white"
-              >
-                ◀
-              </button>
+          >
+            ◀
+          </button>
               <span className="font-bold text-white min-w-[160px] text-center text-lg">
-                {new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </span>
-              <button
-                onClick={() => changeMonth(1)}
+            {new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+          <button
+            onClick={() => changeMonth(1)}
                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-xl text-slate-300 hover:text-white"
-              >
-                ▶
-              </button>
-            </div>
-          </div>
+          >
+            ▶
+          </button>
+        </div>
+      </div>
 
-          {/* Summary Cards */}
+      {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Income Card */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-green-500/50 transition-all hover:shadow-2xl hover:scale-105">
@@ -556,12 +681,12 @@ function Dashboard() {
                 <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-2xl">📈</span>
                 </div>
-              </div>
+          </div>
               <p className="text-4xl font-bold text-green-400 mb-2">
-                ${analytics?.total_income?.toFixed(2) || '0.00'}
-              </p>
+            ${analytics?.total_income?.toFixed(2) || '0.00'}
+          </p>
               <p className="text-sm text-slate-400">This month</p>
-            </div>
+        </div>
 
             {/* Expenses Card */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-red-500/50 transition-all hover:shadow-2xl hover:scale-105">
@@ -570,12 +695,12 @@ function Dashboard() {
                 <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-2xl">📉</span>
                 </div>
-              </div>
+          </div>
               <p className="text-4xl font-bold text-red-400 mb-2">
-                ${analytics?.total_expenses?.toFixed(2) || '0.00'}
-              </p>
+            ${analytics?.total_expenses?.toFixed(2) || '0.00'}
+          </p>
               <p className="text-sm text-slate-400">This month</p>
-            </div>
+        </div>
 
             {/* Net Savings Card */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-amber-500/50 transition-all hover:shadow-2xl hover:scale-105">
@@ -584,12 +709,12 @@ function Dashboard() {
                 <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-2xl">💰</span>
                 </div>
-              </div>
+          </div>
               <p className={`text-4xl font-bold mb-2 ${(analytics?.net_savings || 0) >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
-                ${Math.abs(analytics?.net_savings || 0).toFixed(2)}
-              </p>
+            ${Math.abs(analytics?.net_savings || 0).toFixed(2)}
+          </p>
               <p className="text-sm text-slate-400">This month</p>
-            </div>
+        </div>
 
             {/* Savings Rate Card */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-2xl hover:scale-105">
@@ -598,10 +723,10 @@ function Dashboard() {
                 <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-2xl">📊</span>
                 </div>
-              </div>
+          </div>
               <p className={`text-4xl font-bold mb-2 ${savingsRate >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
-                {savingsRate}%
-              </p>
+            {savingsRate}%
+          </p>
               <p className="text-sm text-slate-400">Of income saved</p>
             </div>
           </div>
@@ -617,63 +742,63 @@ function Dashboard() {
               Financial Overview
             </h2>
             <p className="text-xl text-slate-400">Income, expenses, and spending breakdown</p>
-          </div>
-          
+      </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Bar Chart */}
+        {/* Bar Chart */}
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <span className="text-amber-400">💵</span>
-                Income vs Expenses
-              </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={barData}>
+            Income vs Expenses
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                   <XAxis dataKey="name" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {barData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                {barData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-            {/* Pie Chart */}
+        {/* Pie Chart */}
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <span className="text-amber-400">🥧</span>
-                Spending by Category
-              </h2>
-              {pieData.length === 0 ? (
+            Spending by Category
+          </h2>
+          {pieData.length === 0 ? (
                 <div className="flex items-center justify-center h-[300px] text-slate-400">
-                  No expense data for this month
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+              No expense data for this month
             </div>
-          </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]} />
+                  ))}
+                </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
         </div>
       </section>
 
@@ -855,25 +980,25 @@ function Dashboard() {
                 })()}
               </div>
             )}
-            
-            <div className="relative p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+        
+        <div className="relative p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
                   <div className="p-3 bg-amber-400/20 backdrop-blur-sm rounded-xl border border-amber-400/30">
-                    <span className="text-3xl">🤖</span>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
+                <span className="text-3xl">🤖</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
                     <p className="text-slate-400 text-sm">Powered by multiple frontier models</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleGenerateAI}
-                  disabled={aiLoading}
+              </div>
+            </div>
+            <button
+              onClick={handleGenerateAI}
+              disabled={aiLoading}
                   className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:from-amber-500 hover:to-amber-600 disabled:opacity-50 font-semibold shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {aiLoading ? (
-                    <>
+            >
+              {aiLoading ? (
+                <>
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
                       <span>Analyzing...</span>
                       {currentTryingModel && (() => {
@@ -884,20 +1009,20 @@ function Dashboard() {
                           </span>
                         );
                       })()}
-                    </>
-                  ) : (
-                    <>
-                      <span>✨</span>
-                      Generate
-                    </>
-                  )}
-                </button>
-              </div>
+                </>
+              ) : (
+                <>
+                  <span>✨</span>
+                  Generate
+                </>
+              )}
+            </button>
+          </div>
 
-              {aiSummary ? (
+          {aiSummary ? (
                 <div className="space-y-6">
                   <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-slate-700/50">
-                    {formatAISummary(aiSummary)}
+              {formatAISummary(aiSummary)}
                   </div>
                   
                   {/* Footer with actions */}
@@ -913,17 +1038,17 @@ function Dashboard() {
                           minute: '2-digit' 
                         })}
                       </div>
-                    </div>
-                    <button
-                      onClick={handleGenerateAI}
-                      className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border border-slate-600 hover:border-amber-400/30"
-                    >
-                      <span>🔄</span>
-                      <span>Refresh Analysis</span>
-                    </button>
-                  </div>
                 </div>
-              ) : (
+                <button
+                  onClick={handleGenerateAI}
+                      className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border border-slate-600 hover:border-amber-400/30"
+                >
+                  <span>🔄</span>
+                      <span>Refresh Analysis</span>
+                </button>
+              </div>
+            </div>
+          ) : (
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border border-slate-700">
                   <div className="inline-block p-4 bg-amber-400/20 rounded-full mb-4 border border-amber-400/30">
                     {aiLoading && currentTryingModel ? (
@@ -940,6 +1065,8 @@ function Dashboard() {
                           <span className="text-5xl animate-pulse-fast">{modelInfo.logo}</span>
                         );
                       })()
+                    ) : aiLoading ? (
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-400 border-t-transparent"></div>
                     ) : (
                       <span className="text-5xl">✨</span>
                     )}
@@ -947,18 +1074,19 @@ function Dashboard() {
                   <h3 className="text-xl font-bold text-white mb-2">
                     {aiLoading && currentTryingModel ? (
                       <span className="flex items-center justify-center gap-2">
-                        Trying <span className="text-amber-400">{getModelInfo(currentTryingModel).name}</span>
+                        Analyzing with <span className="text-amber-400">{getModelInfo(currentTryingModel).name}</span>
                       </span>
+                    ) : aiLoading ? (
+                      'Analyzing Your Finances...'
                     ) : (
                       'Get Personalized Financial Advice'
                     )}
                   </h3>
                   <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                    {aiLoading ? (
-                      `Please wait while we try different AI models to generate your financial insights.`
-                    ) : (
-                      'Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.'
-                    )}
+                    {aiLoading
+                      ? 'Our AI is processing your financial data and generating personalized insights.'
+                      : 'Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.'
+                    }
                   </p>
                   <button
                     onClick={handleGenerateAI}
@@ -969,13 +1097,21 @@ function Dashboard() {
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
                         <span>Analyzing...</span>
+                        {currentTryingModel && (() => {
+                          const modelInfo = getModelInfo(currentTryingModel);
+                          return (
+                            <span className="ml-2 text-xs text-slate-700">
+                              ({modelInfo.logo.startsWith('http') ? modelInfo.name : modelInfo.logo} {modelInfo.name})
+                            </span>
+                          );
+                        })()}
                       </div>
                     ) : 'Generate AI Insights'}
                   </button>
-                </div>
-              )}
             </div>
-          </div>
+          )}
+        </div>
+      </div>
         </div>
       </section>
 
@@ -985,7 +1121,7 @@ function Dashboard() {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
               <span className="text-amber-400">📝</span>
-              Recent Activity
+            Recent Activity
             </h2>
             <p className="text-xl text-slate-400">Your latest transactions</p>
           </div>
@@ -995,55 +1131,55 @@ function Dashboard() {
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <span className="text-amber-400">💳</span>
                 Recent Transactions
-              </h2>
-              <a
-                href="/history"
+          </h2>
+          <a
+            href="/history"
                 className="text-amber-400 hover:text-amber-300 font-medium text-sm flex items-center gap-1 transition-colors"
-              >
-                View All
-                <span>→</span>
-              </a>
-            </div>
-            
-            {recentTransactions.length === 0 ? (
-              <div className="text-center py-12">
+          >
+            View All
+            <span>→</span>
+          </a>
+        </div>
+        
+        {recentTransactions.length === 0 ? (
+          <div className="text-center py-12">
                 <div className="inline-block p-4 bg-slate-700/50 rounded-full mb-4">
-                  <span className="text-4xl">📊</span>
-                </div>
+              <span className="text-4xl">📊</span>
+            </div>
                 <p className="text-slate-400 mb-4">No transactions yet</p>
-                <a
-                  href="/transactions"
+            <a
+              href="/transactions"
                   className="inline-block px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all"
-                >
-                  Add Your First Transaction
-                </a>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentTransactions.map((txn) => (
-                  <div
-                    key={txn.id}
+            >
+              Add Your First Transaction
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentTransactions.map((txn) => (
+              <div
+                key={txn.id}
                     className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl hover:bg-slate-700/50 transition-all border border-slate-600/50"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
                         txn.amount > 0 ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'
-                      }`}>
-                        {txn.category_icon}
-                      </div>
-                      <div>
+                  }`}>
+                    {txn.category_icon}
+                  </div>
+                  <div>
                         <p className="font-semibold text-white">{txn.description}</p>
                         <p className="text-sm text-slate-400">{txn.category_name}</p>
-                      </div>
-                    </div>
-                    <p className={`text-lg font-bold ${txn.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toFixed(2)}
-                    </p>
                   </div>
-                ))}
+                </div>
+                    <p className={`text-lg font-bold ${txn.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toFixed(2)}
+                </p>
               </div>
-            )}
+            ))}
           </div>
+        )}
+      </div>
         </div>
       </section>
     </div>

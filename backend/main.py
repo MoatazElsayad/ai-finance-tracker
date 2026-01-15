@@ -553,9 +553,17 @@ PROVIDE A CONCISE ANALYSIS (150-200 words max):
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
 
+    # TEMPORARY: Mock response for testing
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        print("⚠️  No OPENROUTER_API_KEY found - using mock response for testing")
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
+        await asyncio.sleep(1)
+        yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model-for-testing', 'summary': '**Financial Health Assessment**\n\nYour finances look solid with consistent income and reasonable spending patterns.\n\n**Key Achievement**\nYou have maintained good savings habits this month.\n\n**Area for Improvement**\nConsider reducing dining out expenses which are 15% higher than last month.\n\n**Recommended Actions**\n• Set a budget for entertainment expenses\n• Review your subscriptions for unused services', 'context': context})}\n\n"
+        return
+
     # AI Model Loop
     url = "https://openrouter.ai/api/v1/chat/completions"
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -616,8 +624,18 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
 @app.get("/ai/progress")
 async def ai_progress_stream(year: int, month: int, token: str, db: Session = Depends(get_db)):
     """Server-Sent Events endpoint for real-time AI model progress"""
-    print(f"SSE: Starting progress stream for user, year={year}, month={month}")
-    user = get_current_user(token, db)
+    print(f"🎯 SSE REQUEST RECEIVED: year={year}, month={month}, token_length={len(token) if token else 0}")
+
+    if not token:
+        print("❌ SSE: No token provided")
+        return {"error": "No token provided"}
+
+    try:
+        user = get_current_user(token, db)
+        print(f"✅ SSE: Authenticated user {user.id}")
+    except Exception as e:
+        print(f"❌ SSE: Authentication failed: {e}")
+        return {"error": "Authentication failed"}
 
     async def safe_generator():
         try:
@@ -689,10 +707,19 @@ PROVIDE A CONCISE ANALYSIS (150-200 words max):
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
 
+    # TEMPORARY: Mock response for testing
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        print("⚠️  No OPENROUTER_API_KEY found - returning mock response for testing")
+        return {
+            "summary": "**Financial Health Assessment**\n\nYour finances look solid with consistent income and reasonable spending patterns.\n\n**Key Achievement**\nYou've maintained good savings habits this month.\n\n**Area for Improvement**\nConsider reducing dining out expenses which are 15% higher than last month.\n\n**Recommended Actions**\n• Set a budget for entertainment expenses\n• Review your subscriptions for unused services",
+            "context": context,
+            "model_used": "mock-model-for-testing"
+        }
+
     # AI Model Loop
     url = "https://openrouter.ai/api/v1/chat/completions"
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    
+
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
