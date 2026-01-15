@@ -660,33 +660,26 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto w-full">
       {/* Personalized Greeting */}
       {user && (
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-amber-400/20 to-yellow-400/20 backdrop-blur-sm rounded-2xl border border-amber-400/30">
-            <span className="text-3xl">👋</span>
-            <div>
-              <h2 className="text-2xl font-bold text-white">
-                Welcome back, {user.username}!
-              </h2>
-              <p className="text-sm text-amber-300">
-                Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </p>
-            </div>
-          </div>
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-light text-slate-300 mb-1">
+            Welcome back, <span className="font-semibold text-white">{user.username}</span>
+          </h2>
+          <p className="text-lg text-slate-400">
+            Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </p>
         </div>
       )}
 
-      {/* Header with Month Selector */}
-          <div className="flex items-center justify-between mb-12">
-        <div>
-              <h1 className="text-5xl font-bold text-white mb-2 flex items-center gap-3">
-                <span className="text-amber-400">💼</span>
-                Financial Dashboard
-              </h1>
-              <p className="text-xl text-slate-400">Complete financial overview & insights</p>
-        </div>
+      {/* Main Header */}
+      <div className="text-center mb-12">
+        <h1 className="text-6xl font-bold text-white mb-4 flex items-center justify-center gap-4">
+          <span className="text-amber-400">💼</span>
+          Financial Dashboard
+        </h1>
+        <p className="text-xl text-slate-400 mb-8">Complete financial overview & insights</p>
 
         {/* Month Navigator */}
-            <div className="flex items-center gap-3 bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 border border-slate-700">
+        <div className="flex items-center justify-center gap-3 bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 border border-slate-700 max-w-md mx-auto">
           <button
             onClick={() => changeMonth(-1)}
                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-xl text-slate-300 hover:text-white"
