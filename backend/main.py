@@ -51,7 +51,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY is missing! Check your .env file.")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 app = FastAPI(title="Simple Finance Tracker")
 
@@ -107,18 +107,13 @@ class TransactionResponse(BaseModel):
 # ============================================
 
 def hash_password(password: str) -> str:
-    # DEBUG: This will show us exactly what is about to be hashed
-    print(f"DEBUG: Hashing value: {password} (Type: {type(password)})")
-    
-    # Force it to be a string and cut it just in case
-    clean_password = str(password)[:71] 
-    return pwd_context.hash(clean_password)
+    """Hash a password for storage"""
+    # pbkdf2_sha256 doesn't have the 72-byte bcrypt limit, so we can use full password
+    return pwd_context.hash(str(password))
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Check if password matches hash"""
-    # Apply same truncation as hashing to ensure compatibility
-    clean_password = str(plain)[:71]
-    return pwd_context.verify(clean_password, hashed)
+    return pwd_context.verify(str(plain), hashed)
 
 def create_token(user_id: int) -> str:
     """Create JWT token for authentication"""
