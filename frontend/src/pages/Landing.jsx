@@ -1,66 +1,32 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 
 export default function Landing() {
-  const [year, setYear] = useState(new Date().getFullYear());
-
-  // Animation styles converted to a <style> tag compatible with React
-  const animations = `
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-25px); }
-    }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.5); }
-      50% { box-shadow: 0 0 60px rgba(139, 92, 246, 0.7); }
-    }
-    @keyframes gradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    @keyframes shimmer {
-      0% { background-position: -1000px 0; }
-      100% { background-position: 1000px 0; }
-    }
-    .float-animation { animation: float 4s ease-in-out infinite; }
-    .glow-animation { animation: pulse-glow 3s ease-in-out infinite; }
-    .gradient-animation { background-size: 400% 400%; animation: gradient 15s ease infinite; }
-    .shimmer { 
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); 
-      background-size: 1000px 100%; 
-      animation: shimmer 3s infinite; 
-    }
-    .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
-  `;
+  const year = new Date().getFullYear();
 
   return (
-    <div className="bg-gray-50 antialiased font-sans">
-      <style>{animations}</style>
+    <div className="bg-[#0a0e27] antialiased font-sans text-slate-300">
 
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white text-2xl">💰</span>
+              <div className="w-10 h-10 bg-amber-400/20 rounded-lg flex items-center justify-center border border-amber-400/30 shadow-md">
+                <span className="text-xl">💼</span>
               </div>
-              <div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  AI Finance Tracker
-                </span>
-                <p className="text-xs text-gray-500 -mt-1">Powered by AI</p>
-              </div>
+              <span className="font-bold text-xl text-white">
+                AI Finance Tracker
+              </span>
+              <p className="text-xs text-slate-400 -mt-1">Powered by AI</p>
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">Features</a>
-              <a href="#ai" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">AI Technology</a>
+              <a href="#features" className="text-slate-300 hover:text-amber-400 font-medium transition-colors">Features</a>
+              <a href="#ai" className="text-slate-300 hover:text-amber-400 font-medium transition-colors">AI Insights</a>
+              <a href="#contact" className="text-slate-300 hover:text-amber-400 font-medium transition-colors">Contact</a>
             </div>
             <div className="flex gap-3">
-              <Link to="/login" className="px-5 py-2 text-gray-700 hover:text-gray-900 font-semibold transition-colors">Sign In</Link>
-              <Link to="/register" className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold">
+              <Link to="/login" className="px-5 py-2 text-slate-300 hover:text-white font-semibold transition-colors">Sign In</Link>
+              <Link to="/register" className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:shadow-lg transition-all font-semibold">
                 Get Started Free
               </Link>
             </div>
@@ -69,78 +35,79 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 gradient-animation">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      <section className="relative overflow-hidden min-h-screen flex items-center bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0f172a] py-20">
+        <div className="absolute inset-0 z-0 opacity-10">
+          <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: 'url(/path/to/dark-dashboard-screenshot.jpg)' }}></div>
+        </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur rounded-full shadow-lg border border-gray-200">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800/80 backdrop-blur rounded-full shadow-lg border border-slate-700">
                 <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
                 </span>
-                <span className="text-sm font-semibold text-gray-700">🔥 Now with GPT-4 & Gemini AI</span>
+                <span className="text-sm font-semibold text-white">🔥 Powered by Latest AI Models</span>
               </div>
 
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 leading-tight">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight">
                 Master Your Money with
-                <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mt-2">
-                  AI Intelligence
+                <span className="block bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 bg-clip-text text-transparent mt-2">
+                  Intelligent Finance
                 </span>
               </h1>
 
-              <p className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Track expenses, analyze patterns, and receive personalized insights from the world's most advanced AI.
+              <p className="text-xl md:text-2xl text-slate-400 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                Track expenses, gain AI-powered insights, and achieve your financial goals with ease.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link to="/register" className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-2xl transition-all shadow-lg font-bold text-lg flex items-center justify-center gap-2">
+                <Link to="/register" className="group px-8 py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:shadow-2xl transition-all shadow-lg font-bold text-lg flex items-center justify-center gap-2">
                   Start Free Trial
                 </Link>
-                <a href="#features" className="px-8 py-4 bg-white text-gray-700 rounded-xl hover:shadow-xl transition-all border-2 border-gray-200 font-bold text-lg text-center">
-                  Watch Demo
-                </a>
+                <Link to="/login" className="px-8 py-4 bg-slate-800/80 text-white rounded-xl hover:shadow-xl transition-all border-2 border-slate-700 font-bold text-lg text-center">
+                  Login
+                </Link>
               </div>
             </div>
 
-            {/* Dashboard Preview Widget */}
-            <div className="relative float-animation">
-              <div className="bg-white rounded-3xl shadow-2xl p-6 border border-gray-100 glow-animation relative overflow-hidden">
-                <div className="absolute inset-0 shimmer pointer-events-none"></div>
+            {/* Dashboard Preview Widget (Dark Mode) */}
+            <div className="relative">
+              <div className="bg-slate-800/80 rounded-3xl shadow-2xl p-6 border border-slate-700 glow-gold relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent shimmer-animation pointer-events-none"></div>
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="font-bold text-gray-900 text-lg">Monthly Dashboard</h3>
-                    <p className="text-sm text-gray-500">January 2026</p>
+                    <h3 className="font-bold text-white text-xl">Monthly Dashboard</h3>
+                    <p className="text-sm text-slate-400">January {year}</p>
                   </div>
-                  <span className="px-3 py-1.5 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-full text-sm font-bold shadow-lg">
+                  <span className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow-lg">
                     +39% Savings
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                    <p className="text-xs text-green-600 font-semibold">Income</p>
-                    <p className="text-2xl font-black text-green-700">$5,240</p>
+                  <div className="bg-green-500/20 p-4 rounded-xl border border-green-500/30">
+                    <p className="text-xs text-green-400 font-semibold">Income</p>
+                    <p className="text-2xl font-black text-green-300">$5,240</p>
                   </div>
-                  <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-                    <p className="text-xs text-red-600 font-semibold">Expenses</p>
-                    <p className="text-2xl font-black text-red-700">$3,180</p>
+                  <div className="bg-red-500/20 p-4 rounded-xl border border-red-500/30">
+                    <p className="text-xs text-red-400 font-semibold">Expenses</p>
+                    <p className="text-2xl font-black text-red-300">$3,180</p>
                   </div>
-                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                    <p className="text-xs text-blue-600 font-semibold">Saved</p>
-                    <p className="text-2xl font-black text-blue-700">$2,060</p>
+                  <div className="bg-amber-500/20 p-4 rounded-xl border border-amber-500/30">
+                    <p className="text-xs text-amber-400 font-semibold">Saved</p>
+                    <p className="text-2xl font-black text-amber-300">$2,060</p>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-5 rounded-2xl border-2 border-purple-200">
+                <div className="bg-slate-700/50 p-5 rounded-2xl border-2 border-slate-600">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-2xl">🤖</span>
-                    <p className="font-bold text-gray-900">AI Financial Insight</p>
+                    <p className="font-bold text-white">AI Financial Insight</p>
                   </div>
-                  <p className="text-sm text-gray-700">
-                    <strong>Excellent progress!</strong> You've saved 39% of your income this month. Consider investing the extra $560.
+                  <p className="text-sm text-slate-300">
+                    <strong>Excellent progress!</strong> Your savings rate is strong. The AI suggests reviewing 'Eating Out' expenses.
                   </p>
                 </div>
               </div>
@@ -150,42 +117,70 @@ export default function Landing() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-24 bg-[#0f172a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-black text-gray-900">Everything You Need</h2>
+            <h2 className="text-5xl font-black text-white">Everything You Need</h2>
+            <p className="text-xl text-slate-400 mt-4">Powerful tools to manage your money efficiently.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { icon: "🤖", title: "AI Insights", desc: "Personalized advice from GPT-4 and Gemini." },
-              { icon: "📊", title: "Analytics", desc: "Visualize your finances with interactive charts." },
-              { icon: "💰", title: "Smart Tracking", desc: "Effortlessly track income and expenses." },
-              { icon: "🚨", title: "Anomaly Detection", desc: "AI flags unusual transactions automatically." },
-              { icon: "🎯", title: "Budget Goals", desc: "Set limits and get proactive alerts." },
-              { icon: "🔒", title: "Secure", desc: "Bank-level 256-bit encryption for your data." },
+              { icon: "🧠", title: "AI Insights", desc: "Get personalized financial advice and smart recommendations from advanced AI models." },
+              { icon: "📈", title: "Interactive Charts", desc: "Visualize your income, expenses, and savings with dynamic and easy-to-understand charts." },
+              { icon: "📝", title: "Detailed Transactions", desc: "Effortlessly log and categorize your income and expenses with advanced filtering." },
+              { icon: "🚨", title: "Smart Alerts", desc: "Receive proactive notifications for unusual spending or when nearing budget limits." },
+              { icon: "🎯", title: "Budget Management", desc: "Set and track budgets for different categories to stay on top of your spending." },
+              { icon: "🔒", title: "Secure & Private", desc: "Your financial data is protected with industry-leading encryption and security measures." },
             ].map((f, i) => (
-              <div key={i} className="p-8 rounded-3xl border-2 border-gray-100 hover-lift bg-gray-50 cursor-pointer group">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform">
+              <div key={i} className="p-8 rounded-3xl border border-slate-700 hover:border-amber-400/50 transition-all bg-slate-800/50 backdrop-blur-sm shadow-xl hover:shadow-2xl hover:scale-[1.02] group">
+                <div className="w-14 h-14 bg-amber-400/10 rounded-2xl flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform border border-amber-400/30">
                   <span className="text-3xl">{f.icon}</span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{f.title}</h3>
-                <p className="text-gray-700">{f.desc}</p>
+                <h3 className="text-2xl font-bold text-white mb-3">{f.title}</h3>
+                <p className="text-slate-300">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="font-bold text-white mb-2">AI Finance Tracker</p>
-          <div className="flex justify-center gap-6 mb-6">
-            <Link to="/terms" className="hover:text-white">Terms</Link>
-            <Link to="/privacy" className="hover:text-white">Privacy</Link>
-            <Link to="/contact" className="hover:text-white">Contact</Link>
+      {/* AI Technology Section */}
+      <section id="ai" className="py-24 bg-gradient-to-br from-[#1a1f3a] to-[#0a0e27]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-5xl font-black text-white mb-4">Intelligent AI at Your Fingertips</h2>
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto mb-12">
+            Our platform leverages a blend of advanced AI models to provide you with the most accurate and personalized financial insights.
+          </p>
+          <div className="flex flex-wrap justify-center gap-8 mb-12">
+            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
+              <span className="text-2xl">🤖</span><span className="text-white font-medium">ChatGPT-4o</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
+              <span className="text-2xl">✨</span><span className="text-white font-medium">Google Gemini</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
+              <span className="text-2xl">🦙</span><span className="text-white font-medium">Meta Llama</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
+              <span className="text-2xl">🌊</span><span className="text-white font-medium">Mistral AI</span>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">&copy; {year} AI Finance Tracker. All rights reserved.</p>
+          <Link to="/register" className="group px-8 py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:shadow-2xl transition-all shadow-lg font-bold text-lg inline-flex items-center justify-center gap-2">
+            Explore AI Insights
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer id="contact" className="bg-slate-900 text-slate-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="font-bold text-white mb-2 text-lg">AI Finance Tracker</p>
+          <div className="flex justify-center gap-6 mb-6">
+            <a href="#" className="hover:text-amber-400 transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-amber-400 transition-colors">Privacy Policy</a>
+            <a href="mailto:support@financeai.com" className="hover:text-amber-400 transition-colors">Support</a>
+          </div>
+          <p className="text-sm text-slate-500">&copy; {year} AI Finance Tracker. All rights reserved.</p>
         </div>
       </footer>
     </div>

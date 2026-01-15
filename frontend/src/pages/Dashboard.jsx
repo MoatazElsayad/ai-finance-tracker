@@ -15,11 +15,27 @@ const CHART_COLORS = {
   categories: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
 };
 
+const ALL_AI_MODELS = [
+    "openai/gpt-oss-120b:free",
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemma-3-27b-it:free",
+    "deepseek/deepseek-r1-0528:free",
+    "tngtech/deepseek-r1t2-chimera:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "mistralai/devstral-2512:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "qwen/qwen-2.5-vl-7b-instruct:free",
+    "xiaomi/mimo-v2-flash:free",
+    "tngtech/tng-r1t-chimera:free",
+];
+
 function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [aiSummary, setAiSummary] = useState('');
   const [aiModelUsed, setAiModelUsed] = useState(null);
+  const [currentTryingModel, setCurrentTryingModel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -49,7 +65,11 @@ function Dashboard() {
   };
 
   const handleGenerateAI = async () => {
+    setAiSummary(''); // Clear previous summary
+    setAiModelUsed(null); // Clear previous model
     setAiLoading(true);
+    setCurrentTryingModel(null); // Reset trying model
+
     try {
       const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
       setAiSummary(result.summary);
@@ -60,6 +80,22 @@ function Dashboard() {
       setAiLoading(false);
     }
   };
+
+  useEffect(() => {
+    let interval;
+    if (aiLoading) {
+      let currentIndex = 0;
+      setCurrentTryingModel(ALL_AI_MODELS[currentIndex]);
+      interval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % ALL_AI_MODELS.length;
+        setCurrentTryingModel(ALL_AI_MODELS[currentIndex]);
+      }, 1000); // Change model every 1 second
+    } else {
+      clearInterval(interval);
+      setCurrentTryingModel(null);
+    }
+    return () => clearInterval(interval);
+  }, [aiLoading]);
 
   // Get model info (name and icon)
   const getModelInfo = (modelId) => {
@@ -776,7 +812,7 @@ function Dashboard() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
-                    <p className="text-slate-400 text-sm">Powered by advanced AI analysis</p>
+                    <p className="text-slate-400 text-sm">Powered by multiple frontier models</p>
                   </div>
                 </div>
                 <button
@@ -787,7 +823,15 @@ function Dashboard() {
                   {aiLoading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
-                      Analyzing...
+                      <span>Analyzing...</span>
+                      {currentTryingModel && (() => {
+                        const modelInfo = getModelInfo(currentTryingModel);
+                        return (
+                          <span className="ml-2 text-xs text-slate-400">
+                            ({modelInfo.logo || modelInfo.icon} {modelInfo.name})
+                          </span>
+                        );
+                      })()}
                     </>
                   ) : (
                     <>
@@ -843,7 +887,20 @@ function Dashboard() {
                     disabled={aiLoading}
                     className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
                   >
-                    {aiLoading ? 'Analyzing...' : 'Generate AI Insights'}
+                    {aiLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
+                      <span>Analyzing...</span>
+                      {currentTryingModel && (() => {
+                        const modelInfo = getModelInfo(currentTryingModel);
+                        return (
+                          <span className="ml-2 text-xs text-slate-400">
+                            ({modelInfo.logo || modelInfo.icon} {modelInfo.name})
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  ) : 'Generate AI Insights'}
                   </button>
                 </div>
               )}

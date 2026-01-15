@@ -18,22 +18,18 @@ function App() {
       <Routes>
         {/* Public routes */}
 
-        <Route path="/" element={<Landing />} />
-
-        <Route path="/login" element={
-          isAuthenticated() ? <Navigate to="/dashboard" /> : <Login />
-        } />
+        <Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
+        <Route path="/login" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
         
-        {/* Protected routes */}
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="analytics" element={<Analytics />} />
+        {/* Protected routes */} 
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}> 
+          <Route path="/dashboard" element={<Dashboard />} /> 
+          <Route path="/transactions" element={<Transactions />} /> 
+          <Route path="/analytics" element={<Analytics />} /> 
         </Route>
 
-        {/* Catch all - redirect to dashboard */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Catch all - redirect to login if not authenticated, else dashboard */}
+        <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
