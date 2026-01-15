@@ -103,59 +103,60 @@ function Dashboard() {
     if (!modelId) return { name: 'AI Model', logo: '🤖', color: 'amber' };
 
     const modelLower = modelId.toLowerCase();
+    const lobeBase = "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark";
 
     if (modelLower.includes('openai') || modelLower.includes('gpt')) {
       return {
         name: modelLower.includes('oss') ? 'GPT-OSS' : 'ChatGPT-4o',
-        logo: '🤖',
+        logo: `${lobeBase}/openai.png`,
         color: 'emerald'
       };
     } else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
       return {
         name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
-        logo: '💎',
+        logo: modelLower.includes('gemma') ? `${lobeBase}/gemma-color.png` : `${lobeBase}/gemini-color.png`,
         color: 'blue'
       };
     } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
       return {
         name: modelLower.includes('chimera') ? 'DeepSeek Chimera' : 'DeepSeek R1',
-        logo: '🧠',
+        logo: `${lobeBase}/deepseek-color.png`,
         color: 'cyan'
       };
     } else if (modelLower.includes('meta') || modelLower.includes('llama')) {
       return {
         name: 'Llama 3.3',
-        logo: '🦙',
+        logo: `${lobeBase}/meta-color.png`,
         color: 'purple'
       };
     } else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
       return {
         name: 'Nemotron',
-        logo: '🔧',
+        logo: `${lobeBase}/nvidia-color.png`,
         color: 'green'
       };
     } else if (modelLower.includes('mistral') || modelLower.includes('devstral')) {
       return {
         name: modelLower.includes('devstral') ? 'Devstral' : 'Mistral 7B',
-        logo: '🌊',
+        logo: `${lobeBase}/mistral-color.png`,
         color: 'orange'
       };
     } else if (modelLower.includes('qwen')) {
       return {
         name: 'Qwen 2.5',
-        logo: '🔮',
+        logo: `${lobeBase}/qwen-color.png`,
         color: 'pink'
       };
     } else if (modelLower.includes('xiaomi') || modelLower.includes('mimo')) {
       return {
         name: 'MiMo-V2',
-        logo: '📱',
+        logo: `${lobeBase}/xiaomimimo.png`,
         color: 'gray'
       };
     } else if (modelLower.includes('tngtech')) {
       return {
         name: 'TNG Chimera',
-        logo: '⚡',
+        logo: `${lobeBase}/tngtech.png`,
         color: 'yellow'
       };
     }
@@ -762,7 +763,15 @@ function Dashboard() {
                   
                   return (
                     <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5 hover:scale-105 transition-transform`}>
-                      <span className="text-xl">{modelInfo.logo}</span>
+                      {modelInfo.logo.startsWith('http') ? (
+                      <img
+                        src={modelInfo.logo}
+                        alt={modelInfo.name}
+                        className="w-5 h-5 object-contain rounded-sm"
+                      />
+                    ) : (
+                      <span className="text-lg">{modelInfo.logo}</span>
+                    )}
                       <div className="flex flex-col">
                         <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
                         <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
@@ -844,7 +853,19 @@ function Dashboard() {
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border border-slate-700">
                   <div className="inline-block p-4 bg-amber-400/20 rounded-full mb-4 border border-amber-400/30">
                     {aiLoading && currentTryingModel ? (
-                      <span className="text-5xl animate-pulse-fast">{getModelInfo(currentTryingModel).logo}</span>
+                      (() => {
+                        const modelInfo = getModelInfo(currentTryingModel);
+                        const isUrl = modelInfo.logo.startsWith('http');
+                        return isUrl ? (
+                          <img
+                            src={modelInfo.logo}
+                            alt={modelInfo.name}
+                            className="w-12 h-12 object-contain animate-pulse-fast rounded"
+                          />
+                        ) : (
+                          <span className="text-5xl animate-pulse-fast">{modelInfo.logo}</span>
+                        );
+                      })()
                     ) : (
                       <span className="text-5xl">✨</span>
                     )}
