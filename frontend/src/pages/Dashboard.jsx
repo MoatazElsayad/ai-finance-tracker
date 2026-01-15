@@ -84,12 +84,13 @@ function Dashboard() {
   useEffect(() => {
     let interval;
     if (aiLoading) {
+      // Start with first model and cycle through first few models only
       let currentIndex = 0;
       setCurrentTryingModel(ALL_AI_MODELS[currentIndex]);
       interval = setInterval(() => {
-        currentIndex = (currentIndex + 1) % ALL_AI_MODELS.length;
+        currentIndex = (currentIndex + 1) % Math.min(ALL_AI_MODELS.length, 4); // Only cycle through first 4 models
         setCurrentTryingModel(ALL_AI_MODELS[currentIndex]);
-      }, 1000); // Change model every 1 second
+      }, 1500); // Change model every 1.5 seconds
     } else {
       clearInterval(interval);
       setCurrentTryingModel(null);
@@ -100,93 +101,71 @@ function Dashboard() {
   // Get model info (name and icon)
   const getModelInfo = (modelId) => {
     if (!modelId) return { name: 'AI Model', icon: '🤖', color: 'amber' };
-    
+
     const modelLower = modelId.toLowerCase();
-    const lobeBase = "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark";
 
-    // 1. OpenAI / GPT-OSS
     if (modelLower.includes('openai') || modelLower.includes('gpt')) {
-      const isOSS = modelLower.includes('oss');
-      return { 
-        name: isOSS ? 'GPT-OSS 120B' : (modelLower.includes('mini') ? 'GPT-4o Mini' : 'ChatGPT-4o'), 
-        icon: isOSS ? '🔓' : '🤖', 
-        color: 'emerald',
-        logo: `${lobeBase}/openai.png`
+      return {
+        name: modelLower.includes('oss') ? 'GPT-OSS' : 'ChatGPT-4o',
+        icon: '🤖',
+        color: 'emerald'
       };
-    } 
-    // 2. Google (Gemini & Gemma)
-    else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
-      const isGemma = modelLower.includes('gemma');
-      return { 
-        name: isGemma ? 'Gemma 3 27B' : 'Gemini 2.0', 
-        icon: isGemma ? '🌱' : '💎', 
-        color: 'blue',
-        logo: isGemma ? `${lobeBase}/gemma-color.png` : `${lobeBase}/gemini-color.png`
+    } else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
+      return {
+        name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
+        icon: '💎',
+        color: 'blue'
       };
-    } 
-    // 3. DeepSeek & Chimera (TNG Tech)
-    else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
-      const isChimera = modelLower.includes('chimera');
-      return { 
-        name: isChimera ? 'DeepSeek Chimera' : 'DeepSeek R1', 
-        icon: isChimera ? '🦁' : '🧠', 
-        color: 'cyan',
-        logo: `${lobeBase}/deepseek-color.png`
+    } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
+      return {
+        name: modelLower.includes('chimera') ? 'DeepSeek Chimera' : 'DeepSeek R1',
+        icon: '🧠',
+        color: 'cyan'
       };
-    }
-    // 4. Meta (Llama)
-    else if (modelLower.includes('meta') || modelLower.includes('llama')) {
-      return { 
-        name: 'Llama 3.3', 
-        icon: '🦙', 
-        color: 'purple',
-        logo: `${lobeBase}/meta-color.png`
+    } else if (modelLower.includes('meta') || modelLower.includes('llama')) {
+      return {
+        name: 'Llama 3.3',
+        icon: '🦙',
+        color: 'purple'
       };
-    } 
-    // 5. NVIDIA (Nemotron)
-    else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
-      return { 
-        name: 'Nemotron Nano', 
-        icon: '🟢', 
-        color: 'green',
-        logo: `${lobeBase}/nvidia-color.png`
+    } else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
+      return {
+        name: 'Nemotron',
+        icon: '🔧',
+        color: 'green'
       };
-    }
-    // 6. Mistral & Devstral
-    else if (modelLower.includes('mistral') || modelLower.includes('devstral')) {
-      return { 
-        name: modelLower.includes('devstral') ? 'Devstral 2' : 'Mistral 7B', 
-        icon: '🌊', 
-        color: 'orange',
-        logo: `${lobeBase}/mistral-color.png`
+    } else if (modelLower.includes('mistral') || modelLower.includes('devstral')) {
+      return {
+        name: modelLower.includes('devstral') ? 'Devstral' : 'Mistral 7B',
+        icon: '🌊',
+        color: 'orange'
       };
-    }
-    // 7. Qwen
-    else if (modelLower.includes('qwen')) {
-      return { 
-        name: 'Qwen 2.5 VL', 
-        icon: '🔮', 
-        color: 'pink',
-        logo: `${lobeBase}/qwen-color.png`
+    } else if (modelLower.includes('qwen')) {
+      return {
+        name: 'Qwen 2.5',
+        icon: '🔮',
+        color: 'pink'
       };
-    }
-    // 8. Xiaomi (MiMo)
-    else if (modelLower.includes('xiaomi') || modelLower.includes('mimo')) {
-      return { 
-        name: 'MiMo-V2 Flash', 
-        icon: '📱', 
-        color: 'orange',
-        logo: `${lobeBase}/xiaomimimo.png`
+    } else if (modelLower.includes('xiaomi') || modelLower.includes('mimo')) {
+      return {
+        name: 'MiMo-V2',
+        icon: '📱',
+        color: 'gray'
+      };
+    } else if (modelLower.includes('tngtech')) {
+      return {
+        name: 'TNG Chimera',
+        icon: '⚡',
+        color: 'yellow'
       };
     }
 
-    // Default fallback for any unknown :free models
+    // Default fallback
     const modelName = modelId.split('/').pop().split(':')[0].replace(/-/g, ' ');
-    return { 
-      name: modelName.charAt(0).toUpperCase() + modelName.slice(1), 
-      icon: '✨', 
-      color: 'slate',
-      logo: null 
+    return {
+      name: modelName,
+      icon: '🤖',
+      color: 'amber'
     };
   };
 
@@ -783,17 +762,7 @@ function Dashboard() {
                   
                   return (
                     <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5 hover:scale-105 transition-transform`}>
-                      <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
-                      {modelInfo.logo ? (
-                        <img 
-                          src={modelInfo.logo} 
-                          alt={modelInfo.name} 
-                          className="w-full h-full object-contain rounded-sm"
-                        />
-                      ) : (
-                        <span className="text-xl">{modelInfo.icon}</span>
-                      )}
-                    </div>
+                      <span className="text-xl">{modelInfo.icon}</span>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
                         <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
@@ -828,7 +797,7 @@ function Dashboard() {
                         const modelInfo = getModelInfo(currentTryingModel);
                         return (
                           <span className="ml-2 text-xs text-slate-400">
-                            ({modelInfo.logo || modelInfo.icon} {modelInfo.name})
+                            ({modelInfo.icon} {modelInfo.name})
                           </span>
                         );
                       })()}
