@@ -3,7 +3,7 @@
  * Professional financial dashboard with unified dark theme
  */
 import { useState, useEffect } from 'react';
-import { getTransactions, getMonthlyAnalytics, generateAISummary } from '../api';
+import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 
 // Dark mode chart colors - professional finance palette
@@ -38,6 +38,7 @@ function Dashboard() {
   const [currentTryingModel, setCurrentTryingModel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
+  const [user, setUser] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -46,6 +47,19 @@ function Dashboard() {
   useEffect(() => {
     loadDashboard();
   }, [selectedMonth]);
+
+  useEffect(() => {
+    // Load user information
+    const loadUser = async () => {
+      try {
+        const userData = await getCurrentUser();
+        setUser(userData);
+      } catch (error) {
+        console.error('Failed to load user:', error);
+      }
+    };
+    loadUser();
+  }, []);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -644,6 +658,23 @@ function Dashboard() {
       {/* Section 1: Header & Summary Cards */}
       <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0f172a]">
         <div className="max-w-7xl mx-auto w-full">
+      {/* Personalized Greeting */}
+      {user && (
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-amber-400/20 to-yellow-400/20 backdrop-blur-sm rounded-2xl border border-amber-400/30">
+            <span className="text-3xl">👋</span>
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                Welcome back, {user.username}!
+              </h2>
+              <p className="text-sm text-amber-300">
+                Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header with Month Selector */}
           <div className="flex items-center justify-between mb-12">
         <div>
