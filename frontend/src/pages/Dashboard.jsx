@@ -982,41 +982,16 @@ function Dashboard() {
             )}
         
         <div className="relative p-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-center mb-6">
             <div className="flex items-center gap-3">
                   <div className="p-3 bg-amber-400/20 backdrop-blur-sm rounded-xl border border-amber-400/30">
                 <span className="text-3xl">🤖</span>
               </div>
-              <div>
+              <div className="text-center">
                 <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
                     <p className="text-slate-400 text-sm">Powered by multiple frontier models</p>
               </div>
             </div>
-            <button
-              onClick={handleGenerateAI}
-              disabled={aiLoading}
-                  className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:from-amber-500 hover:to-amber-600 disabled:opacity-50 font-semibold shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {aiLoading ? (
-                <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
-                      <span>Analyzing...</span>
-                      {currentTryingModel && (() => {
-                        const modelInfo = getModelInfo(currentTryingModel);
-                        return (
-                          <span className="ml-2 text-xs text-slate-400">
-                            ({modelInfo.icon} {modelInfo.name})
-                          </span>
-                        );
-                      })()}
-                </>
-              ) : (
-                <>
-                  <span>✨</span>
-                  Generate
-                </>
-              )}
-            </button>
           </div>
 
           {aiSummary ? (
@@ -1068,9 +1043,9 @@ function Dashboard() {
                     ) : aiLoading ? (
                       <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-400 border-t-transparent"></div>
                     ) : (
-                      <span className="text-5xl">✨</span>
+                <span className="text-5xl">✨</span>
                     )}
-                  </div>
+              </div>
                   <h3 className="text-xl font-bold text-white mb-2">
                     {aiLoading && currentTryingModel ? (
                       <span className="flex items-center justify-center gap-2">
@@ -1081,16 +1056,16 @@ function Dashboard() {
                     ) : (
                       'Get Personalized Financial Advice'
                     )}
-                  </h3>
+              </h3>
                   <p className="text-slate-400 mb-6 max-w-md mx-auto">
                     {aiLoading
                       ? 'Our AI is processing your financial data and generating personalized insights.'
                       : 'Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.'
                     }
-                  </p>
-                  <button
-                    onClick={handleGenerateAI}
-                    disabled={aiLoading}
+              </p>
+              <button
+                onClick={handleGenerateAI}
+                disabled={aiLoading}
                     className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
                   >
                     {aiLoading ? (
@@ -1107,7 +1082,7 @@ function Dashboard() {
                         })()}
                       </div>
                     ) : 'Generate AI Insights'}
-                  </button>
+              </button>
             </div>
           )}
         </div>
