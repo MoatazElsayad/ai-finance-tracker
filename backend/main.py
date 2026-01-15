@@ -523,7 +523,7 @@ def create_ai_progress_generator(db: Session, user_id: int, year: int, month: in
 - Income: ${context['current_month']['income']:,.2f}
 - Expenses: ${context['current_month']['expenses']:,.2f}
 - Net Savings: ${context['current_month']['savings']:,.2f}
-- Savings Rate: {context['current_month']['savings_rate']}%}
+- Savings Rate: {context['current_month']['savings_rate']}%
 - Transactions: {context['current_month']['transaction_count']}
 
 📈 TRENDS (vs Last Month):
