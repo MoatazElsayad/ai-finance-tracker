@@ -128,6 +128,13 @@ function BudgetPlanning() {
     loadData();
   }, [selectedMonth]);
 
+  // Generate AI insights when budgets change or page loads
+  useEffect(() => {
+    if (budgets.length > 0 && !loading && !aiBudgetInsights) {
+      generateBudgetInsights();
+    }
+  }, [budgets, loading, selectedMonth]);
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -156,11 +163,6 @@ function BudgetPlanning() {
         console.log('🎯 Sample budget:', budgetsData[0]);
       }
 
-      // Generate AI budget insights automatically
-      if (budgetsData.length > 0) {
-        setTimeout(() => generateBudgetInsights(), 1000); // Small delay to ensure state is updated
-      }
-
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -169,9 +171,20 @@ function BudgetPlanning() {
   };
 
   const generateBudgetInsights = async () => {
-    if (budgets.length === 0) return; // No budgets to analyze
+    if (!budgets || budgets.length === 0) {
+      console.log('No budgets to analyze, skipping insights generation');
+      setAiBudgetInsights('💰 **No Budgets Set:** Create some budgets to get AI insights!\n\n🎯 **Get Started:** Set monthly spending limits for your categories.\n\n📊 **Tip:** Budgeting helps you take control of your finances.');
+      return;
+    }
 
     setBudgetInsightsLoading(true);
+
+    // Maximum timeout to prevent infinite loading
+    const maxTimeout = setTimeout(() => {
+      console.warn('Budget insights generation timed out, using fallback');
+      setAiBudgetInsights('💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.');
+      setBudgetInsightsLoading(false);
+    }, 15000); // 15 second maximum timeout
     setAiBudgetInsights('');
     setBudgetModelUsed(null);
     setCurrentTryingBudgetModel(null);
@@ -202,13 +215,23 @@ function BudgetPlanning() {
 
       const generateBudgetInsightsFallback = async () => {
         try {
-          const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
-          // For budget insights, we'll use a simple fallback message
-          setAiBudgetInsights(`💰 **Budget Check:** ${budgetData.filter(b => b.overBudget).length > 0 ? 'Some categories are over budget. Consider adjusting spending.' : 'Your budgets are on track! Great financial discipline.'}\n\n🎯 **Savings Goal:** Aim to save at least 20% of your income.\n\n📊 **Tip:** Track your expenses daily for better control.`);
+          // Calculate budget stats for fallback message
+          const actualSpending = getActualSpending();
+          const overBudgetCount = budgets.filter(budget => {
+            const categoryName = budget.category?.name || 'Unknown';
+            const actual = actualSpending[categoryName] || 0;
+            const budgeted = budget.amount;
+            return actual > budgeted;
+          }).length;
+
+          const fallbackMessage = `💰 **Budget Check:** ${overBudgetCount > 0 ? `${overBudgetCount} categories are over budget. Consider adjusting spending.` : 'Your budgets are on track! Great financial discipline.'}\n\n🎯 **Savings Goal:** Aim to save at least 20% of your income.\n\n📊 **Tip:** Track your expenses daily for better control.`;
+
+          setAiBudgetInsights(fallbackMessage);
           setBudgetModelUsed('fallback-model');
         } catch (error) {
           setAiBudgetInsights('💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.');
         } finally {
+          clearTimeout(maxTimeout);
           setBudgetInsightsLoading(false);
         }
       };
@@ -225,6 +248,7 @@ function BudgetPlanning() {
               setCurrentTryingBudgetModel(data.model);
               break;
             case 'success':
+              clearTimeout(maxTimeout);
               // Generate simple budget insights from the context
               const context = data.context;
               const budgetStatus = context.budget_status || [];
@@ -274,6 +298,7 @@ function BudgetPlanning() {
       };
 
     } catch (error) {
+      clearTimeout(maxTimeout);
       console.warn('Budget insights setup failed');
       setAiBudgetInsights('💰 **Budget Check:** Track your spending patterns.\n\n🎯 **Savings Goal:** Build consistent saving habits.\n\n📊 **Tip:** Regular financial reviews are key.');
       setBudgetInsightsLoading(false);
