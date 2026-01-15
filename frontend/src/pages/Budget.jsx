@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
+import { generateAISummary } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
 // Dark mode chart colors - professional finance palette
@@ -13,6 +14,93 @@ const CHART_COLORS = {
   savings: '#10b981',
   overBudget: '#f59e0b',
   categories: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
+};
+
+const ALL_AI_MODELS = [
+    "openai/gpt-oss-120b:free",
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemma-3-27b-it:free",
+    "deepseek/deepseek-r1-0528:free",
+    "tngtech/deepseek-r1t2-chimera:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "mistralai/devstral-2512:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "qwen/qwen-2.5-vl-7b-instruct:free",
+    "xiaomi/mimo-v2-flash:free",
+    "tngtech/tng-r1t-chimera:free",
+];
+
+// Get model info (name and icon)
+const getModelInfo = (modelId) => {
+  if (!modelId) return { name: 'AI Model', logo: '🤖', color: 'amber' };
+
+  const modelLower = modelId.toLowerCase();
+  const lobeBase = "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark";
+
+  if (modelLower.includes('openai') || modelLower.includes('gpt')) {
+    return {
+      name: modelLower.includes('oss') ? 'GPT-OSS' : 'ChatGPT-4o',
+      logo: `${lobeBase}/openai.png`,
+      color: 'emerald'
+    };
+  } else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
+    return {
+      name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
+      logo: modelLower.includes('gemma') ? `${lobeBase}/gemma-color.png` : `${lobeBase}/gemini-color.png`,
+      color: 'blue'
+    };
+  } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
+    return {
+      name: modelLower.includes('chimera') ? 'DeepSeek Chimera' : 'DeepSeek R1',
+      logo: `${lobeBase}/deepseek-color.png`,
+      color: 'cyan'
+    };
+  } else if (modelLower.includes('meta') || modelLower.includes('llama')) {
+    return {
+      name: 'Llama 3.3',
+      logo: `${lobeBase}/meta-color.png`,
+      color: 'purple'
+    };
+  } else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
+    return {
+      name: 'Nemotron',
+      logo: `${lobeBase}/nvidia-color.png`,
+      color: 'green'
+    };
+  } else if (modelLower.includes('mistral') || modelLower.includes('devstral')) {
+    return {
+      name: modelLower.includes('devstral') ? 'Devstral' : 'Mistral 7B',
+      logo: `${lobeBase}/mistral-color.png`,
+      color: 'orange'
+    };
+  } else if (modelLower.includes('qwen')) {
+    return {
+      name: 'Qwen 2.5',
+      logo: `${lobeBase}/qwen-color.png`,
+      color: 'pink'
+    };
+  } else if (modelLower.includes('xiaomi') || modelLower.includes('mimo')) {
+    return {
+      name: 'MiMo-V2',
+      logo: `${lobeBase}/xiaomimimo.png`,
+      color: 'gray'
+    };
+  } else if (modelLower.includes('tngtech')) {
+    return {
+      name: 'TNG Chimera',
+      logo: `${lobeBase}/tngtech.png`,
+      color: 'yellow'
+    };
+  }
+
+  // Default fallback
+  const modelName = modelId.split('/').pop().split(':')[0].replace(/-/g, ' ');
+  return {
+    name: modelName,
+    logo: '🤖',
+    color: 'amber'
+  };
 };
 
 function BudgetPlanning() {
@@ -31,6 +119,10 @@ function BudgetPlanning() {
   const [budgetLoading, setBudgetLoading] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [aiBudgetInsights, setAiBudgetInsights] = useState('');
+  const [budgetModelUsed, setBudgetModelUsed] = useState(null);
+  const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
+  const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -64,10 +156,127 @@ function BudgetPlanning() {
         console.log('🎯 Sample budget:', budgetsData[0]);
       }
 
+      // Generate AI budget insights automatically
+      if (budgetsData.length > 0) {
+        setTimeout(() => generateBudgetInsights(), 1000); // Small delay to ensure state is updated
+      }
+
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateBudgetInsights = async () => {
+    if (budgets.length === 0) return; // No budgets to analyze
+
+    setBudgetInsightsLoading(true);
+    setAiBudgetInsights('');
+    setBudgetModelUsed(null);
+    setCurrentTryingBudgetModel(null);
+
+    try {
+      // Use Server-Sent Events for real-time progress (similar to main AI)
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('❌ No token found');
+        setBudgetInsightsLoading(false);
+        return;
+      }
+
+      const eventSourceUrl = `${apiUrl}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
+
+      const eventSource = new EventSource(eventSourceUrl);
+      let hasReceivedMessage = false;
+
+      const timeout = setTimeout(() => {
+        if (!hasReceivedMessage) {
+          console.warn('SSE timeout, using fallback');
+          eventSource.close();
+          generateBudgetInsightsFallback();
+        }
+      }, 5000);
+
+      const generateBudgetInsightsFallback = async () => {
+        try {
+          const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
+          // For budget insights, we'll use a simple fallback message
+          setAiBudgetInsights(`💰 **Budget Check:** ${budgetData.filter(b => b.overBudget).length > 0 ? 'Some categories are over budget. Consider adjusting spending.' : 'Your budgets are on track! Great financial discipline.'}\n\n🎯 **Savings Goal:** Aim to save at least 20% of your income.\n\n📊 **Tip:** Track your expenses daily for better control.`);
+          setBudgetModelUsed('fallback-model');
+        } catch (error) {
+          setAiBudgetInsights('💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.');
+        } finally {
+          setBudgetInsightsLoading(false);
+        }
+      };
+
+      eventSource.onmessage = (event) => {
+        hasReceivedMessage = true;
+        clearTimeout(timeout);
+
+        try {
+          const data = JSON.parse(event.data);
+
+          switch (data.type) {
+            case 'trying_model':
+              setCurrentTryingBudgetModel(data.model);
+              break;
+            case 'success':
+              // Generate simple budget insights from the context
+              const context = data.context;
+              const budgetStatus = context.budget_status || [];
+
+              let insights = '';
+              if (budgetStatus.length > 0) {
+                const overBudget = budgetStatus.filter(b => b.status === 'over').length;
+                const onTrack = budgetStatus.filter(b => b.status === 'on_track').length;
+
+                if (overBudget > 0) {
+                  insights += `💰 **Budget Alert:** ${overBudget} categories are over budget. Time to adjust spending!\n\n`;
+                } else if (onTrack > 0) {
+                  insights += `✅ **Great Job:** ${onTrack} categories are on track. Keep it up!\n\n`;
+                }
+              } else {
+                insights += `💰 **Budget Check:** Start creating budgets to track your spending.\n\n`;
+              }
+
+              insights += `🎯 **Savings Focus:** Aim for 20% savings rate this month.\n\n`;
+              insights += `📊 **Pro Tip:** Review budgets weekly for better control.`;
+
+              setAiBudgetInsights(insights);
+              setBudgetModelUsed(data.model);
+              setBudgetInsightsLoading(false);
+              eventSource.close();
+              break;
+            case 'error':
+              setAiBudgetInsights(`💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.`);
+              setBudgetInsightsLoading(false);
+              eventSource.close();
+              break;
+          }
+        } catch (e) {
+          console.error('Failed to parse SSE data:', event.data, e);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        clearTimeout(timeout);
+        if (!hasReceivedMessage) {
+          generateBudgetInsightsFallback();
+        } else {
+          setBudgetInsightsLoading(false);
+        }
+        eventSource.close();
+      };
+
+    } catch (error) {
+      console.warn('Budget insights setup failed');
+      setAiBudgetInsights('💰 **Budget Check:** Track your spending patterns.\n\n🎯 **Savings Goal:** Build consistent saving habits.\n\n📊 **Tip:** Regular financial reviews are key.');
+      setBudgetInsightsLoading(false);
     }
   };
 
@@ -364,23 +573,84 @@ function BudgetPlanning() {
           </div>
 
           {/* AI Budget Insights */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-2xl">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-2xl relative">
+            {/* Model Badge - Top Right Corner */}
+            {budgetModelUsed && (
+              <div className="absolute top-4 right-4 z-10">
+                {(() => {
+                  const modelInfo = getModelInfo(budgetModelUsed);
+                  const colorMap = {
+                    emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
+                    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
+                    cyan: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300',
+                    purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/50 text-purple-300',
+                    green: 'from-green-500/20 to-emerald-500/20 border-green-400/50 text-green-300',
+                    orange: 'from-orange-500/20 to-yellow-500/20 border-orange-400/50 text-orange-300',
+                    pink: 'from-pink-500/20 to-rose-500/20 border-pink-400/50 text-pink-300',
+                    gray: 'from-gray-500/20 to-slate-500/20 border-gray-400/50 text-gray-300',
+                    yellow: 'from-yellow-500/20 to-amber-500/20 border-yellow-400/50 text-yellow-300',
+                    amber: 'from-amber-500/20 to-yellow-500/20 border-amber-400/50 text-amber-300'
+                  };
+                  const colorClass = colorMap[modelInfo.color] || colorMap.amber;
+
+                  return (
+                    <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-lg px-3 py-1.5 border shadow-lg flex items-center gap-1.5 text-xs`}>
+                      {modelInfo.logo.startsWith('http') ? (
+                        <img
+                          src={modelInfo.logo}
+                          alt={modelInfo.name}
+                          className="w-3 h-3 object-contain rounded-sm"
+                        />
+                      ) : (
+                        <span className="text-xs">{modelInfo.logo}</span>
+                      )}
+                      <span className="font-medium">{modelInfo.name}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-amber-400/20 rounded-lg">
-                <span className="text-xl">🤖</span>
+                {budgetInsightsLoading && currentTryingBudgetModel ? (
+                  (() => {
+                    const modelInfo = getModelInfo(currentTryingBudgetModel);
+                    return modelInfo.logo.startsWith('http') ? (
+                      <img
+                        src={modelInfo.logo}
+                        alt={modelInfo.name}
+                        className="w-5 h-5 object-contain animate-pulse-fast rounded"
+                      />
+                    ) : (
+                      <span className="text-lg animate-pulse-fast">{modelInfo.logo}</span>
+                    );
+                  })()
+                ) : budgetInsightsLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-amber-400 border-t-transparent"></div>
+                ) : (
+                  <span className="text-xl">🤖</span>
+                )}
               </div>
               <h3 className="text-lg font-bold text-white">AI Budget Insights</h3>
             </div>
-            <div className="space-y-3">
-              <p className="text-slate-300">
-                💡 <strong>Smart Recommendations:</strong> Based on your spending patterns, consider increasing your food budget by 15% and reducing entertainment spending.
-              </p>
-              <p className="text-slate-300">
-                🎯 <strong>Goal Achievement:</strong> You're on track to save $2,340 this month. Great job maintaining discipline in transportation costs!
-              </p>
-              <p className="text-slate-300">
-                ⚠️ <strong>Attention Needed:</strong> Your shopping category is 25% over budget. Consider setting a temporary spending freeze.
-              </p>
+
+            <div className="space-y-2 pr-20">
+              {budgetInsightsLoading ? (
+                <div className="space-y-2">
+                  <div className="h-4 bg-slate-700/50 rounded animate-pulse"></div>
+                  <div className="h-4 bg-slate-700/50 rounded animate-pulse w-3/4"></div>
+                  <div className="h-4 bg-slate-700/50 rounded animate-pulse w-1/2"></div>
+                </div>
+              ) : aiBudgetInsights ? (
+                aiBudgetInsights.split('\n\n').map((line, index) => (
+                  <p key={index} className="text-slate-300 leading-relaxed">
+                    {line}
+                  </p>
+                ))
+              ) : (
+                <p className="text-slate-400">Loading budget insights...</p>
+              )}
             </div>
           </div>
         </div>
