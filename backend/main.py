@@ -597,7 +597,8 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
 
         async with httpx.AsyncClient(verify=False) as client:
             try:
-                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+                # Shorter timeout per model attempt (15 seconds)
+                response = await client.post(url, headers=headers, json=payload, timeout=15.0)
 
                 if response.status_code == 200:
                     result = response.json()
@@ -610,8 +611,13 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
                 elif response.status_code == 429:
                     # Send failed event (rate limited)
                     yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
-                    await asyncio.sleep(1)  # Brief pause before next model
+                    await asyncio.sleep(0.5)  # Brief pause before next model
                     continue
+
+            except httpx.TimeoutException:
+                # Send timeout event and continue to next model
+                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'timeout'})}\n\n"
+                continue
 
             except Exception as e:
                 # Send failed event (error)

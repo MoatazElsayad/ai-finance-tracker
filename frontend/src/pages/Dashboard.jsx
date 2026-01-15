@@ -140,7 +140,8 @@ function Dashboard() {
               break;
             case 'error':
               console.log('AI Error:', data.message);
-              alert(data.message);
+              // Show "all models busy" message in the card instead of alert
+              setAiSummary(`**All Models Busy**\n\n${data.message}\n\nPlease try again in a few minutes.`);
               setAiLoading(false);
               eventSource.close();
               break;
@@ -177,6 +178,9 @@ function Dashboard() {
         setAiModelUsed(result.model_used || null);
       } catch (fallbackError) {
         console.error('Fallback API also failed:', fallbackError);
+        // Show "all models busy" message in the card instead of alert
+        setAiSummary(`**All Models Busy**\n\nUnable to connect to AI services. Please try again in a few minutes.`);
+        setAiLoading(false);
         alert(fallbackError.message);
       } finally {
         setAiLoading(false);
@@ -254,7 +258,8 @@ function Dashboard() {
               break;
             case 'error':
               console.log('AI Error:', data.message);
-              alert(data.message);
+              // Show "all models busy" message in the card instead of alert
+              setAiSummary(`**All Models Busy**\n\n${data.message}\n\nPlease try again in a few minutes.`);
               setAiLoading(false);
               eventSource.close();
               break;
