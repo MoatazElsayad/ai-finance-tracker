@@ -175,6 +175,21 @@ export const createBudget = async (categoryId, amount, month, year) => {
   return handleResponse(response);
 };
 
+export const updateBudget = async (budgetId, categoryId, amount, month, year) => {
+  const token = getToken();
+  const response = await authFetch(`/budgets/${budgetId}?token=${token}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      category_id: categoryId,
+      amount: parseFloat(amount),
+      month: parseInt(month),
+      year: parseInt(year),
+    }),
+  });
+
+  return handleResponse(response);
+};
+
 export const deleteBudget = async (budgetId) => {
   const token = getToken();
   const response = await authFetch(`/budgets/${budgetId}?token=${token}`, {

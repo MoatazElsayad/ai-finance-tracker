@@ -3,7 +3,7 @@
  * Dark Mode Finance Tracker - Professional budget management with AI insights
  */
 import { useState, useEffect } from 'react';
-import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, deleteBudget, getCategories } from '../api';
+import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
 // Dark mode chart colors - professional finance palette
@@ -28,6 +28,9 @@ function BudgetPlanning() {
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [newBudget, setNewBudget] = useState({ category_id: '', amount: '' });
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     loadData();
@@ -81,7 +84,7 @@ function BudgetPlanning() {
 
     const spendingByCategory = {};
     currentMonthTransactions.forEach(t => {
-      const category = t.category || 'Uncategorized';
+      const category = t.category_name || 'Uncategorized';
       spendingByCategory[category] = (spendingByCategory[category] || 0) + Math.abs(t.amount);
     });
 
@@ -121,21 +124,33 @@ function BudgetPlanning() {
 
   const handleCreateBudget = async () => {
     if (newBudget.category_id && newBudget.amount) {
+      setBudgetLoading(true);
       try {
-        await createBudget(
+        const result = await createBudget(
           parseInt(newBudget.category_id),
           newBudget.amount,
           selectedMonth.month,
           selectedMonth.year
         );
+
         // Reload data to get updated budgets
         const budgetsData = await getBudgets(selectedMonth.year, selectedMonth.month);
         setBudgets(budgetsData);
+
+        // Reset form
         setNewBudget({ category_id: '', amount: '' });
         setShowBudgetForm(false);
+
+        // Show success message
+        setToastMessage(result.action === 'updated' ? 'Budget updated successfully!' : 'Budget created successfully!');
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+
       } catch (error) {
         console.error('Failed to create budget:', error);
         alert(error.message);
+      } finally {
+        setBudgetLoading(false);
       }
     }
   };
@@ -151,24 +166,35 @@ function BudgetPlanning() {
 
   const handleUpdateBudget = async () => {
     if (editingBudget && newBudget.category_id && newBudget.amount) {
+      setBudgetLoading(true);
       try {
-        // Delete existing budget and create new one (since backend uses upsert)
-        await deleteBudget(editingBudget.id);
-        await createBudget(
+        await updateBudget(
+          editingBudget.id,
           parseInt(newBudget.category_id),
           newBudget.amount,
           selectedMonth.month,
           selectedMonth.year
         );
+
         // Reload data
         const budgetsData = await getBudgets(selectedMonth.year, selectedMonth.month);
         setBudgets(budgetsData);
+
+        // Reset form
         setEditingBudget(null);
         setNewBudget({ category_id: '', amount: '' });
         setShowBudgetForm(false);
+
+        // Show success message
+        setToastMessage('Budget updated successfully!');
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+
       } catch (error) {
         console.error('Failed to update budget:', error);
         alert(error.message);
+      } finally {
+        setBudgetLoading(false);
       }
     }
   };
@@ -212,6 +238,16 @@ function BudgetPlanning() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-20 right-4 z-50 animate-slide-in">
+          <div className="bg-green-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-green-400/30">
+            <span className="text-xl">✓</span>
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Section 1: Header and Overview */}
       <section className="min-h-screen flex flex-col justify-center px-6 py-12">
         <div className="max-w-7xl mx-auto w-full">
@@ -439,14 +475,22 @@ function BudgetPlanning() {
               <div className="flex gap-3">
                 <button
                   onClick={editingBudget ? handleUpdateBudget : handleCreateBudget}
-                  disabled={!newBudget.category_id || !newBudget.amount}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!newBudget.category_id || !newBudget.amount || budgetLoading}
+                  className="px-6 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {editingBudget ? 'Update Budget' : 'Create Budget'}
+                  {budgetLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
+                      <span>{editingBudget ? 'Updating...' : 'Creating...'}</span>
+                    </>
+                  ) : (
+                    <span>{editingBudget ? 'Update Budget' : 'Create Budget'}</span>
+                  )}
                 </button>
                 <button
                   onClick={cancelForm}
-                  className="px-6 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors"
+                  disabled={budgetLoading}
+                  className="px-6 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>

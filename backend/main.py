@@ -827,23 +827,23 @@ def create_budget(
     token: str,
     db: Session = Depends(get_db)
 ):
-    """Create a new budget"""
+    """Create or update a budget (upsert)"""
     user = get_current_user(token, db)
-    
-    # Check if budget already exists
+
+    # Always use upsert logic - check if budget already exists for this category/month/year
     existing = db.query(Budget).filter(
         Budget.user_id == user.id,
         Budget.category_id == data.category_id,
         Budget.month == data.month,
         Budget.year == data.year
     ).first()
-    
+
     if existing:
         # Update existing budget
         existing.amount = data.amount
         db.commit()
-        return {"message": "Budget updated", "id": existing.id}
-    
+        return {"message": "Budget updated", "id": existing.id, "action": "updated"}
+
     # Create new budget
     budget = Budget(
         user_id=user.id,
@@ -854,8 +854,34 @@ def create_budget(
     )
     db.add(budget)
     db.commit()
-    
-    return {"message": "Budget created", "id": budget.id}
+
+    return {"message": "Budget created", "id": budget.id, "action": "created"}
+
+@app.put("/budgets/{budget_id}")
+def update_budget(
+    budget_id: int,
+    data: BudgetCreate,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Update a specific budget by ID"""
+    user = get_current_user(token, db)
+
+    budget = db.query(Budget).filter(
+        Budget.id == budget_id,
+        Budget.user_id == user.id
+    ).first()
+
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+
+    budget.category_id = data.category_id
+    budget.amount = data.amount
+    budget.month = data.month
+    budget.year = data.year
+
+    db.commit()
+    return {"message": "Budget updated", "id": budget.id}
 
 @app.delete("/budgets/{budget_id}")
 def delete_budget(
