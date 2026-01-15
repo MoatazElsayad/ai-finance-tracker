@@ -1,15 +1,16 @@
 /**
  * Login Page - Simple form with registration option
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { login, register } from '../api';
 
 function Login() {
   const navigate = useNavigate();
-  
-  // Form state
-  const [isLogin, setIsLogin] = useState(true); // Toggle between login/register
+  const location = useLocation();
+
+  // Form state - check if we're on register route
+  const [isLogin, setIsLogin] = useState(location.pathname !== '/register'); // Toggle between login/register
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -40,38 +41,42 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0f172a] flex items-center justify-center px-6 py-12">
       <div className="max-w-md w-full">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-block p-4 bg-blue-600 rounded-2xl mb-4">
-            <span className="text-4xl">💰</span>
+        <div className="text-center mb-12">
+          <div className="inline-block p-4 bg-amber-400/20 backdrop-blur-sm rounded-2xl mb-6 border border-amber-400/30 shadow-lg">
+            <span className="text-5xl">💼</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Finance Tracker</h1>
-          <p className="text-gray-600 mt-2">
-            {isLogin ? 'Welcome back!' : 'Create your account'}
+          <h1 className="text-4xl font-bold text-white mb-2">AI Finance Tracker</h1>
+          <p className="text-slate-400 text-lg">
+            {isLogin ? 'Welcome back!' : 'Join the community'}
           </p>
+          <p className="text-xs text-slate-500 mt-1">Powered by AI</p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-slate-700">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+            <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-sm border border-red-500/30 rounded-xl text-red-300 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚠️</span>
+                <span>{error}</span>
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Email Address
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
                 placeholder="you@example.com"
                 required
               />
@@ -80,14 +85,14 @@ function Login() {
             {/* Username (only for registration) */}
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Username
                 </label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
                   placeholder="johndoe"
                   required
                 />
@@ -96,14 +101,14 @@ function Login() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
                 placeholder="••••••••"
                 required
               />
@@ -113,27 +118,59 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-bold text-lg hover:shadow-2xl transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
             >
-              {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-900 border-t-transparent"></div>
+                  <span>Please wait...</span>
+                </>
+              ) : (
+                <span>{isLogin ? '🚀 Sign In' : '✨ Create Account'}</span>
+              )}
             </button>
           </form>
 
           {/* Toggle Login/Register */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              {' '}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-slate-400">
+              {isLogin ? "New to AI Finance Tracker?" : "Already have an account?"}
               <button
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError('');
                 }}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="ml-2 text-amber-400 hover:text-amber-300 font-semibold transition-colors"
               >
-                {isLogin ? 'Sign up' : 'Sign in'}
+                {isLogin ? 'Create one here' : 'Sign in instead'}
               </button>
             </p>
+          </div>
+
+          {/* Back to Landing */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate('/')}
+              className="text-sm text-slate-500 hover:text-slate-400 transition-colors"
+            >
+              ← Back to home
+            </button>
+          </div>
+        </div>
+
+        {/* Features Preview */}
+        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <span className="text-2xl mb-2 block">🤖</span>
+            <p className="text-xs text-slate-400">AI Insights</p>
+          </div>
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <span className="text-2xl mb-2 block">📊</span>
+            <p className="text-xs text-slate-400">Smart Charts</p>
+          </div>
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <span className="text-2xl mb-2 block">🎯</span>
+            <p className="text-xs text-slate-400">Budget Tracking</p>
           </div>
         </div>
       </div>

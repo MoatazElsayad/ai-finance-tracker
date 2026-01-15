@@ -16,11 +16,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-
+        {/* Public routes - Landing page for all non-authenticated users */}
         <Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
         <Route path="/login" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
-        
+        <Route path="/register" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
+
         {/* Protected routes */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -28,8 +28,8 @@ function App() {
           <Route path="/budget" element={<Budget />} />
         </Route>
 
-        {/* Catch all - redirect to login if not authenticated, else dashboard */}
-        <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+        {/* Catch all - show landing page if not authenticated, else dashboard */}
+        <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
       </Routes>
     </BrowserRouter>
   );
