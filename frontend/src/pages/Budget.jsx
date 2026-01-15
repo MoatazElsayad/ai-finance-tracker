@@ -49,6 +49,21 @@ function BudgetPlanning() {
       setTransactions(transactionsData);
       setBudgets(budgetsData);
       setCategories(categoriesData);
+
+      // Debug logging
+      console.log('🔍 Budget Connection Debug:');
+      console.log('📊 Transactions loaded:', transactionsData.length);
+      console.log('💰 Budgets loaded:', budgetsData.length);
+      console.log('📂 Categories loaded:', categoriesData.length);
+
+      // Show sample data
+      if (transactionsData.length > 0) {
+        console.log('📋 Sample transaction:', transactionsData[0]);
+      }
+      if (budgetsData.length > 0) {
+        console.log('🎯 Sample budget:', budgetsData[0]);
+      }
+
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -79,8 +94,10 @@ function BudgetPlanning() {
       const transactionDate = new Date(t.date);
       return transactionDate.getFullYear() === selectedMonth.year &&
              transactionDate.getMonth() + 1 === selectedMonth.month &&
-             t.type === 'expense';
+             t.amount < 0; // Negative amounts = expenses
     });
+
+    console.log('💸 Current month expense transactions:', currentMonthTransactions.length);
 
     const spendingByCategory = {};
     currentMonthTransactions.forEach(t => {
@@ -88,19 +105,22 @@ function BudgetPlanning() {
       spendingByCategory[category] = (spendingByCategory[category] || 0) + Math.abs(t.amount);
     });
 
+    console.log('📊 Spending by category:', spendingByCategory);
     return spendingByCategory;
   };
 
   // Prepare budget vs actual data
   const prepareBudgetData = () => {
     const actualSpending = getActualSpending();
-    return budgets.map(budget => {
+    const budgetData = budgets.map(budget => {
       const categoryName = budget.category?.name || 'Unknown';
       const actual = actualSpending[categoryName] || 0;
       const budgeted = budget.amount;
       const percentage = budgeted > 0 ? ((actual / budgeted) * 100).toFixed(1) : 0;
       const remaining = Math.max(0, budgeted - actual);
       const overBudget = actual > budgeted;
+
+      console.log(`🎯 Budget for ${categoryName}: Budgeted $${budgeted}, Actual $${actual}, ${percentage}% used`);
 
       return {
         id: budget.id,
@@ -115,6 +135,9 @@ function BudgetPlanning() {
         category_id: budget.category_id
       };
     });
+
+    console.log('📈 Final budget data:', budgetData);
+    return budgetData;
   };
 
   const budgetData = prepareBudgetData();
