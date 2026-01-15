@@ -874,13 +874,27 @@ function Dashboard() {
               ) : (
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border border-slate-700">
                   <div className="inline-block p-4 bg-amber-400/20 rounded-full mb-4 border border-amber-400/30">
-                    <span className="text-5xl">✨</span>
+                    {aiLoading && currentTryingModel ? (
+                      <span className="text-5xl animate-pulse-fast">{getModelInfo(currentTryingModel).logo || getModelInfo(currentTryingModel).icon}</span>
+                    ) : (
+                      <span className="text-5xl">✨</span>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    Get Personalized Financial Advice
+                    {aiLoading && currentTryingModel ? (
+                      <span className="flex items-center justify-center gap-2">
+                        Trying <span className="text-amber-400">{getModelInfo(currentTryingModel).name}</span>
+                      </span>
+                    ) : (
+                      'Get Personalized Financial Advice'
+                    )}
                   </h3>
                   <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                    Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.
+                    {aiLoading ? (
+                      `Please wait while we try different AI models to generate your financial insights.`
+                    ) : (
+                      'Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.'
+                    )}
                   </p>
                   <button
                     onClick={handleGenerateAI}
@@ -888,19 +902,19 @@ function Dashboard() {
                     className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
                   >
                     {aiLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
-                      <span>Analyzing...</span>
-                      {currentTryingModel && (() => {
-                        const modelInfo = getModelInfo(currentTryingModel);
-                        return (
-                          <span className="ml-2 text-xs text-slate-400">
-                            ({modelInfo.logo || modelInfo.icon} {modelInfo.name})
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  ) : 'Generate AI Insights'}
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
+                        <span>Analyzing...</span>
+                        {currentTryingModel && (() => {
+                          const modelInfo = getModelInfo(currentTryingModel);
+                          return (
+                            <span className="ml-2 text-xs text-slate-400">
+                              ({modelInfo.logo || modelInfo.icon} {modelInfo.name})
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    ) : 'Generate AI Insights'}
                   </button>
                 </div>
               )}
