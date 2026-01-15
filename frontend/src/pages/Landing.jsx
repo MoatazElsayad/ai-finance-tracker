@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LineChart, Line, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function Landing() {
   const year = new Date().getFullYear();
@@ -76,7 +77,31 @@ export default function Landing() {
             <div className="relative">
               <div className="bg-slate-800/80 rounded-3xl shadow-2xl p-6 border border-slate-700 glow-gold relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent shimmer-animation pointer-events-none"></div>
-                <div className="flex items-center justify-between mb-6">
+
+                {/* Mini Chart in Top Right */}
+                <div className="absolute top-4 right-4 w-20 h-12 bg-slate-900/60 rounded-lg border border-slate-600/50 p-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={[
+                      { day: 1, value: 1800 },
+                      { day: 5, value: 1950 },
+                      { day: 10, value: 1850 },
+                      { day: 15, value: 2000 },
+                      { day: 20, value: 2100 },
+                      { day: 25, value: 2060 }
+                    ]}>
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#fbbf24"
+                        fill="#fbbf24"
+                        fillOpacity={0.3}
+                        strokeWidth={1.5}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="flex items-center justify-between mb-6 pr-24">
                   <div>
                     <h3 className="font-bold text-white text-xl">Monthly Dashboard</h3>
                     <p className="text-sm text-slate-400">January {year}</p>
@@ -151,18 +176,38 @@ export default function Landing() {
           <p className="text-xl text-slate-400 max-w-3xl mx-auto mb-12">
             Our platform leverages a blend of advanced AI models to provide you with the most accurate and personalized financial insights.
           </p>
-          <div className="flex flex-wrap justify-center gap-8 mb-12">
-            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
-              <span className="text-2xl">🤖</span><span className="text-white font-medium">ChatGPT-4o</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/openai.png" alt="OpenAI" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">ChatGPT-4o</span>
             </div>
-            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
-              <span className="text-2xl">✨</span><span className="text-white font-medium">Google Gemini</span>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/gemini-color.png" alt="Google" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">Gemini 2.0</span>
             </div>
-            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
-              <span className="text-2xl">🦙</span><span className="text-white font-medium">Meta Llama</span>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/gemma-color.png" alt="Google" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">Gemma 3</span>
             </div>
-            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2 shadow-lg">
-              <span className="text-2xl">🌊</span><span className="text-white font-medium">Mistral AI</span>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/deepseek-color.png" alt="DeepSeek" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">DeepSeek R1</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/meta-color.png" alt="Meta" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">Llama 3.3</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/mistral-color.png" alt="Mistral" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">Mistral 7B</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/nvidia-color.png" alt="Nvidia" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">Nemotron</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg hover:border-amber-400/50 transition-all">
+              <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/qwen-color.png" alt="Qwen" className="w-6 h-6" />
+              <span className="text-white font-medium text-sm">Qwen 2.5</span>
             </div>
           </div>
           <Link to="/register" className="group px-8 py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:shadow-2xl transition-all shadow-lg font-bold text-lg inline-flex items-center justify-center gap-2">
