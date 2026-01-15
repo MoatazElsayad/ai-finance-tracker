@@ -9,7 +9,7 @@ import { isAuthenticated, logout, getCurrentUser } from './api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
-import Analytics from './pages/Analytics';
+import Budget from './pages/Budget';
 import Landing from "./pages/Landing";
 
 function App() {
@@ -21,11 +21,11 @@ function App() {
         <Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
         <Route path="/login" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
         
-        {/* Protected routes */} 
-        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}> 
-          <Route path="/dashboard" element={<Dashboard />} /> 
-          <Route path="/transactions" element={<Transactions />} /> 
-          <Route path="/analytics" element={<Analytics />} /> 
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/budget" element={<Budget />} />
         </Route>
 
         {/* Catch all - redirect to login if not authenticated, else dashboard */}
@@ -82,11 +82,11 @@ function Layout() {
               >
                 Transactions
               </Link>
-              <Link 
-                to="/analytics" 
+              <Link
+                to="/budget"
                 className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
               >
-                Analytics
+                Budget
               </Link>
             </div>
 

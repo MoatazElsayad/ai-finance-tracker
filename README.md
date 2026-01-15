@@ -9,7 +9,7 @@ Perfect for learning full-stack development!
 ## ✨ Features
 
 - 📝 Track income and expenses
-- 📊 Simple analytics with charts
+- 📊 Budget planning & financial insights
 - 🤖 AI-powered financial insights (OpenAI)
 - 🔐 Secure authentication (JWT)
 - 🎨 Modern, clean UI (Tailwind CSS)
