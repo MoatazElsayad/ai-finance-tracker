@@ -173,7 +173,7 @@ function BudgetPlanning() {
   const generateBudgetInsights = async () => {
     if (!budgets || budgets.length === 0) {
       console.log('No budgets to analyze, skipping insights generation');
-      setAiBudgetInsights('💰 **No Budgets Set:** Create some budgets to get AI insights!\n\n🎯 **Get Started:** Set monthly spending limits for your categories.\n\n📊 **Tip:** Budgeting helps you take control of your finances.');
+      setAiBudgetInsights('💰 <strong>No Budgets Set:</strong> Create some budgets to get AI insights!\n\n🎯 <strong>Get Started:</strong> Set monthly spending limits for your categories.\n\n📊 <strong>Tip:</strong> Budgeting helps you take control of your finances.');
       return;
     }
 
@@ -182,7 +182,7 @@ function BudgetPlanning() {
     // Maximum timeout to prevent infinite loading
     const maxTimeout = setTimeout(() => {
       console.warn('Budget insights generation timed out, using fallback');
-      setAiBudgetInsights('💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.');
+      setAiBudgetInsights('💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.');
       setBudgetInsightsLoading(false);
     }, 15000); // 15 second maximum timeout
     setAiBudgetInsights('');
@@ -226,10 +226,12 @@ function BudgetPlanning() {
 
           const fallbackMessage = `💰 **Budget Check:** ${overBudgetCount > 0 ? `${overBudgetCount} categories are over budget. Consider adjusting spending.` : 'Your budgets are on track! Great financial discipline.'}\n\n🎯 **Savings Goal:** Aim to save at least 20% of your income.\n\n📊 **Tip:** Track your expenses daily for better control.`;
 
-          setAiBudgetInsights(fallbackMessage);
+          // Convert markdown to HTML in fallback message
+          const htmlMessage = fallbackMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          setAiBudgetInsights(htmlMessage);
           setBudgetModelUsed('fallback-model');
         } catch (error) {
-          setAiBudgetInsights('💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.');
+          setAiBudgetInsights('💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.');
         } finally {
           clearTimeout(maxTimeout);
           setBudgetInsightsLoading(false);
@@ -259,16 +261,16 @@ function BudgetPlanning() {
                 const onTrack = budgetStatus.filter(b => b.status === 'on_track').length;
 
                 if (overBudget > 0) {
-                  insights += `💰 **Budget Alert:** ${overBudget} categories are over budget. Time to adjust spending!\n\n`;
+                  insights += `💰 <strong>Budget Alert:</strong> ${overBudget} categories are over budget. Time to adjust spending!\n\n`;
                 } else if (onTrack > 0) {
-                  insights += `✅ **Great Job:** ${onTrack} categories are on track. Keep it up!\n\n`;
+                  insights += `✅ <strong>Great Job:</strong> ${onTrack} categories are on track. Keep it up!\n\n`;
                 }
               } else {
-                insights += `💰 **Budget Check:** Start creating budgets to track your spending.\n\n`;
+                insights += `💰 <strong>Budget Check:</strong> Start creating budgets to track your spending.\n\n`;
               }
 
-              insights += `🎯 **Savings Focus:** Aim for 20% savings rate this month.\n\n`;
-              insights += `📊 **Pro Tip:** Review budgets weekly for better control.`;
+              insights += `🎯 <strong>Savings Focus:</strong> Aim for 20% savings rate this month.\n\n`;
+              insights += `📊 <strong>Pro Tip:</strong> Review budgets weekly for better control.`;
 
               setAiBudgetInsights(insights);
               setBudgetModelUsed(data.model);
@@ -276,7 +278,7 @@ function BudgetPlanning() {
               eventSource.close();
               break;
             case 'error':
-              setAiBudgetInsights(`💰 **Budget Check:** Monitor your spending to stay within budget limits.\n\n🎯 **Savings Goal:** Focus on consistent saving habits.\n\n📊 **Tip:** Regular budget reviews help maintain financial health.`);
+              setAiBudgetInsights(`💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.`);
               setBudgetInsightsLoading(false);
               eventSource.close();
               break;
@@ -300,7 +302,7 @@ function BudgetPlanning() {
     } catch (error) {
       clearTimeout(maxTimeout);
       console.warn('Budget insights setup failed');
-      setAiBudgetInsights('💰 **Budget Check:** Track your spending patterns.\n\n🎯 **Savings Goal:** Build consistent saving habits.\n\n📊 **Tip:** Regular financial reviews are key.');
+      setAiBudgetInsights('💰 <strong>Budget Check:</strong> Track your spending patterns.\n\n🎯 <strong>Savings Goal:</strong> Build consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular financial reviews are key.');
       setBudgetInsightsLoading(false);
     }
   };
@@ -669,9 +671,11 @@ function BudgetPlanning() {
                 </div>
               ) : aiBudgetInsights ? (
                 aiBudgetInsights.split('\n\n').map((line, index) => (
-                  <p key={index} className="text-slate-300 leading-relaxed">
-                    {line}
-                  </p>
+                  <p
+                    key={index}
+                    className="text-slate-300 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: line }}
+                  />
                 ))
               ) : (
                 <p className="text-slate-400">Loading budget insights...</p>
