@@ -116,7 +116,9 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Check if password matches hash"""
-    return pwd_context.verify(plain, hashed)
+    # Apply same truncation as hashing to ensure compatibility
+    clean_password = str(plain)[:71]
+    return pwd_context.verify(clean_password, hashed)
 
 def create_token(user_id: int) -> str:
     """Create JWT token for authentication"""
