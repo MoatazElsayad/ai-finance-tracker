@@ -163,6 +163,26 @@ export const generateAISummary = async (year, month) => {
   return handleResponse(response);
 };
 
+// Server-Sent Events endpoint for real-time AI model progress
+export const createAIProgressStream = (year, month, onMessage, onError) => {
+  const token = getToken();
+  const eventSource = new EventSource(
+    `${API_URL}/ai/progress?year=${year}&month=${month}&token=${token}`
+  );
+
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    onMessage(data);
+  };
+
+  eventSource.onerror = (error) => {
+    if (onError) onError(error);
+    eventSource.close();
+  };
+
+  return eventSource; // Return EventSource so it can be closed
+};
+
 // ============================================
 // AUTH HELPER
 // ============================================

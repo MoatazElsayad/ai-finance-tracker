@@ -10,14 +10,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func  
+from sqlalchemy import func
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 import httpx
 import random
+import json
+import asyncio
 
 # Import local modules
 from database import get_db, init_database
@@ -499,8 +502,135 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
 
 
 # ============================================
-# AI ROUTE (Simple OpenAI Integration)
+# AI ROUTES (OpenAI Integration with Real-time Updates)
 # ============================================
+
+def create_ai_progress_generator(db: Session, user_id: int, year: int, month: int):
+    """Generator that yields SSE events for AI model progress"""
+
+    async def event_generator():
+        # Get rich context
+        context = build_rich_financial_context(db, user_id, year, month)
+
+        if context["current_month"]["transaction_count"] == 0:
+            yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
+            return
+
+        # Build comprehensive prompt
+        prompt_text = f"""You are a professional financial advisor analyzing a user's finances. Provide a comprehensive but concise analysis.
+
+📊 CURRENT MONTH ({month}/{year}):
+- Income: ${context['current_month']['income']:,.2f}
+- Expenses: ${context['current_month']['expenses']:,.2f}
+- Net Savings: ${context['current_month']['savings']:,.2f}
+- Savings Rate: {context['current_month']['savings_rate']}%}
+- Transactions: {context['current_month']['transaction_count']}
+
+📈 TRENDS (vs Last Month):
+- Income: {context['trends']['income_change']:+.1f}%
+- Expenses: {context['trends']['expense_change']:+.1f}%
+- Savings: {context['trends']['savings_change']:+.1f}%
+
+💰 TOP SPENDING CATEGORIES:
+{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown'][:5]])}
+
+🔥 BIGGEST CATEGORY CHANGES (vs Last Month):
+{chr(10).join([f"- {cat['category']}: {cat['change_percent']:+.1f}% (${cat['current']:,.2f} now vs ${cat['previous']:,.2f} before)" for cat in context['category_changes'][:3]])}
+
+{'🎯 BUDGET STATUS:' if context['budget_status'] else ''}
+{chr(10).join([f"- {b['category']}: ${b['spent']:,.2f} / ${b['budgeted']:,.2f} ({b['percentage']:.1f}%) - {'⚠️ OVER BUDGET' if b['status'] == 'over' else '✅ On Track' if b['status'] == 'on_track' else '✅ Good'}" for b in context['budget_status']]) if context['budget_status'] else ''}
+
+🚨 LARGEST EXPENSES:
+{chr(10).join([f"- ${exp['amount']:,.2f} - {exp['description']} ({exp['category']}) on {exp['date']}" for exp in context['unusual_expenses'][:3]])}
+
+📊 SPENDING FREQUENCY:
+{chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
+
+PROVIDE A CONCISE ANALYSIS (150-200 words max):
+1. **Financial Health** (1-2 sentences) - Savings rate assessment
+2. **Key Win** (1 sentence) - One main achievement
+3. **Main Concern** (1-2 sentences) - Biggest issue with specific numbers
+4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps
+
+Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
+
+        # AI Model Loop
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:8000",
+            "X-Title": "Finance Tracker AI",
+        }
+
+        MODELS = FREE_MODELS.copy()
+        random.shuffle(MODELS)
+
+        for model_id in MODELS:
+            # Send "trying" event
+            yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
+
+            payload = {
+                "model": model_id,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a financial advisor. Be CONCISE (150-200 words max). Use clear sections. Be specific with numbers and actionable."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt_text
+                    }
+                ],
+                "max_tokens": 400,
+                "temperature": 0.7
+            }
+
+            async with httpx.AsyncClient(verify=False) as client:
+                try:
+                    response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        summary = result['choices'][0]['message']['content']
+
+                        # Send success event
+                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                        return
+
+                    elif response.status_code == 429:
+                        # Send failed event (rate limited)
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                        await asyncio.sleep(1)  # Brief pause before next model
+                        continue
+
+                except Exception as e:
+                    # Send failed event (error)
+                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
+                    continue
+
+        # All models failed
+        yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
+
+    return event_generator
+
+@app.get("/ai/progress")
+async def ai_progress_stream(year: int, month: int, token: str, db: Session = Depends(get_db)):
+    """Server-Sent Events endpoint for real-time AI model progress"""
+    user = get_current_user(token, db)
+
+    return StreamingResponse(
+        create_ai_progress_generator(db, user.id, year, month),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+        }
+    )
 
 @app.post("/ai/summary")
 async def generate_ai_summary(year: int, month: int, token: str, db: Session = Depends(get_db)):

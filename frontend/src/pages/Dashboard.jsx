@@ -71,32 +71,56 @@ function Dashboard() {
     setCurrentTryingModel(null); // Reset trying model
 
     try {
-      const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
-      setAiSummary(result.summary);
-      setAiModelUsed(result.model_used || null);
+      // Use Server-Sent Events for real-time progress
+      const eventSource = new EventSource(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${localStorage.getItem('token')}`
+      );
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case 'trying_model':
+            setCurrentTryingModel(data.model);
+            break;
+          case 'model_failed':
+            // Could show failed models differently if needed
+            console.log(`Model ${data.model} failed: ${data.reason}`);
+            break;
+          case 'success':
+            setAiSummary(data.summary);
+            setAiModelUsed(data.model);
+            setAiLoading(false);
+            eventSource.close();
+            break;
+          case 'error':
+            alert(data.message);
+            setAiLoading(false);
+            eventSource.close();
+            break;
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        setAiLoading(false);
+        eventSource.close();
+      };
+
     } catch (error) {
-      alert(error.message);
-    } finally {
-      setAiLoading(false);
+      // Fallback to regular API call if SSE fails
+      console.warn('SSE failed, falling back to regular API call');
+      try {
+        const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
+        setAiSummary(result.summary);
+        setAiModelUsed(result.model_used || null);
+      } catch (fallbackError) {
+        alert(fallbackError.message);
+      } finally {
+        setAiLoading(false);
+      }
     }
   };
-
-  useEffect(() => {
-    let interval;
-    if (aiLoading) {
-      // Start with first model and cycle through first few models only
-      let currentIndex = 0;
-      setCurrentTryingModel(ALL_AI_MODELS[currentIndex]);
-      interval = setInterval(() => {
-        currentIndex = (currentIndex + 1) % Math.min(ALL_AI_MODELS.length, 4); // Only cycle through first 4 models
-        setCurrentTryingModel(ALL_AI_MODELS[currentIndex]);
-      }, 1500); // Change model every 1.5 seconds
-    } else {
-      clearInterval(interval);
-      setCurrentTryingModel(null);
-    }
-    return () => clearInterval(interval);
-  }, [aiLoading]);
 
   // Get model info (name and icon)
   const getModelInfo = (modelId) => {
