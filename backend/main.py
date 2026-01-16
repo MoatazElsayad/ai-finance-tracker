@@ -52,8 +52,7 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY is missing! Check your .env file.")
 
 pwd_context = CryptContext(
-    schemes=["pbkdf2_sha256", "bcrypt"],
-    deprecated=["bcrypt"],
+    schemes=["pbkdf2_sha256"],
     pbkdf2_sha256__default_rounds=600000
 )
 
@@ -117,7 +116,22 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Check if password matches hash"""
-    return pwd_context.verify(str(plain), hashed)
+    # First try pbkdf2_sha256 (for new hashes)
+    try:
+        return pwd_context.verify(str(plain), hashed)
+    except Exception:
+        pass
+
+    # If that fails, try manual bcrypt verification for legacy hashes
+    if hashed.startswith(("$2a$", "$2b$", "$2y$")):
+        try:
+            import bcrypt
+            # bcrypt has 72-byte limit, so truncate
+            return bcrypt.checkpw(str(plain)[:71].encode('utf-8'), hashed.encode('utf-8'))
+        except Exception:
+            pass
+
+    return False
 
 def create_token(user_id: int) -> str:
     """Create JWT token for authentication"""
@@ -188,7 +202,14 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     """
     # Find user
     user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Debug: show hash format
+    hash_preview = user.hashed_password[:50] if user.hashed_password else "None"
+    print(f"DEBUG - Hash preview: {hash_preview}")
+
+    if not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Return token
