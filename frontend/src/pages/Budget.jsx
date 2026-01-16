@@ -265,7 +265,7 @@ function BudgetPlanning() {
       setAiBudgetInsights('💰 <strong>No Budgets Set:</strong> Create some budgets to get AI insights!\n\n🎯 <strong>Get Started:</strong> Set monthly spending limits for your categories.\n\n📊 <strong>Tip:</strong> Budgeting helps you take control of your finances.');
       setBudgetModelUsed(null);
       setBudgetInsightsLoading(false);
-      clearInsightsCache(currentCacheKey); // Clear any partial or invalid cache for current key
+      clearInsightsCache(); // Clear any partial or invalid cache
       return;
     }
 
@@ -365,8 +365,7 @@ function BudgetPlanning() {
               eventSource.close();
 
               // Cache the successful result and update last used cache key
-              saveInsightsToCache(insights, data.model);
-              localStorage.setItem('last_budget_insights_cache_key', getCacheKey());
+              saveInsightsToCache(currentCacheKey, insights, data.model, selectedMonth);
               break;
             case 'error':
               setAiBudgetInsights(`💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.`);
