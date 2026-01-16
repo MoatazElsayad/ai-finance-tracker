@@ -6,13 +6,38 @@ import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 
-// Dark mode chart colors - professional finance palette
+// Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
-  income: '#10b981',
-  expense: '#ef4444',
-  savings: '#fbbf24',
-  accent: '#3b82f6',
-  categories: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
+  // Primary metrics - high contrast, professional colors
+  income: '#00d4aa',     // Bright emerald green
+  expense: '#ff6b6b',    // Soft coral red
+  savings: '#ffd93d',    // Bright golden yellow
+  accent: '#4ecdc4',     // Teal accent
+
+  // Unified category color palette - cohesive and visually appealing
+  categories: [
+    '#4ecdc4',  // Teal
+    '#45b7d1',  // Sky blue
+    '#96ceb4',  // Sage green
+    '#ffeaa7',  // Cream yellow
+    '#dda0dd',  // Plum
+    '#98d8c8',  // Mint green
+    '#f7dc6f',  // Golden yellow
+    '#bb8fce',  // Light purple
+    '#85c1e9',  // Light blue
+    '#f8c471',  // Orange
+    '#82e0aa',  // Light green
+    '#f1948a',  // Light coral
+    '#85c1e9',  // Powder blue
+    '#d7bde2',  // Lavender
+    '#a9dfbf',  // Pale green
+  ],
+
+  // Chart-specific colors for better visual hierarchy
+  primary: '#00d4aa',    // Main positive color
+  secondary: '#ff6b6b',  // Main negative color
+  tertiary: '#ffd93d',   // Accent/highlight color
+  neutral: '#64748b',    // Neutral gray for backgrounds
 };
 
 const ALL_AI_MODELS = [
@@ -636,17 +661,28 @@ function Dashboard() {
   const cumulativeSavingsData = getCumulativeSavingsData();
   const monthlyComparisonData = getMonthlyComparisonData();
 
-  // Custom tooltip style for dark mode
+  // Enhanced custom tooltip style for dark mode with better visual hierarchy
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-xl">
-          <p className="text-slate-300 mb-1">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: ${entry.value.toFixed(2)}
-            </p>
-          ))}
+        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-xl p-4 shadow-2xl">
+          <p className="text-white font-semibold mb-2 text-sm">{label}</p>
+          <div className="space-y-1">
+            {payload.map((entry, index) => (
+              <div key={index} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: entry.color }}
+                  ></div>
+                  <span className="text-slate-300 text-sm">{entry.name}:</span>
+                </div>
+                <span className="text-white font-medium text-sm">
+                  ${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       );
     }
@@ -775,35 +811,66 @@ function Dashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Bar Chart */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">💵</span>
-            Income vs Expenses
-          </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={barData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="name" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                <span className="text-emerald-400">💵</span>
+                Income vs Expenses
+              </h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#00d4aa" stopOpacity={0.4}/>
+                    </linearGradient>
+                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.4}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
                   <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                {barData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={80}>
+                    {barData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.name === 'Income' ? 'url(#incomeGradient)' : 'url(#expenseGradient)'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
         {/* Pie Chart */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">🥧</span>
-            Spending by Category
-          </h2>
+                <span className="text-teal-400">🥧</span>
+                Spending by Category
+              </h2>
           {pieData.length === 0 ? (
                 <div className="flex items-center justify-center h-[300px] text-slate-400">
-              No expense data for this month
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-slate-700/50 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">📊</span>
+                    </div>
+                    <p className="text-lg font-medium">No expense data for this month</p>
+                    <p className="text-sm text-slate-500 mt-1">Add some transactions to see the breakdown</p>
+                  </div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
@@ -813,13 +880,23 @@ function Dashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
+                  label={({ name, percent }) => percent > 0.05 ? `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%` : ''}
+                  outerRadius={90}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
+                  stroke="#1e293b"
+                  strokeWidth={2}
                 >
                   {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]}
+                          style={{
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
                   ))}
                 </Pie>
                     <Tooltip content={<CustomTooltip />} />
@@ -844,29 +921,57 @@ function Dashboard() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Daily Spending Trend */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">📅</span>
+                <span className="text-orange-400">📅</span>
                 Daily Spending Trend (Last 14 Days)
               </h2>
               {dailySpendingData.length === 0 ? (
                 <div className="flex items-center justify-center h-[300px] text-slate-400">
-                  No spending data available
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-slate-700/50 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">📈</span>
+                    </div>
+                    <p className="text-lg font-medium">No spending data available</p>
+                    <p className="text-sm text-slate-500 mt-1">Add expenses to see daily trends</p>
+                  </div>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dailySpendingData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" />
+                  <LineChart data={dailySpendingData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <defs>
+                      <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                    <XAxis
+                      dataKey="date"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      stroke="#94a3b8"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}`}
+                    />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="amount" 
-                      stroke={CHART_COLORS.expense} 
-                      strokeWidth={2}
-                      dot={{ fill: CHART_COLORS.expense, r: 4 }}
-                      activeDot={{ r: 6, fill: CHART_COLORS.expense }}
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#ff6b6b"
+                      strokeWidth={3}
+                      dot={{ fill: '#ff6b6b', r: 5, strokeWidth: 2, stroke: '#ffffff' }}
+                      activeDot={{ r: 7, fill: '#ff6b6b', strokeWidth: 2, stroke: '#ffffff' }}
+                      fill="url(#spendingGradient)"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -874,20 +979,45 @@ function Dashboard() {
             </div>
 
             {/* Weekly Spending Pattern */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">📆</span>
+                <span className="text-purple-400">📆</span>
                 Weekly Spending Pattern
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weeklyPatternData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="day" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                <BarChart data={weeklyPatternData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="weeklyGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4ecdc4" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#4ecdc4" stopOpacity={0.3}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <XAxis
+                    dataKey="day"
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                  <Bar dataKey="amount" radius={[6, 6, 0, 0]} maxBarSize={60}>
                     {weeklyPatternData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]}
+                        style={{
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -910,54 +1040,122 @@ function Dashboard() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Monthly Comparison */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">📊</span>
+                <span className="text-blue-400">📊</span>
                 Monthly Comparison
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyComparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="month" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                <BarChart data={monthlyComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="incomeCompareGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#00d4aa" stopOpacity={0.4}/>
+                    </linearGradient>
+                    <linearGradient id="expenseCompareGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.4}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <XAxis
+                    dataKey="month"
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ color: '#94a3b8' }} />
-                  <Bar dataKey="income" fill={CHART_COLORS.income} radius={[8, 8, 0, 0]} name="Income" />
-                  <Bar dataKey="expenses" fill={CHART_COLORS.expense} radius={[8, 8, 0, 0]} name="Expenses" />
+                  <Legend
+                    wrapperStyle={{
+                      color: '#94a3b8',
+                      fontSize: '12px',
+                      paddingTop: '10px'
+                    }}
+                  />
+                  <Bar
+                    dataKey="income"
+                    fill="url(#incomeCompareGradient)"
+                    radius={[4, 4, 0, 0]}
+                    name="Income"
+                    maxBarSize={50}
+                  />
+                  <Bar
+                    dataKey="expenses"
+                    fill="url(#expenseCompareGradient)"
+                    radius={[4, 4, 0, 0]}
+                    name="Expenses"
+                    maxBarSize={50}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* Cumulative Savings Trend */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">💎</span>
+                <span className="text-yellow-400">💎</span>
                 Cumulative Savings Trend
               </h2>
               {cumulativeSavingsData.length === 0 ? (
                 <div className="flex items-center justify-center h-[300px] text-slate-400">
-                  No savings data available
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-slate-700/50 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">💰</span>
+                    </div>
+                    <p className="text-lg font-medium">No savings data available</p>
+                    <p className="text-sm text-slate-500 mt-1">Add income transactions to see savings growth</p>
+                  </div>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={cumulativeSavingsData}>
+                  <AreaChart data={cumulativeSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <defs>
                       <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={CHART_COLORS.savings} stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor={CHART_COLORS.savings} stopOpacity={0.1}/>
+                        <stop offset="5%" stopColor="#ffd93d" stopOpacity={0.3}/>
+                        <stop offset="50%" stopColor="#ffd93d" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#ffd93d" stopOpacity={0.05}/>
+                      </linearGradient>
+                      <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#ffd93d" />
+                        <stop offset="100%" stopColor="#ffb347" />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                    <XAxis
+                      dataKey="date"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      stroke="#94a3b8"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}`}
+                    />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="savings" 
-                      stroke={CHART_COLORS.savings} 
-                      fillOpacity={1} 
+                    <Area
+                      type="monotone"
+                      dataKey="savings"
+                      stroke="url(#strokeGradient)"
+                      fillOpacity={1}
                       fill="url(#colorSavings)"
-                      strokeWidth={2}
+                      strokeWidth={3}
+                      dot={{ fill: '#ffd93d', r: 4, strokeWidth: 2, stroke: '#ffffff' }}
+                      activeDot={{ r: 6, fill: '#ffd93d', strokeWidth: 2, stroke: '#ffffff' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
