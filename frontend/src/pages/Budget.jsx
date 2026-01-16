@@ -7,13 +7,72 @@ import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateB
 import { generateAISummary } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
-// Dark mode chart colors - professional finance palette
+// Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
-  budget: '#3b82f6',
-  actual: '#ef4444',
-  savings: '#10b981',
-  overBudget: '#f59e0b',
-  categories: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
+  // Primary metrics - high contrast, professional colors
+  income: '#00d4aa',     // Bright emerald green
+  expense: '#ff6b6b',    // Soft coral red
+  savings: '#ffd93d',    // Bright golden yellow
+  accent: '#4ecdc4',     // Teal accent
+
+  // Budget-specific colors
+  budget: '#4ecdc4',     // Teal for budget
+  actual: '#ff6b6b',     // Coral red for actual spending
+  overBudget: '#f59e0b', // Orange for over budget
+  underBudget: '#00d4aa', // Green for under budget
+
+  // Unified category color palette - cohesive and visually appealing
+  categories: [
+    '#4ecdc4',  // Teal
+    '#45b7d1',  // Sky blue
+    '#96ceb4',  // Sage green
+    '#ffeaa7',  // Cream yellow
+    '#dda0dd',  // Plum
+    '#98d8c8',  // Mint green
+    '#f7dc6f',  // Golden yellow
+    '#bb8fce',  // Light purple
+    '#85c1e9',  // Light blue
+    '#f8c471',  // Orange
+    '#82e0aa',  // Light green
+    '#f1948a',  // Light coral
+    '#85c1e9',  // Powder blue
+    '#d7bde2',  // Lavender
+    '#a9dfbf',  // Pale green
+  ],
+
+  // Chart-specific colors for better visual hierarchy
+  primary: '#00d4aa',    // Main positive color
+  secondary: '#ff6b6b',  // Main negative color
+  tertiary: '#ffd93d',   // Accent/highlight color
+  neutral: '#64748b',    // Neutral gray for backgrounds
+};
+
+// Enhanced custom tooltip style for dark mode with better visual hierarchy
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-xl p-4 shadow-2xl">
+        <p className="text-white font-semibold mb-2 text-sm">{label}</p>
+        <div className="space-y-1">
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                ></div>
+                <span className="text-slate-300 text-sm">{entry.name}:</span>
+              </div>
+              <span className="text-white font-medium text-sm">
+                ${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
 };
 
 const ALL_AI_MODELS = [
@@ -698,43 +757,76 @@ function BudgetPlanning() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Budget vs Actual Bar Chart */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">📈</span>
+                <span className="text-blue-400">📈</span>
                 Monthly Comparison
               </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="name" stroke="#94a3b8" angle={-45} textAnchor="end" height={80} />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #475569',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value, name) => [`$${value.toFixed(2)}`, name]}
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="budgetGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4ecdc4" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#4ecdc4" stopOpacity={0.4}/>
+                    </linearGradient>
+                    <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.4}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
                   />
-                  <Legend />
-                  <Bar dataKey="Budgeted" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Actual" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend
+                    wrapperStyle={{
+                      color: '#94a3b8',
+                      fontSize: '12px',
+                      paddingTop: '10px'
+                    }}
+                  />
+                  <Bar
+                    dataKey="Budgeted"
+                    fill="url(#budgetGradient)"
+                    radius={[4, 4, 0, 0]}
+                    name="Budgeted"
+                    maxBarSize={50}
+                  />
+                  <Bar
+                    dataKey="Actual"
+                    fill="url(#actualGradient)"
+                    radius={[4, 4, 0, 0]}
+                    name="Actual"
+                    maxBarSize={50}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* Budget Performance Pie Chart */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-amber-400">🎯</span>
+                <span className="text-green-400">🎯</span>
                 Budget Performance
               </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'On Track', value: budgetData.filter(b => !b.overBudget).length, color: '#10b981' },
-                      { name: 'Over Budget', value: budgetData.filter(b => b.overBudget).length, color: '#ef4444' }
+                      { name: 'On Track', value: budgetData.filter(b => !b.overBudget).length, color: '#00d4aa' },
+                      { name: 'Over Budget', value: budgetData.filter(b => b.overBudget).length, color: '#ff6b6b' }
                     ]}
                     cx="50%"
                     cy="50%"
@@ -742,16 +834,31 @@ function BudgetPlanning() {
                     outerRadius={100}
                     paddingAngle={5}
                     dataKey="value"
+                    stroke="#1e293b"
+                    strokeWidth={2}
                   >
                     {[
-                      { name: 'On Track', value: budgetData.filter(b => !b.overBudget).length, color: '#10b981' },
-                      { name: 'Over Budget', value: budgetData.filter(b => b.overBudget).length, color: '#ef4444' }
+                      { name: 'On Track', value: budgetData.filter(b => !b.overBudget).length, color: '#00d4aa' },
+                      { name: 'Over Budget', value: budgetData.filter(b => b.overBudget).length, color: '#ff6b6b' }
                     ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        style={{
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend
+                    wrapperStyle={{
+                      color: '#94a3b8',
+                      fontSize: '12px',
+                      paddingTop: '10px'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>

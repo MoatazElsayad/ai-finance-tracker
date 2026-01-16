@@ -938,7 +938,7 @@ function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dailySpendingData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <LineChart data={dailySpendingData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <defs>
                       <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.3}/>
@@ -1116,7 +1116,7 @@ function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={cumulativeSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <AreaChart data={cumulativeSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <defs>
                       <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ffd93d" stopOpacity={0.3}/>
