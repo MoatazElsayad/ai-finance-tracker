@@ -20,7 +20,7 @@ function App() {
         <Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
         <Route path="/login" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/register" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
-
+        
         {/* Protected routes */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -82,7 +82,7 @@ function Layout() {
               >
                 Transactions
               </Link>
-              <Link
+              <Link 
                 to="/budget"
                 className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
               >

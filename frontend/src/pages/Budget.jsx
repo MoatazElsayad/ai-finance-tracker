@@ -182,6 +182,7 @@ function BudgetPlanning() {
   const [budgetModelUsed, setBudgetModelUsed] = useState(null);
   const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
   const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
+  const [insightsCheckedForCurrentData, setInsightsCheckedForCurrentData] = useState(false); // New state for smart caching
 
   // Cache key for AI insights
   const getCacheKey = () => {
@@ -266,17 +267,28 @@ function BudgetPlanning() {
 
   // Generate AI insights when budgets change or page loads (with smart caching)
   useEffect(() => {
-    if (budgets.length > 0 && !loading && !aiBudgetInsights) {
-      // First try to load from cache
+    if (!loading) {
+      const currentCacheKey = getCacheKey();
+      const lastCacheKey = localStorage.getItem('last_budget_insights_cache_key');
+
+      if (aiBudgetInsights && currentCacheKey === lastCacheKey) {
+        console.log('🧠 Insights are already displayed and current.');
+        return;
+      }
+
+      // Attempt to load from cache first
       const hasCachedData = loadCachedInsights();
 
-      // Only generate new insights if no cached data exists
-      if (!hasCachedData) {
-        console.log('🔄 No cached insights found, generating new ones');
+      if (hasCachedData) {
+        console.log('✅ Loaded cached insights. Check if they are current.');
+        // If cached data is loaded, set the lastCacheKey to current for comparison
+        localStorage.setItem('last_budget_insights_cache_key', currentCacheKey);
+      } else {
+        console.log('🔄 No valid cached insights found for current data, generating new ones.');
         generateBudgetInsights();
       }
     }
-  }, [budgets, loading, selectedMonth]);
+  }, [budgets, loading, transactions, selectedMonth]);
 
   const loadData = async () => {
     setLoading(true);
@@ -420,8 +432,9 @@ function BudgetPlanning() {
               setBudgetInsightsLoading(false);
               eventSource.close();
 
-              // Cache the successful result
+              // Cache the successful result and update last used cache key
               saveInsightsToCache(insights, data.model);
+              localStorage.setItem('last_budget_insights_cache_key', getCacheKey());
               break;
             case 'error':
               setAiBudgetInsights(`💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.`);
