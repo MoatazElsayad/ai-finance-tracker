@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
 import { generateAISummary } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
+import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -182,111 +183,23 @@ function BudgetPlanning() {
   const [budgetModelUsed, setBudgetModelUsed] = useState(null);
   const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
   const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
-  const [insightsCheckedForCurrentData, setInsightsCheckedForCurrentData] = useState(false); // New state for smart caching
 
-  // Cache key for AI insights
-  const getCacheKey = () => {
-    // Create a unique key based on budget data and transactions
-    const budgetString = JSON.stringify(budgets.map(b => ({
-      id: b.id,
-      category_id: b.category_id,
-      amount: b.amount,
-      month: selectedMonth.month,
-      year: selectedMonth.year
-    })).sort((a, b) => a.id - b.id));
-
-    const transactionString = JSON.stringify(transactions
-      .filter(t => {
-        const txnDate = new Date(t.date);
-        return txnDate.getFullYear() === selectedMonth.year &&
-               txnDate.getMonth() + 1 === selectedMonth.month &&
-               t.amount < 0; // Only expense transactions
-      })
-      .map(t => ({
-        id: t.id,
-        amount: t.amount,
-        category_id: t.category_id,
-        date: t.date
-      }))
-      .sort((a, b) => a.id - b.id));
-
-    return btoa(budgetString + transactionString).slice(0, 32);
-  };
-
-  // Clear cache when data changes
-  const clearInsightsCache = () => {
-    try {
-      // Clear all budget insight caches (simple approach)
-      const keys = Object.keys(localStorage).filter(key => key.startsWith('budget_insights_'));
-      keys.forEach(key => localStorage.removeItem(key));
-      console.log('🗑️ Cleared AI insights cache');
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-    }
-  };
-
-  // Load cached insights
-  const loadCachedInsights = () => {
-    try {
-      const cacheKey = getCacheKey();
-      const cached = localStorage.getItem(`budget_insights_${cacheKey}`);
-      if (cached) {
-        const parsedCache = JSON.parse(cached);
-        setAiBudgetInsights(parsedCache.insights);
-        setBudgetModelUsed(parsedCache.model);
-        console.log('📋 Loaded cached AI insights');
-        return true;
-      }
-    } catch (error) {
-      console.error('Error loading cached insights:', error);
-    }
-    return false;
-  };
-
-  // Save insights to cache
-  const saveInsightsToCache = (insights, model) => {
-    try {
-      const cacheKey = getCacheKey();
-      const cacheData = {
-        insights,
-        model,
-        timestamp: Date.now(),
-        month: selectedMonth.month,
-        year: selectedMonth.year
-      };
-      localStorage.setItem(`budget_insights_${cacheKey}`, JSON.stringify(cacheData));
-      console.log('💾 Saved AI insights to cache');
-    } catch (error) {
-      console.error('Error saving insights to cache:', error);
-    }
-  };
 
   useEffect(() => {
     loadData();
   }, [selectedMonth]);
 
-  // Generate AI insights when budgets change or page loads (with smart caching)
+  // Generate AI insights when budgets or transactions change
   useEffect(() => {
-    if (!loading) {
-      const currentCacheKey = getCacheKey();
-      const lastCacheKey = localStorage.getItem('last_budget_insights_cache_key');
-
-      if (aiBudgetInsights && currentCacheKey === lastCacheKey) {
-        console.log('🧠 Insights are already displayed and current.');
-        return;
-      }
-
-      // Attempt to load from cache first
-      const hasCachedData = loadCachedInsights();
-
-      if (hasCachedData) {
-        console.log('✅ Loaded cached insights. Check if they are current.');
-        // If cached data is loaded, set the lastCacheKey to current for comparison
-        localStorage.setItem('last_budget_insights_cache_key', currentCacheKey);
-      } else {
-        console.log('🔄 No valid cached insights found for current data, generating new ones.');
-        generateBudgetInsights();
-      }
+    if (!loading && budgets.length > 0) {
+      generateBudgetInsights();
+    } else if (!loading && budgets.length === 0) {
+      // If no budgets, display a default message
+      setAiBudgetInsights('💰 <strong>No Budgets Set:</strong> Create some budgets to get AI insights!\n\n🎯 <strong>Get Started:</strong> Set monthly spending limits for your categories.\n\n📊 <strong>Tip:</strong> Budgeting helps you take control of your finances.');
+      setBudgetModelUsed(null);
+      setBudgetInsightsLoading(false);
+      // Clear AI insights cache since budget data changed
+      clearInsightsCache(); // Clear any partial or invalid cache
     }
   }, [budgets, loading, transactions, selectedMonth]);
 
@@ -326,13 +239,35 @@ function BudgetPlanning() {
   };
 
   const generateBudgetInsights = async () => {
+    if (budgetInsightsLoading) return; // Prevent multiple simultaneous calls
+
+    // Reset states before potential generation
+    setBudgetInsightsLoading(true);
+    setAiBudgetInsights('');
+    setBudgetModelUsed(null);
+    setCurrentTryingBudgetModel(null);
+
+    // Generate current cache key
+    const currentCacheKey = getCacheKey(budgets, transactions, selectedMonth);
+
+    // Try to load from cache first
+    const cachedData = loadCachedInsights(currentCacheKey);
+    if (cachedData) {
+      setAiBudgetInsights(cachedData.insights);
+      setBudgetModelUsed(cachedData.model);
+      setBudgetInsightsLoading(false);
+      console.log('✅ Loaded cached insights, no API call.');
+      return; // Exit if successfully loaded from cache
+    }
+
     if (!budgets || budgets.length === 0) {
       console.log('No budgets to analyze, skipping insights generation');
       setAiBudgetInsights('💰 <strong>No Budgets Set:</strong> Create some budgets to get AI insights!\n\n🎯 <strong>Get Started:</strong> Set monthly spending limits for your categories.\n\n📊 <strong>Tip:</strong> Budgeting helps you take control of your finances.');
+      setBudgetModelUsed(null);
+      setBudgetInsightsLoading(false);
+      clearInsightsCache(currentCacheKey); // Clear any partial or invalid cache for current key
       return;
     }
-
-    setBudgetInsightsLoading(true);
 
     // Maximum timeout to prevent infinite loading
     const maxTimeout = setTimeout(() => {
@@ -340,9 +275,6 @@ function BudgetPlanning() {
       setAiBudgetInsights('💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.');
       setBudgetInsightsLoading(false);
     }, 15000); // 15 second maximum timeout
-    setAiBudgetInsights('');
-    setBudgetModelUsed(null);
-    setCurrentTryingBudgetModel(null);
 
     try {
       // Use Server-Sent Events for real-time progress (similar to main AI)
@@ -460,32 +392,10 @@ function BudgetPlanning() {
 
     } catch (error) {
       clearTimeout(maxTimeout);
-      console.warn('Budget insights setup failed');
-      setAiBudgetInsights('💰 <strong>Budget Check:</strong> Track your spending patterns.\n\n🎯 <strong>Savings Goal:</strong> Build consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular financial reviews are key.');
+      console.error('Budget insights generation failed:', error);
+      setAiBudgetInsights('💰 <strong>Budget Check:</strong> Track your spending patterns.\n\n🎯 <strong>Savings Goal:</strong> Build consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular financial reviews are key.\n\n<span class="text-red-400">Error: Unable to generate insights.</span>');
       setBudgetInsightsLoading(false);
     }
-  };
-
-  const changeMonth = (direction) => {
-    setSelectedMonth(prev => {
-      let newMonth = prev.month + direction;
-      let newYear = prev.year;
-
-      if (newMonth > 12) {
-        newMonth = 1;
-        newYear += 1;
-      } else if (newMonth < 1) {
-        newMonth = 12;
-        newYear -= 1;
-      }
-
-      return { year: newYear, month: newMonth };
-    });
-
-    // Clear AI insights when changing months (different data scope)
-    clearInsightsCache();
-    setAiBudgetInsights('');
-    setBudgetModelUsed(null);
   };
 
   // Calculate actual spending by category for current month
@@ -562,7 +472,7 @@ function BudgetPlanning() {
 
         // Reset form
         setNewBudget({ category_id: '', amount: '' });
-        setShowBudgetForm(false);
+      setShowBudgetForm(false);
 
         // Clear AI insights cache since budget data changed
         clearInsightsCache();
@@ -608,9 +518,9 @@ function BudgetPlanning() {
         setBudgets(budgetsData);
 
         // Reset form
-        setEditingBudget(null);
+      setEditingBudget(null);
         setNewBudget({ category_id: '', amount: '' });
-        setShowBudgetForm(false);
+      setShowBudgetForm(false);
 
         // Clear AI insights cache since budget data changed
         clearInsightsCache();
@@ -635,7 +545,7 @@ function BudgetPlanning() {
 
     try {
       await deleteBudget(id);
-      setBudgets(budgets.filter(b => b.id !== id));
+    setBudgets(budgets.filter(b => b.id !== id));
 
       // Clear AI insights cache since budget data changed
       clearInsightsCache();
@@ -833,7 +743,7 @@ function BudgetPlanning() {
                 ) : budgetInsightsLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-amber-400 border-t-transparent"></div>
                 ) : (
-                  <span className="text-xl">🤖</span>
+                <span className="text-xl">🤖</span>
                 )}
               </div>
               <h3 className="text-lg font-bold text-white">AI Budget Insights</h3>

@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
+import { clearInsightsCache } from '../utils/cache';
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -64,6 +65,9 @@ function Transactions() {
       setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
       setShowForm(false);
+
+      // Clear AI insights cache for Budget page
+      clearInsightsCache();
       
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
@@ -78,6 +82,8 @@ function Transactions() {
     try {
       await deleteTransaction(id);
       setTransactions(transactions.filter(t => t.id !== id));
+      // Clear AI insights cache for Budget page
+      clearInsightsCache();
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (error) {
