@@ -183,14 +183,98 @@ function BudgetPlanning() {
   const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
   const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
 
+  // Cache key for AI insights
+  const getCacheKey = () => {
+    // Create a unique key based on budget data and transactions
+    const budgetString = JSON.stringify(budgets.map(b => ({
+      id: b.id,
+      category_id: b.category_id,
+      amount: b.amount,
+      month: selectedMonth.month,
+      year: selectedMonth.year
+    })).sort((a, b) => a.id - b.id));
+
+    const transactionString = JSON.stringify(transactions
+      .filter(t => {
+        const txnDate = new Date(t.date);
+        return txnDate.getFullYear() === selectedMonth.year &&
+               txnDate.getMonth() + 1 === selectedMonth.month &&
+               t.amount < 0; // Only expense transactions
+      })
+      .map(t => ({
+        id: t.id,
+        amount: t.amount,
+        category_id: t.category_id,
+        date: t.date
+      }))
+      .sort((a, b) => a.id - b.id));
+
+    return btoa(budgetString + transactionString).slice(0, 32);
+  };
+
+  // Clear cache when data changes
+  const clearInsightsCache = () => {
+    try {
+      // Clear all budget insight caches (simple approach)
+      const keys = Object.keys(localStorage).filter(key => key.startsWith('budget_insights_'));
+      keys.forEach(key => localStorage.removeItem(key));
+      console.log('🗑️ Cleared AI insights cache');
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  };
+
+  // Load cached insights
+  const loadCachedInsights = () => {
+    try {
+      const cacheKey = getCacheKey();
+      const cached = localStorage.getItem(`budget_insights_${cacheKey}`);
+      if (cached) {
+        const parsedCache = JSON.parse(cached);
+        setAiBudgetInsights(parsedCache.insights);
+        setBudgetModelUsed(parsedCache.model);
+        console.log('📋 Loaded cached AI insights');
+        return true;
+      }
+    } catch (error) {
+      console.error('Error loading cached insights:', error);
+    }
+    return false;
+  };
+
+  // Save insights to cache
+  const saveInsightsToCache = (insights, model) => {
+    try {
+      const cacheKey = getCacheKey();
+      const cacheData = {
+        insights,
+        model,
+        timestamp: Date.now(),
+        month: selectedMonth.month,
+        year: selectedMonth.year
+      };
+      localStorage.setItem(`budget_insights_${cacheKey}`, JSON.stringify(cacheData));
+      console.log('💾 Saved AI insights to cache');
+    } catch (error) {
+      console.error('Error saving insights to cache:', error);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, [selectedMonth]);
 
-  // Generate AI insights when budgets change or page loads
+  // Generate AI insights when budgets change or page loads (with smart caching)
   useEffect(() => {
     if (budgets.length > 0 && !loading && !aiBudgetInsights) {
-      generateBudgetInsights();
+      // First try to load from cache
+      const hasCachedData = loadCachedInsights();
+
+      // Only generate new insights if no cached data exists
+      if (!hasCachedData) {
+        console.log('🔄 No cached insights found, generating new ones');
+        generateBudgetInsights();
+      }
     }
   }, [budgets, loading, selectedMonth]);
 
@@ -335,6 +419,9 @@ function BudgetPlanning() {
               setBudgetModelUsed(data.model);
               setBudgetInsightsLoading(false);
               eventSource.close();
+
+              // Cache the successful result
+              saveInsightsToCache(insights, data.model);
               break;
             case 'error':
               setAiBudgetInsights(`💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.`);
@@ -381,6 +468,11 @@ function BudgetPlanning() {
 
       return { year: newYear, month: newMonth };
     });
+
+    // Clear AI insights when changing months (different data scope)
+    clearInsightsCache();
+    setAiBudgetInsights('');
+    setBudgetModelUsed(null);
   };
 
   // Calculate actual spending by category for current month
@@ -459,6 +551,10 @@ function BudgetPlanning() {
         setNewBudget({ category_id: '', amount: '' });
         setShowBudgetForm(false);
 
+        // Clear AI insights cache since budget data changed
+        clearInsightsCache();
+        setAiBudgetInsights(''); // Clear current insights to trigger regeneration
+
         // Show success message
         setToastMessage(result.action === 'updated' ? 'Budget updated successfully!' : 'Budget created successfully!');
         setShowSuccessToast(true);
@@ -503,6 +599,10 @@ function BudgetPlanning() {
         setNewBudget({ category_id: '', amount: '' });
         setShowBudgetForm(false);
 
+        // Clear AI insights cache since budget data changed
+        clearInsightsCache();
+        setAiBudgetInsights(''); // Clear current insights to trigger regeneration
+
         // Show success message
         setToastMessage('Budget updated successfully!');
         setShowSuccessToast(true);
@@ -523,6 +623,10 @@ function BudgetPlanning() {
     try {
       await deleteBudget(id);
       setBudgets(budgets.filter(b => b.id !== id));
+
+      // Clear AI insights cache since budget data changed
+      clearInsightsCache();
+      setAiBudgetInsights(''); // Clear current insights to trigger regeneration
     } catch (error) {
       console.error('Failed to delete budget:', error);
       alert(error.message);
@@ -658,7 +762,8 @@ function BudgetPlanning() {
             </div>
           </div>
 
-          {/* AI Budget Insights */}
+          {/* AI Budget Insights - Smart Caching */}
+          {/* Caches insights based on budget + transaction data. Only regenerates when data changes. */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-2xl relative">
             {/* Model Badge - Top Right Corner */}
             {budgetModelUsed && (
