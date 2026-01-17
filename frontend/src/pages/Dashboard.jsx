@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -744,7 +745,7 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Income</span>
                 <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📈</span>
+                  <TrendingUp className="w-7 h-7 text-green-400" strokeWidth={2} />
                 </div>
           </div>
               <p className="text-4xl font-bold text-green-400 mb-2">
@@ -758,7 +759,7 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Expenses</span>
                 <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📉</span>
+                  <TrendingDown className="w-7 h-7 text-red-400" strokeWidth={2} />
                 </div>
           </div>
               <p className="text-4xl font-bold text-red-400 mb-2">
@@ -772,7 +773,7 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Net Savings</span>
                 <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">💰</span>
+                  <Wallet className="w-7 h-7 text-amber-400" strokeWidth={2} />
                 </div>
           </div>
               <p className={`text-4xl font-bold mb-2 ${(analytics?.net_savings || 0) >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
@@ -786,7 +787,7 @@ function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Savings Rate</span>
                 <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📊</span>
+                  <Percent className="w-7 h-7 text-blue-400" strokeWidth={2} />
                 </div>
           </div>
               <p className={`text-4xl font-bold mb-2 ${savingsRate >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
@@ -1211,8 +1212,8 @@ function Dashboard() {
         <div className="relative p-8">
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center gap-3">
-                  <div className="p-3 bg-amber-400/20 backdrop-blur-sm rounded-xl border border-amber-400/30">
-                <span className="text-3xl">🤖</span>
+              <div className="p-3">
+                <Bot className="w-10 h-10 text-amber-400" strokeWidth={2} />
               </div>
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
@@ -1245,14 +1246,14 @@ function Dashboard() {
                   onClick={handleGenerateAI}
                       className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border border-slate-600 hover:border-amber-400/30"
                 >
-                  <span>🔄</span>
+                    <RefreshCw className="w-5 h-5" strokeWidth={2.2} />
                       <span>Refresh Analysis</span>
                 </button>
               </div>
             </div>
           ) : (
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border border-slate-700">
-                  <div className="inline-block p-4 bg-amber-400/20 rounded-full mb-4 border border-amber-400/30">
+                  <div className="inline-block p-4">
                     {aiLoading && currentTryingModel ? (
                       (() => {
                         const modelInfo = getModelInfo(currentTryingModel);
@@ -1270,7 +1271,10 @@ function Dashboard() {
                     ) : aiLoading ? (
                       <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-400 border-t-transparent"></div>
                     ) : (
-                <span className="text-5xl">✨</span>
+                <Sparkles 
+                  className="w-10 h-10 text-amber-300 animate-pulse" 
+                  strokeWidth={1.5} 
+                />
                     )}
               </div>
                   <h3 className="text-xl font-bold text-white mb-2">
@@ -1301,11 +1305,6 @@ function Dashboard() {
                         <span>Analyzing...</span>
                         {currentTryingModel && (() => {
                           const modelInfo = getModelInfo(currentTryingModel);
-                          return (
-                            <span className="ml-2 text-xs text-slate-700">
-                              ({modelInfo.logo.startsWith('http') ? modelInfo.name : modelInfo.logo} {modelInfo.name})
-                            </span>
-                          );
                         })()}
                       </div>
                     ) : 'Generate AI Insights'}

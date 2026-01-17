@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { clearInsightsCache } from '../utils/cache';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2 } from 'lucide-react';
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -223,7 +224,7 @@ function Transactions() {
       {showSuccessToast && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in">
           <div className="bg-green-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-green-400/30">
-            <span className="text-xl">✓</span>
+            <Check className="w-8 h-8 text-white" strokeWidth={1.8} />
             <span className="font-medium">Transaction saved successfully!</span>
           </div>
         </div>
@@ -244,7 +245,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Income</span>
             <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center border border-green-500/30">
-              <span className="text-2xl">📈</span>
+              <TrendingUp className="w-7 h-7 text-green-400" strokeWidth={2} />
             </div>
           </div>
           <p className="text-3xl font-bold text-green-400">
@@ -256,7 +257,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Expenses</span>
             <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center border border-red-500/30">
-              <span className="text-2xl">📉</span>
+              <TrendingDown className="w-7 h-7 text-red-400" strokeWidth={2} />
             </div>
           </div>
           <p className="text-3xl font-bold text-red-400">
@@ -268,7 +269,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Net Balance</span>
             <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center border border-amber-500/30">
-              <span className="text-2xl">💰</span>
+              <Wallet className="w-7 h-7 text-amber-400" strokeWidth={2} />
             </div>
           </div>
           <p className={`text-3xl font-bold ${totals.net >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
@@ -280,7 +281,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Count</span>
             <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
-              <span className="text-2xl">📊</span>
+              <Hash className="w-7 h-7 text-blue-400" strokeWidth={2.2} />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-400">{totals.count}</p>
@@ -294,7 +295,7 @@ function Transactions() {
             onClick={() => setShowForm(true)}
             className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2"
           >
-            <span className="text-xl">➕</span>
+            <CirclePlus className="w-7 h-7" strokeWidth={2} />
             Add New Transaction
           </button>
         </div>
@@ -572,9 +573,9 @@ function Transactions() {
                 setSortBy('date');
                 setSortOrder('desc');
               }}
-              className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all text-sm font-medium"
+              className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all text-sm font-medium flex gap-2"
             >
-              🔄 Reset Filters
+              <RefreshCw className="w-5 h-5" strokeWidth={2} /> Reset Filters
             </button>
           </div>
         </div>
@@ -653,7 +654,7 @@ function Transactions() {
                           onClick={() => handleDelete(txn.id)}
                           className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-medium text-sm transition-all border border-red-500/30"
                         >
-                          🗑️
+                          <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300 transition-colors" strokeWidth={2} />
                         </button>
                       </div>
                     </div>
