@@ -58,11 +58,11 @@ const authFetch = async (url, options = {}) => {
 // AUTHENTICATION
 // ============================================
 
-export const register = async (email, username, password) => {
+export const register = async (email, username, firstName, lastName, phone, password) => {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, username, password }),
+    body: JSON.stringify({ email, username, first_name: firstName, last_name: lastName, phone, password }),
   });
 
   const data = await handleResponse(response);
@@ -136,7 +136,31 @@ export const deleteTransaction = async (id) => {
 // ============================================
 
 export const getCategories = async () => {
-  const response = await fetch(`${API_URL}/categories`);
+  const token = getToken();
+  const response = await authFetch(`/categories?token=${token}`);
+  return handleResponse(response);
+};
+
+export const createCategory = async (name, type, icon) => {
+  const token = getToken();
+  const response = await authFetch(`/categories?token=${token}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      type,
+      icon
+    }),
+  });
+
+  return handleResponse(response);
+};
+
+export const deleteCategory = async (categoryId) => {
+  const token = getToken();
+  const response = await authFetch(`/categories/${categoryId}?token=${token}`, {
+    method: 'DELETE',
+  });
+
   return handleResponse(response);
 };
 
@@ -218,6 +242,10 @@ export const generateAISummary = async (year, month) => {
   return handleResponse(response);
 };
 
+// ============================================
+// User Profile
+// ============================================
+
 // Server-Sent Events endpoint for real-time AI model progress
 export const createAIProgressStream = (year, month, onMessage, onError) => {
   const token = getToken();
@@ -236,6 +264,23 @@ export const createAIProgressStream = (year, month, onMessage, onError) => {
   };
 
   return eventSource; // Return EventSource so it can be closed
+};
+
+// Update profile
+export const updateUserProfile = async (data) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}/profile?token=${token}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to update profile');
+  }
+  return await res.json();
 };
 
 // ============================================

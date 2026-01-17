@@ -14,6 +14,9 @@ function Login() {
   const [isLogin, setIsLogin] = useState(location.pathname !== '/register'); // Toggle between login/register
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,8 +31,8 @@ function Login() {
         // Login
         await login(email, password);
       } else {
-        // Register - make sure username is included!
-        await register(email, username, password);
+        // Register - include all new fields
+        await register(email, username, firstName, lastName, phone, password);
       }
       
       navigate('/dashboard');
@@ -96,6 +99,54 @@ function Login() {
                   className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
                   placeholder="johndoe"
                   required
+                />
+              </div>
+            )}
+
+            {/* First Name & Last Name (only for registration) */}
+            {!isLogin && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                    placeholder="John"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                    placeholder="Doe"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Phone (only for registration) */}
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                  placeholder="+1 (555) 123-4567"
                 />
               </div>
             )}

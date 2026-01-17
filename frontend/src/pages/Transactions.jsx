@@ -5,14 +5,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { clearInsightsCache } from '../utils/cache';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2 } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus } from 'lucide-react';
+import CategoryIconPicker from '../components/CategoryIconPicker';
+import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showCustomCategoryCreator, setShowCustomCategoryCreator] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [selectedCategoryIcon, setSelectedCategoryIcon] = useState('');
 
   // Form state
   const [categoryId, setCategoryId] = useState('');
@@ -386,19 +391,38 @@ function Transactions() {
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Category
                 </label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {filteredCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.icon} {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="flex-1 px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                    required
+                  >
+                    <option value="">Select category</option>
+                    {filteredCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowIconPicker(true)}
+                    className="px-4 py-3 bg-slate-700/50 hover:bg-slate-600 border-2 border-slate-600 hover:border-amber-400/50 rounded-xl text-2xl transition-all"
+                    title="Pick category icon"
+                  >
+                    {selectedCategoryIcon || '😀'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomCategoryCreator(true)}
+                    className="px-4 py-3 bg-slate-700/50 hover:bg-slate-600 border-2 border-slate-600 hover:border-amber-400/50 rounded-xl text-white font-medium transition-all flex items-center gap-2"
+                    title="Create custom category"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">Create</span>
+                  </button>
+                </div>
               </div>
 
               {/* Amount */}
@@ -471,6 +495,25 @@ function Transactions() {
           </form>
         </div>
       )}
+
+      {/* Icon Picker Modal */}
+      <CategoryIconPicker
+        isOpen={showIconPicker}
+        onClose={() => setShowIconPicker(false)}
+        onSelect={(icon) => setSelectedCategoryIcon(icon)}
+        type={isExpense ? 'expense' : 'income'}
+      />
+
+      {/* Custom Category Creator Modal */}
+      <CustomCategoryCreator
+        isOpen={showCustomCategoryCreator}
+        onClose={() => setShowCustomCategoryCreator(false)}
+        onSuccess={() => {
+          setShowCustomCategoryCreator(false);
+          loadData();
+        }}
+        type={isExpense ? 'expense' : 'income'}
+      />
 
       {/* Filters and Search */}
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700 mb-8">

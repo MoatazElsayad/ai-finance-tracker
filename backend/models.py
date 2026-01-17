@@ -20,6 +20,9 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     username = Column(String, unique=True, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -31,18 +34,21 @@ class User(Base):
 
 class Category(Base):
     """
-    Pre-defined categories for transactions
+    Categories for transactions - can be default or user-created
     Like: Food, Transport, Salary, etc.
     """
     __tablename__ = "categories"
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL = default category
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # "income" or "expense"
     icon = Column(String)  # emoji like 🍔 or 💰
+    created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationship: one category has many transactions
     transactions = relationship("Transaction", back_populates="category")
+    user = relationship("User")
 
 
 class Transaction(Base):

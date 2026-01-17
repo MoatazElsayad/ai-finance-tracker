@@ -81,6 +81,9 @@ def startup():
 class UserRegister(BaseModel):
     email: EmailStr
     username: str
+    first_name: str
+    last_name: str
+    phone: str | None = None
     password: str
 
 class UserLogin(BaseModel):
@@ -103,6 +106,17 @@ class TransactionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class ProfileUpdate(BaseModel):
+    username: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+
+class CategoryCreate(BaseModel):
+    name: str
+    type: str  # "income" or "expense"
+    icon: str  # emoji like 🍔
 
 
 # ============================================
@@ -176,12 +190,20 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         if existing:
             raise HTTPException(status_code=400, detail="Email already registered")
         
+        # Check if username is taken
+        existing_username = db.query(User).filter(User.username == data.username).first()
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Username already taken")
+        
         # Explicitly pull the password out
         plain_password = data.password 
         
         user = User(
             email=data.email,
             username=data.username,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            phone=data.phone,
             hashed_password=hash_password(plain_password)
         )
         db.add(user)
@@ -193,7 +215,6 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"CRASH IN REGISTER: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 @app.post("/auth/login")
 def login(data: UserLogin, db: Session = Depends(get_db)):
@@ -226,7 +247,11 @@ def get_me(token: str, db: Session = Depends(get_db)):
     return {
         "id": user.id,
         "email": user.email,
-        "username": user.username
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "phone": user.phone,
+        "createdAt": user.created_at.isoformat() if user.created_at else None
     }
 
 
@@ -312,20 +337,110 @@ def delete_transaction(
 
 
 @app.get("/categories")
-def get_categories(db: Session = Depends(get_db)):
+def get_categories(token: str, db: Session = Depends(get_db)):
     """
-    Get all available categories
+    Get all available categories (default + user's custom ones)
     """
-    categories = db.query(Category).all()
+    user = get_current_user(token, db)
+    
+    # Get default categories (user_id is NULL)
+    default_categories = db.query(Category).filter(Category.user_id == None).all()
+    
+    # Get user's custom categories
+    custom_categories = db.query(Category).filter(Category.user_id == user.id).all()
+    
+    # Combine both
+    all_categories = default_categories + custom_categories
+    
     return [
         {
             "id": c.id,
             "name": c.name,
             "type": c.type,
-            "icon": c.icon
+            "icon": c.icon,
+            "is_custom": c.user_id is not None
         }
-        for c in categories
+        for c in all_categories
     ]
+
+
+@app.post("/categories")
+def create_category(
+    data: CategoryCreate,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a custom category for the user
+    """
+    user = get_current_user(token, db)
+    
+    # Validate category type
+    if data.type not in ["income", "expense"]:
+        raise HTTPException(400, "Type must be 'income' or 'expense'")
+    
+    # Check if category name already exists for this user
+    existing = db.query(Category).filter(
+        Category.user_id == user.id,
+        Category.name.ilike(data.name),
+        Category.type == data.type
+    ).first()
+    
+    if existing:
+        raise HTTPException(400, "You already have a category with this name")
+    
+    # Create new category
+    category = Category(
+        user_id=user.id,
+        name=data.name,
+        type=data.type,
+        icon=data.icon
+    )
+    
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    
+    return {
+        "id": category.id,
+        "name": category.name,
+        "type": category.type,
+        "icon": category.icon,
+        "is_custom": True
+    }
+
+
+@app.delete("/categories/{category_id}")
+def delete_category(
+    category_id: int,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a custom category (only the user's own categories)
+    """
+    user = get_current_user(token, db)
+    
+    category = db.query(Category).filter(
+        Category.id == category_id,
+        Category.user_id == user.id
+    ).first()
+    
+    if not category:
+        raise HTTPException(404, "Category not found or you don't have permission to delete it")
+    
+    # Check if category is being used in transactions
+    used_in_transactions = db.query(Transaction).filter(
+        Transaction.category_id == category_id
+    ).count()
+    
+    if used_in_transactions > 0:
+        raise HTTPException(400, f"Cannot delete category - it's used in {used_in_transactions} transaction(s)")
+    
+    db.delete(category)
+    db.commit()
+    
+    return {"message": "Category deleted successfully"}
 
 
 # ============================================
@@ -939,6 +1054,45 @@ def get_budget_comparison_endpoint(
     comparison = get_budget_comparison(db, user.id, year, month)
     return {"comparison": comparison}
 
+
+# ============================================
+# User Profile
+# ============================================
+@app.patch("/profile")   # or @app.patch("/users/profile")
+def update_profile(
+    data: ProfileUpdate,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(token, db)
+    
+    if data.username:
+        # Check if username is taken
+        existing = db.query(User).filter(User.username == data.username, User.id != current_user.id).first()
+        if existing:
+            raise HTTPException(400, "Username already taken")
+        current_user.username = data.username
+    
+    if data.first_name is not None:
+        current_user.first_name = data.first_name
+    
+    if data.last_name is not None:
+        current_user.last_name = data.last_name
+    
+    if data.phone is not None:
+        current_user.phone = data.phone
+    
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "phone": current_user.phone,
+        "createdAt": current_user.created_at.isoformat() if current_user.created_at else None
+    }
 
 # ============================================
 # TEST SSE ROUTE

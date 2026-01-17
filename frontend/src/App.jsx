@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, Outlet } from 'react-router-dom';
 import { isAuthenticated, logout, getCurrentUser } from './api';
+import UserAvatar from './components/UserAvatar';
 
 // Import pages
 import Login from './pages/Login';
@@ -11,25 +12,39 @@ import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Budget from './pages/Budget';
 import Landing from "./pages/Landing";
+import Profile from './pages/Profile';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes - Landing page for all non-authenticated users */}
-        <Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
-        <Route path="/login" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/register" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
-        
-        {/* Protected routes */}
+        {/* Public routes – redirect to dashboard if already logged in */}
+        <Route
+          path="/"
+          element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />}
+        />
+        <Route
+          path="/login"
+          element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} 
+        />
+
+        {/* All protected routes wrapped in Layout + auth guard */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/budget" element={<Budget />} />
+          <Route path="/profile" element={<Profile />} />           {/* ← added here */}
         </Route>
 
-        {/* Catch all - show landing page if not authenticated, else dashboard */}
-        <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />} />
+        {/* Catch-all */}
+        <Route
+          path="*"
+          element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />}
+        />
       </Routes>
     </BrowserRouter>
   );
@@ -88,13 +103,25 @@ function Layout() {
               >
                 Budget
               </Link>
+              <Link 
+                to="/profile" 
+                className="text-slate-300 hover:text-amber-400 transition-colors"
+              >
+                Profile
+              </Link>
             </div>
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-400">
-                {user?.username || 'User'}
-              </span>
+              {user && <UserAvatar user={user} size="w-10 h-10" />}
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-amber-400">
+                  {user?.first_name || user?.username || 'User'}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {user?.email}
+                </span>
+              </div>
               <button
                 onClick={logout}
                 className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg transition-colors font-medium"
