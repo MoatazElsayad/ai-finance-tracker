@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
-import { RefreshCw, Target, DollarSign, Wallet, Activity, HeartPulse, Bot, Trash2, Pencil } from 'lucide-react';
+import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
