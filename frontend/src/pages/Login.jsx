@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, register } from '../api';
-import { AlertTriangle, Bot, PieChartIcon, Target } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
@@ -61,7 +60,7 @@ function Login() {
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-sm border border-red-500/30 rounded-xl text-red-300 text-sm">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-400" strokeWidth={2} />
+                <span className="text-lg">⚠️</span>
                 <span>{error}</span>
               </div>
             </div>
@@ -110,7 +109,7 @@ function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
-                placeholder="Hide and Don't share"
+                placeholder="••••••••"
                 required
               />
             </div>
@@ -127,7 +126,7 @@ function Login() {
                   <span>Please wait...</span>
                 </>
               ) : (
-                <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                <span>{isLogin ? '🚀 Sign In' : '✨ Create Account'}</span>
               )}
             </button>
           </form>
@@ -161,22 +160,17 @@ function Login() {
 
         {/* Features Preview */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          {/* AI Insights */}
-          <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-3">
-            <Bot className="w-8 h-8 text-amber-400" strokeWidth={2} />
-            <p className="text-sm font-medium text-slate-300">AI Insights</p>
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <span className="text-2xl mb-2 block">🤖</span>
+            <p className="text-xs text-slate-400">AI Insights</p>
           </div>
-
-          {/* Smart Charts */}
-          <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-3">
-            <PieChartIcon className="w-8 h-8 text-amber-400" strokeWidth={2} />
-            <p className="text-sm font-medium text-slate-300">Smart Charts</p>
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <span className="text-2xl mb-2 block">📊</span>
+            <p className="text-xs text-slate-400">Smart Charts</p>
           </div>
-
-          {/* Budget Tracking */}
-          <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-3">
-            <Target className="w-8 h-8 text-amber-400" strokeWidth={2} />
-            <p className="text-sm font-medium text-slate-300">Budget Tracking</p>
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <span className="text-2xl mb-2 block">🎯</span>
+            <p className="text-xs text-slate-400">Budget Tracking</p>
           </div>
         </div>
       </div>
