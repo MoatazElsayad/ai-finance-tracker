@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -804,7 +804,7 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <span className="text-amber-400">📊</span>
+              <LayoutDashboard className="w-11 h-11 text-amber-400" strokeWidth={2} />
               Financial Overview
             </h2>
             <p className="text-xl text-slate-400">Income, expenses, and spending breakdown</p>
@@ -914,7 +914,7 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <span className="text-amber-400">📈</span>
+              <TrendingUp className="w-11 h-11 text-blue-400" strokeWidth={2} />
               Spending Trends
             </h2>
             <p className="text-xl text-slate-400">Daily patterns and weekly insights</p>
@@ -1033,7 +1033,7 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <span className="text-amber-400">⚖️</span>
+              <Scale className="w-11 h-11 text-amber-400" strokeWidth={2} />
               Progress & Comparison
             </h2>
             <p className="text-xl text-slate-400">Monthly comparison and savings growth</p>
@@ -1211,9 +1211,9 @@ function Dashboard() {
         
         <div className="relative p-8">
           <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
               <div className="p-3">
-                <Bot className="w-10 h-10 text-amber-400" strokeWidth={2} />
+                <Bot className="w-11 h-11 text-amber-400" strokeWidth={1.8} />
               </div>
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
@@ -1321,8 +1321,8 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <span className="text-amber-400">📝</span>
-            Recent Activity
+              <History className="w-10 h-10 text-slate-400" strokeWidth={1.8} />
+              Recent Activity
             </h2>
             <p className="text-xl text-slate-400">Your latest transactions</p>
           </div>
@@ -1330,7 +1330,7 @@ function Dashboard() {
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-slate-700">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <span className="text-amber-400">💳</span>
+                <ArrowLeftRight className="w-7 h-7 text-amber-400" strokeWidth={1.8} />
                 Recent Transactions
           </h2>
           <a
