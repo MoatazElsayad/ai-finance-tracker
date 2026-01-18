@@ -5,8 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { clearInsightsCache } from '../utils/cache';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus } from 'lucide-react';
-import CategoryIconPicker from '../components/CategoryIconPicker';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
@@ -16,8 +15,6 @@ function Transactions() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showCustomCategoryCreator, setShowCustomCategoryCreator] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showIconPicker, setShowIconPicker] = useState(false);
-  const [selectedCategoryIcon, setSelectedCategoryIcon] = useState('');
 
   // Form state
   const [categoryId, setCategoryId] = useState('');
@@ -229,7 +226,7 @@ function Transactions() {
       {showSuccessToast && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in">
           <div className="bg-green-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-green-400/30">
-            <span className="text-xl">✓</span>
+            <Check className="w-8 h-8 text-white" strokeWidth={1.8} />
             <span className="font-medium">Transaction saved successfully!</span>
           </div>
         </div>
@@ -238,7 +235,9 @@ function Transactions() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-          <span className="text-amber-400">💳</span>
+          <div className="p-2 bg-amber-400/20 rounded-lg">
+            <CreditCard className="w-8 h-8 text-amber-400" />
+          </div>
           Transactions
         </h1>
         <p className="text-slate-400 text-lg">Manage your income and expenses</p>
@@ -250,7 +249,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Income</span>
             <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center border border-green-500/30">
-              <span className="text-2xl">📈</span>
+              <TrendingUp className="w-6 h-6 text-green-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-green-400">
@@ -262,7 +261,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Expenses</span>
             <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center border border-red-500/30">
-              <span className="text-2xl">📉</span>
+              <TrendingDown className="w-6 h-6 text-red-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-red-400">
@@ -274,7 +273,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Net Balance</span>
             <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center border border-amber-500/30">
-              <span className="text-2xl">💰</span>
+              <DollarSign className="w-6 h-6 text-amber-400" />
             </div>
           </div>
           <p className={`text-3xl font-bold ${totals.net >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
@@ -286,7 +285,7 @@ function Transactions() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Count</span>
             <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
-              <span className="text-2xl">📊</span>
+              <BarChart3 className="w-6 h-6 text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-400">{totals.count}</p>
@@ -354,7 +353,7 @@ function Transactions() {
                       : 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700'
                   }`}
                 >
-                  <span className="text-2xl mb-2 block">💰</span>
+                  <DollarSign className="w-6 h-6 mb-2 mx-auto" />
                   Income
                 </button>
               </div>
@@ -391,38 +390,19 @@ function Transactions() {
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Category
                 </label>
-                <div className="flex gap-2">
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="flex-1 px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
-                    required
-                  >
-                    <option value="">Select category</option>
-                    {filteredCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setShowIconPicker(true)}
-                    className="px-4 py-3 bg-slate-700/50 hover:bg-slate-600 border-2 border-slate-600 hover:border-amber-400/50 rounded-xl text-2xl transition-all"
-                    title="Pick category icon"
-                  >
-                    {selectedCategoryIcon || '😀'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomCategoryCreator(true)}
-                    className="px-4 py-3 bg-slate-700/50 hover:bg-slate-600 border-2 border-slate-600 hover:border-amber-400/50 rounded-xl text-white font-medium transition-all flex items-center gap-2"
-                    title="Create custom category"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden sm:inline">Create</span>
-                  </button>
-                </div>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                  required
+                >
+                  <option value="">Select category</option>
+                  {filteredCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Amount */}
@@ -491,18 +471,18 @@ function Transactions() {
               >
                 Cancel
               </button>
+              <button
+                type="button"
+                onClick={() => setShowCustomCategoryCreator(true)}
+                className="px-6 py-3 bg-slate-700/50 text-slate-300 rounded-xl font-medium hover:bg-slate-700 transition-all flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                New Category
+              </button>
             </div>
           </form>
         </div>
       )}
-
-      {/* Icon Picker Modal */}
-      <CategoryIconPicker
-        isOpen={showIconPicker}
-        onClose={() => setShowIconPicker(false)}
-        onSelect={(icon) => setSelectedCategoryIcon(icon)}
-        type={isExpense ? 'expense' : 'income'}
-      />
 
       {/* Custom Category Creator Modal */}
       <CustomCategoryCreator
@@ -522,7 +502,7 @@ function Transactions() {
           <div className="lg:col-span-2">
             <label className="block text-sm font-medium text-slate-300 mb-2">Search</label>
             <div className="relative">
-              <span className="absolute left-3 top-3 text-slate-400">🔍</span>
+              <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
@@ -628,7 +608,7 @@ function Transactions() {
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl border border-slate-700 overflow-hidden">
         <div className="p-6 bg-slate-700/30 border-b border-slate-600">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span className="text-amber-400">📊</span>
+            <BarChart3 className="w-5 h-5 text-amber-400" />
             Transactions ({filteredTransactions.length})
           </h2>
         </div>
@@ -636,7 +616,7 @@ function Transactions() {
         {filteredTransactions.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-block p-6 bg-slate-700/50 rounded-full mb-4">
-              <span className="text-5xl">📝</span>
+              <FileText className="w-12 h-12 text-slate-400" />
             </div>
             <p className="text-slate-400 text-lg mb-2">No transactions found</p>
             <p className="text-slate-500 text-sm">

@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, register } from '../api';
+import { AlertTriangle, Bot, PieChartIcon, Target } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
@@ -211,17 +212,22 @@ function Login() {
 
         {/* Features Preview */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
-            <span className="text-2xl mb-2 block">🤖</span>
-            <p className="text-xs text-slate-400">AI Insights</p>
+          {/* AI Insights */}
+          <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-3">
+            <Bot className="w-8 h-8 text-amber-400" strokeWidth={2} />
+            <p className="text-sm font-medium text-slate-300">AI Insights</p>
           </div>
-          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
-            <span className="text-2xl mb-2 block">📊</span>
-            <p className="text-xs text-slate-400">Smart Charts</p>
+
+          {/* Smart Charts */}
+          <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-3">
+            <PieChartIcon className="w-8 h-8 text-amber-400" strokeWidth={2} />
+            <p className="text-sm font-medium text-slate-300">Smart Charts</p>
           </div>
-          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
-            <span className="text-2xl mb-2 block">🎯</span>
-            <p className="text-xs text-slate-400">Budget Tracking</p>
+
+          {/* Budget Tracking */}
+          <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-3">
+            <Target className="w-8 h-8 text-amber-400" strokeWidth={2} />
+            <p className="text-sm font-medium text-slate-300">Budget Tracking</p>
           </div>
         </div>
       </div>

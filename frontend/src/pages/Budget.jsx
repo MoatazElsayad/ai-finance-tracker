@@ -4,9 +4,9 @@
  */
 import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
-import { generateAISummary } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
+import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -75,21 +75,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   }
   return null;
 };
-
-const ALL_AI_MODELS = [
-    "openai/gpt-oss-120b:free",
-    "google/gemini-2.0-flash-exp:free",
-    "google/gemma-3-27b-it:free",
-    "deepseek/deepseek-r1-0528:free",
-    "tngtech/deepseek-r1t2-chimera:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "mistralai/devstral-2512:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "qwen/qwen-2.5-vl-7b-instruct:free",
-    "xiaomi/mimo-v2-flash:free",
-    "tngtech/tng-r1t-chimera:free",
-];
 
 // Get model info (name and icon)
 const getModelInfo = (modelId) => {
@@ -635,7 +620,7 @@ function BudgetPlanning() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Budget</span>
                 <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">🎯</span>
+                  <Target className="w-7 h-7 text-blue-400" strokeWidth={2} />
                 </div>
               </div>
               <p className="text-3xl font-bold text-blue-400 mb-2">
@@ -648,7 +633,7 @@ function BudgetPlanning() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Spent</span>
                 <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">💸</span>
+                  <DollarSign className="w-7 h-7 text-red-400" strokeWidth={2} />
                 </div>
               </div>
               <p className="text-3xl font-bold text-red-400 mb-2">
@@ -661,7 +646,7 @@ function BudgetPlanning() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Remaining</span>
                 <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">💰</span>
+                  <Wallet className="w-7 h-7 text-green-400" strokeWidth={2} />
                 </div>
               </div>
               <p className="text-3xl font-bold text-green-400 mb-2">
@@ -674,7 +659,7 @@ function BudgetPlanning() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Budget Health</span>
                 <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📊</span>
+                  <HeartPulse className="w-7 h-7 text-amber-400" strokeWidth={1.7} />
                 </div>
               </div>
               <p className={`text-3xl font-bold mb-2 ${totalActual > totalBudgeted ? 'text-red-400' : 'text-green-400'}`}>
@@ -724,8 +709,8 @@ function BudgetPlanning() {
               </div>
             )}
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-400/20 rounded-lg">
+            <div className="flex items-center gap-1 mb-4">
+              <div className="p-2">
                 {budgetInsightsLoading && currentTryingBudgetModel ? (
                   (() => {
                     const modelInfo = getModelInfo(currentTryingBudgetModel);
@@ -742,7 +727,7 @@ function BudgetPlanning() {
                 ) : budgetInsightsLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-amber-400 border-t-transparent"></div>
                 ) : (
-                <span className="text-xl">🤖</span>
+                <Bot className="w-7 h-7 text-amber-400" strokeWidth={1.5} />
                 )}
               </div>
               <h3 className="text-lg font-bold text-white">AI Budget Insights</h3>
@@ -767,6 +752,31 @@ function BudgetPlanning() {
                 <p className="text-slate-400">Loading budget insights...</p>
               )}
             </div>
+
+            {/* Regenerate Button - bottom right */}
+            <button
+              onClick={() => {
+                clearInsightsCache();           // Force fresh generation
+                generateBudgetInsights();       // Trigger the full regeneration flow
+              }}
+              disabled={budgetInsightsLoading}
+              title="Regenerate AI insights"
+              className={`
+                absolute bottom-4 right-4
+                p-2.5 rounded-full
+                bg-slate-700/80 hover:bg-slate-600/90
+                text-slate-300 hover:text-amber-400
+                transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${budgetInsightsLoading ? 'animate-pulse' : 'hover:rotate-180 hover:scale-110'}
+                focus:outline-none focus:ring-2 focus:ring-amber-400/50
+              `}
+            >
+              <RefreshCw 
+                className="w-5 h-5" 
+                strokeWidth={2.2}
+              />
+            </button>
           </div>
         </div>
       </section>
@@ -776,7 +786,7 @@ function BudgetPlanning() {
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <span className="text-amber-400">📊</span>
+              <Wallet className="w-11 h-11 text-amber-400" strokeWidth={1.8} />
               Budget vs Actual Spending
             </h2>
             <p className="text-xl text-slate-400">Track your financial discipline</p>
@@ -1021,13 +1031,13 @@ function BudgetPlanning() {
                             onClick={() => handleEditBudget(budget)}
                             className="p-1 text-slate-400 hover:text-amber-400 transition-colors"
                           >
-                            ✏️
+                            <Pencil className="w-5 h-5" strokeWidth={2.2} />
                           </button>
                           <button
                             onClick={() => handleDeleteBudget(budget.id)}
                             className="p-1 text-slate-400 hover:text-red-400 transition-colors"
                           >
-                            🗑️
+                            <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300 transition-colors" strokeWidth={2} />
                           </button>
                         </div>
                       </td>
