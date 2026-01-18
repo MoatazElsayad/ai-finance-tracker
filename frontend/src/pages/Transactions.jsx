@@ -299,7 +299,7 @@ function Transactions() {
             onClick={() => setShowForm(true)}
             className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2"
           >
-            <span className="text-xl">➕</span>
+            <CirclePlus className="w-7 h-7" strokeWidth={2} />
             Add New Transaction
           </button>
         </div>
