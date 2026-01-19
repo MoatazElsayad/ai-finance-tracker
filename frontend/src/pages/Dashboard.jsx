@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser } from '../api';
+import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
 
@@ -41,21 +42,6 @@ const CHART_COLORS = {
   neutral: '#64748b',    // Neutral gray for backgrounds
 };
 
-const ALL_AI_MODELS = [
-    "openai/gpt-oss-120b:free",
-    "google/gemini-2.0-flash-exp:free",
-    "google/gemma-3-27b-it:free",
-    "deepseek/deepseek-r1-0528:free",
-    "tngtech/deepseek-r1t2-chimera:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "mistralai/devstral-2512:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "qwen/qwen-2.5-vl-7b-instruct:free",
-    "xiaomi/mimo-v2-flash:free",
-    "tngtech/tng-r1t-chimera:free",
-];
-
 function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -69,10 +55,12 @@ function Dashboard() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
+  const { theme } = useTheme();
 
   useEffect(() => {
     loadDashboard();
-  }, [selectedMonth]);
+  }, [selectedMonth, viewMode]);
 
   useEffect(() => {
     // Load user information
@@ -87,16 +75,85 @@ function Dashboard() {
     loadUser();
   }, []);
 
+  // Get date range based on view mode
+  const getDateRange = () => {
+    if (viewMode === 'monthly') {
+      // Monthly: from 1st to last day of selected month
+      const startDate = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+      const endDate = new Date(selectedMonth.year, selectedMonth.month, 0);
+      return { startDate, endDate };
+    } else if (viewMode === 'yearly') {
+      // Yearly: entire year
+      const startDate = new Date(selectedMonth.year, 0, 1);
+      const endDate = new Date(selectedMonth.year, 11, 31);
+      return { startDate, endDate };
+    } else {
+      // Overall: all time (very far past to future)
+      return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+    }
+  };
+
   const loadDashboard = async () => {
     setLoading(true);
     try {
-      const [txns, stats] = await Promise.all([
-        getTransactions(),
-        getMonthlyAnalytics(selectedMonth.year, selectedMonth.month)
-      ]);
+      const txns = await getTransactions();
+
+      // Calculate analytics based on view mode
+      let periodStart, periodEnd;
+      if (viewMode === 'monthly') {
+        periodStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+        periodEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
+      } else if (viewMode === 'yearly') {
+        // Yearly view
+        periodStart = new Date(selectedMonth.year, 0, 1);
+        periodEnd = new Date(selectedMonth.year, 11, 31);
+      } else {
+        // Overall: all transactions
+        periodStart = new Date(1900, 0, 1);
+        periodEnd = new Date(2100, 11, 31);
+      }
+
+      // Filter transactions for the period
+      const periodTransactions = txns.filter(txn => {
+        const txnDate = new Date(txn.date);
+        return txnDate >= periodStart && txnDate <= periodEnd;
+      });
+
+      // Calculate totals
+      const totalIncome = periodTransactions
+        .filter(t => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const totalExpenses = Math.abs(
+        periodTransactions
+          .filter(t => t.amount < 0)
+          .reduce((sum, t) => sum + t.amount, 0)
+      );
+
+      const netSavings = totalIncome - totalExpenses;
+      const savingsRateValue = totalIncome > 0 ? ((netSavings / totalIncome) * 100) : 0;
+
+      // Get category breakdown for the period
+      const categoryBreakdown = {};
+      periodTransactions
+        .filter(t => t.amount < 0)
+        .forEach(t => {
+          const category = t.category_name || 'Uncategorized';
+          categoryBreakdown[category] = (categoryBreakdown[category] || 0) + Math.abs(t.amount);
+        });
+
+      const categoryBreakdownArray = Object.entries(categoryBreakdown)
+        .map(([name, amount]) => ({ name, amount }))
+        .sort((a, b) => b.amount - a.amount);
 
       setTransactions(txns);
-      setAnalytics(stats);
+      setAnalytics({
+        total_income: totalIncome,
+        total_expenses: totalExpenses,
+        net_savings: netSavings,
+        savings_rate: savingsRateValue,
+        category_breakdown: categoryBreakdownArray
+      });
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {
@@ -226,120 +283,6 @@ function Dashboard() {
         setAiLoading(false);
       }
     }
-
-    /*
-    // SSE CODE - COMMENTED OUT FOR DEBUGGING
-    try {
-      // Use Server-Sent Events for real-time progress
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        console.error('❌ No token found in localStorage');
-        alert('Please log in again');
-        setAiLoading(false);
-        return;
-      }
-
-      const eventSourceUrl = `${apiUrl}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
-
-      console.log('🔗 Attempting SSE connection to:', eventSourceUrl);
-      console.log('📝 Token exists:', !!token, 'Length:', token.length);
-
-      const eventSource = new EventSource(eventSourceUrl);
-      let hasReceivedMessage = false;
-
-      // Timeout for SSE connection
-      const timeout = setTimeout(() => {
-        if (!hasReceivedMessage) {
-          console.warn('SSE timeout, falling back to regular API');
-          eventSource.close();
-          fallbackToRegularAPI();
-        }
-      }, 5000); // 5 second timeout
-
-      const fallbackToRegularAPI = async () => {
-        try {
-          console.log('Using fallback API call');
-          const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
-          setAiSummary(result.summary);
-          setAiModelUsed(result.model_used || null);
-        } catch (fallbackError) {
-          console.error('Fallback API also failed:', fallbackError);
-          alert(fallbackError.message);
-    } finally {
-      setAiLoading(false);
-    }
-      };
-
-      eventSource.onmessage = (event) => {
-        hasReceivedMessage = true;
-        clearTimeout(timeout);
-
-        console.log('SSE Message received:', event.data);
-        try {
-          const data = JSON.parse(event.data);
-
-          switch (data.type) {
-            case 'trying_model':
-              console.log('Trying model:', data.model);
-              setCurrentTryingModel(data.model);
-              break;
-            case 'model_failed':
-              console.log(`Model ${data.model} failed: ${data.reason}`);
-              // Could show failed models differently if needed
-              break;
-            case 'success':
-              console.log('AI Success with model:', data.model);
-              setAiSummary(data.summary);
-              setAiModelUsed(data.model);
-              setAiLoading(false);
-              eventSource.close();
-              break;
-            case 'error':
-              console.log('AI Error:', data.message);
-              // Show "all models busy" message in the card instead of alert
-              setAiSummary(`**All Models Busy**\n\n${data.message}\n\nPlease try again in a few minutes.`);
-              setAiLoading(false);
-              eventSource.close();
-              break;
-          }
-        } catch (e) {
-          console.error('Failed to parse SSE data:', event.data, e);
-        }
-      };
-
-      eventSource.onopen = () => {
-        console.log('SSE Connection opened');
-      };
-
-      eventSource.onerror = (error) => {
-        console.error('SSE Error:', error);
-        console.error('SSE ReadyState:', eventSource.readyState);
-        clearTimeout(timeout);
-        if (!hasReceivedMessage) {
-          console.warn('SSE failed on connection, using fallback');
-          fallbackToRegularAPI();
-        } else {
-          setAiLoading(false);
-        }
-        eventSource.close();
-      };
-
-    } catch (error) {
-      // Fallback to regular API call if SSE setup fails
-      console.warn('SSE setup failed, falling back to regular API call');
-      try {
-        const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
-        setAiSummary(result.summary);
-        setAiModelUsed(result.model_used || null);
-      } catch (fallbackError) {
-        alert(fallbackError.message);
-      } finally {
-        setAiLoading(false);
-      }
-    }
-    */
   };
 
   // Get model info (name and icon)
@@ -353,25 +296,25 @@ function Dashboard() {
       return {
         name: modelLower.includes('oss') ? 'GPT-OSS' : 'ChatGPT-4o',
         logo: `${lobeBase}/openai.png`,
-        color: 'emerald'
+        color: 'slate-100'
       };
     } else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
       return {
         name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
         logo: modelLower.includes('gemma') ? `${lobeBase}/gemma-color.png` : `${lobeBase}/gemini-color.png`,
-        color: 'blue'
+        color: 'blue-700'
       };
     } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
       return {
         name: modelLower.includes('chimera') ? 'DeepSeek Chimera' : 'DeepSeek R1',
         logo: `${lobeBase}/deepseek-color.png`,
-        color: 'cyan'
+        color: 'blue'
       };
     } else if (modelLower.includes('meta') || modelLower.includes('llama')) {
       return {
         name: 'Llama 3.3',
         logo: `${lobeBase}/meta-color.png`,
-        color: 'purple'
+        color: 'cyan'
       };
     } else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
       return {
@@ -401,7 +344,19 @@ function Dashboard() {
       return {
         name: 'TNG Chimera',
         logo: `${lobeBase}/tngtech.png`,
-        color: 'yellow'
+        color: 'emerald'
+      };
+    } else if (modelLower.includes('qwen') && modelLower.includes('coder')) {
+      return {
+        name: 'Qwen Coder 3',
+        logo: `${lobeBase}/qwen-color.png`,
+        color: 'pink'
+      };
+    } else if (modelLower.includes('glm') || modelLower.includes('z-ai')) {
+      return {
+        name: 'GLM 4.5 Air',
+        logo: `${lobeBase}/zhipu-color.png`,
+        color: 'blue-600'
       };
     }
 
@@ -431,6 +386,10 @@ function Dashboard() {
     });
   };
 
+  const changeYear = (offset) => {
+    setSelectedMonth(prev => ({ ...prev, year: prev.year + offset }));
+  };
+
   const formatAISummary = (text) => {
     if (!text) return null;
     const sections = text.split(/\*\*(.*?)\*\*/g);
@@ -448,7 +407,14 @@ function Dashboard() {
         currentSection = section;
         sectionContent = [];
       } else if (section.trim() && currentSection) {
-        sectionContent.push(section.trim());
+        let content = section.trim();
+        // Remove leading colon if present (from format like "**Title**: content")
+        if (content.startsWith(':')) {
+          content = content.substring(1).trim();
+        }
+        if (content) {
+          sectionContent.push(content);
+        }
       }
     });
     
@@ -457,68 +423,75 @@ function Dashboard() {
       formattedSections.push({ title: currentSection, content: sectionContent.join('\n') });
     }
     
-    const getSectionIcon = (title) => {
-      if (title.includes('Health') || title.includes('Financial Health')) return '💎';
-      if (title.includes('Win') || title.includes('Success') || title.includes('Positive')) return '✅';
-      if (title.includes('Concern') || title.includes('Warning') || title.includes('Alert')) return '⚠️';
-      if (title.includes('Action') || title.includes('Recommendation') || title.includes('Suggestion')) return '🎯';
-      if (title.includes('Summary') || title.includes('Overview')) return '📊';
-      if (title.includes('Trend') || title.includes('Pattern')) return '📈';
-      return '💡';
+    const getSectionAccent = (title) => {
+      if (title.includes('Health') || title.includes('Financial Health')) return 'emerald';
+      if (title.includes('Win') || title.includes('Success') || title.includes('Positive')) return 'green';
+      if (title.includes('Concern') || title.includes('Warning') || title.includes('Alert')) return 'red';
+      if (title.includes('Action') || title.includes('Recommendation') || title.includes('Suggestion')) return 'amber';
+      if (title.includes('Summary') || title.includes('Overview')) return 'blue';
+      if (title.includes('Trend') || title.includes('Pattern')) return 'cyan';
+      return 'slate';
     };
     
-    const getSectionColor = (title) => {
-      if (title.includes('Health') || title.includes('Financial Health')) return 'from-emerald-500/20 to-green-500/20 border-emerald-500/30';
-      if (title.includes('Win') || title.includes('Success') || title.includes('Positive')) return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
-      if (title.includes('Concern') || title.includes('Warning') || title.includes('Alert')) return 'from-red-500/20 to-rose-500/20 border-red-500/30';
-      if (title.includes('Action') || title.includes('Recommendation') || title.includes('Suggestion')) return 'from-amber-500/20 to-yellow-500/20 border-amber-500/30';
-      if (title.includes('Summary') || title.includes('Overview')) return 'from-blue-500/20 to-indigo-500/20 border-blue-500/30';
-      return 'from-purple-500/20 to-pink-500/20 border-purple-500/30';
+    const accentColors = {
+      emerald: { border: 'border-emerald-500/50', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+      green: { border: 'border-green-500/50', text: 'text-green-400', bg: 'bg-green-500/10' },
+      red: { border: 'border-red-500/50', text: 'text-red-400', bg: 'bg-red-500/10' },
+      amber: { border: 'border-amber-500/50', text: 'text-amber-400', bg: 'bg-amber-500/10' },
+      blue: { border: 'border-blue-500/50', text: 'text-blue-400', bg: 'bg-blue-500/10' },
+      cyan: { border: 'border-cyan-500/50', text: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+      slate: { border: 'border-slate-500/30', text: 'text-slate-300', bg: 'bg-slate-500/5' }
     };
     
     return (
-      <div className="space-y-6">
+      <div className={`border ${theme === 'dark' ? 'border-slate-600/50 bg-slate-700/20' : 'border-slate-300/50 bg-slate-100/30'} rounded-lg p-6 space-y-6`}>
         {formattedSections.map((section, idx) => {
-          const icon = getSectionIcon(section.title);
-          const colorClass = getSectionColor(section.title);
+          const accentKey = getSectionAccent(section.title);
+          const colors = accentColors[accentKey];
           const hasList = section.content.includes('•') || section.content.includes('-');
           
-            return (
+          return (
             <div
               key={idx}
-              className={`bg-gradient-to-br ${colorClass} rounded-xl p-6 border backdrop-blur-sm shadow-lg hover:shadow-xl transition-all`}
+              className={idx !== formattedSections.length - 1 ? `pb-6 ${theme === 'dark' ? 'border-b border-slate-600/30' : 'border-b border-slate-300/30'}` : ''}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl">
-                  {icon}
-                </div>
-                <h4 className="font-bold text-white text-xl">
-                  {section.title}
+              {/* Section Title */}
+              <h4 className={`font-semibold text-base ${colors.text} mb-3 flex items-center gap-2`}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{
+                  backgroundColor: colors.text.includes('emerald') ? '#10b981' :
+                                   colors.text.includes('green') ? '#22c55e' :
+                                   colors.text.includes('red') ? '#ef4444' :
+                                   colors.text.includes('amber') ? '#f59e0b' :
+                                   colors.text.includes('blue') ? '#3b82f6' :
+                                   colors.text.includes('cyan') ? '#06b6d4' :
+                                   '#cbd5e1'
+                }}></span>
+                {section.title}
               </h4>
-              </div>
               
-              <div className="pl-12">
+              {/* Content */}
+              <div className="pl-5">
                 {hasList ? (
-                  <ul className="space-y-3">
+                  <ul className="space-y-2">
                     {section.content.split('\n').filter(line => line.trim()).map((line, i) => {
                       if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
                         const cleanLine = line.replace(/^[•\-]\s*/, '').trim();
                         return (
-                          <li key={i} className="flex items-start gap-3 text-slate-200 leading-relaxed">
-                            <span className="text-amber-400 font-bold mt-1 flex-shrink-0">▸</span>
+                          <li key={i} className={`flex items-start gap-3 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} leading-relaxed text-sm`}>
+                            <span className={`${colors.text} font-semibold mt-0.5 flex-shrink-0`}>→</span>
                             <span className="flex-1">{cleanLine}</span>
                           </li>
                         );
                       }
                       return (
-                        <p key={i} className="text-slate-300 leading-relaxed mb-2">
+                        <p key={i} className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} leading-relaxed text-sm`}>
                           {line.trim()}
                         </p>
                       );
-                  })}
-                </ul>
+                    })}
+                  </ul>
                 ) : (
-                  <p className="text-slate-200 leading-relaxed text-base">
+                  <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} leading-relaxed text-sm`}>
                     {section.content}
                   </p>
                 )}
@@ -532,10 +505,10 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-[#0a0e27]">
+      <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-slate-400 text-lg">Loading financial data...</p>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg`}>Loading financial data...</p>
         </div>
       </div>
     );
@@ -559,102 +532,222 @@ function Dashboard() {
   // Recent 5 transactions
   const recentTransactions = transactions.slice(0, 5);
 
-  // Daily spending trend (last 30 days)
+  // Daily spending trend (monthly) or monthly spending (yearly) or yearly spending (overall)
   const getDailySpendingData = () => {
-    const dailyData = {};
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    if (viewMode === 'monthly') {
+      // Monthly view: show daily breakdown for last 14 days in the month
+      const dailyData = {};
+      const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+      const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
 
-    transactions
-      .filter(txn => {
-        const txnDate = new Date(txn.date);
-        return txnDate >= thirtyDaysAgo && txnDate <= today && txn.amount < 0;
-      })
-      .forEach(txn => {
-        const date = new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        dailyData[date] = (dailyData[date] || 0) + Math.abs(txn.amount);
-      });
+      transactions
+        .filter(txn => {
+          const txnDate = new Date(txn.date);
+          return txnDate >= monthStart && txnDate <= monthEnd && txn.amount < 0;
+        })
+        .forEach(txn => {
+          const date = new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          dailyData[date] = (dailyData[date] || 0) + Math.abs(txn.amount);
+        });
 
-    return Object.entries(dailyData)
-      .map(([date, amount]) => ({ date, amount }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-      .slice(-14);
+      return Object.entries(dailyData)
+        .map(([date, amount]) => ({ date, amount }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(-14);
+    } else if (viewMode === 'yearly') {
+      // Yearly view: show monthly breakdown for the entire year
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyData = monthNames.map(month => ({ date: month, amount: 0 }));
+
+      transactions
+        .filter(txn => {
+          const txnDate = new Date(txn.date);
+          return txnDate.getFullYear() === selectedMonth.year && txn.amount < 0;
+        })
+        .forEach(txn => {
+          const monthIndex = new Date(txn.date).getMonth();
+          monthlyData[monthIndex].amount += Math.abs(txn.amount);
+        });
+
+      return monthlyData;
+    } else {
+      // Overall view: show yearly breakdown for all years
+      const yearlyData = {};
+      transactions
+        .filter(txn => txn.amount < 0)
+        .forEach(txn => {
+          const year = new Date(txn.date).getFullYear();
+          yearlyData[year] = (yearlyData[year] || 0) + Math.abs(txn.amount);
+        });
+
+      return Object.entries(yearlyData)
+        .map(([date, amount]) => ({ date: date.toString(), amount }))
+        .sort((a, b) => parseInt(a.date) - parseInt(b.date));
+    }
   };
 
-  // Weekly spending pattern
+  // Weekly pattern (monthly) or quarterly pattern (yearly) or monthly pattern (overall)
   const getWeeklyPatternData = () => {
-    const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const weeklyData = dayOfWeek.map(day => ({ day, amount: 0 }));
+    if (viewMode === 'monthly') {
+      // Monthly view: show weekly breakdown
+      const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weeklyData = dayOfWeek.map(day => ({ day, amount: 0 }));
 
-    transactions
-      .filter(txn => {
-        const txnDate = new Date(txn.date);
-        const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
-        const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
-        return txnDate >= monthStart && txnDate <= monthEnd && txn.amount < 0;
-      })
-      .forEach(txn => {
-        const dayIndex = new Date(txn.date).getDay();
-        weeklyData[dayIndex].amount += Math.abs(txn.amount);
-      });
+      transactions
+        .filter(txn => {
+          const txnDate = new Date(txn.date);
+          const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+          const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
+          return txnDate >= monthStart && txnDate <= monthEnd && txn.amount < 0;
+        })
+        .forEach(txn => {
+          const dayIndex = new Date(txn.date).getDay();
+          weeklyData[dayIndex].amount += Math.abs(txn.amount);
+        });
 
-    return weeklyData;
+      return weeklyData;
+    } else if (viewMode === 'yearly') {
+      // Yearly view: show quarterly breakdown
+      const quarters = [
+        { quarter: 'Q1', amount: 0 },
+        { quarter: 'Q2', amount: 0 },
+        { quarter: 'Q3', amount: 0 },
+        { quarter: 'Q4', amount: 0 }
+      ];
+
+      transactions
+        .filter(txn => {
+          const txnDate = new Date(txn.date);
+          return txnDate.getFullYear() === selectedMonth.year && txn.amount < 0;
+        })
+        .forEach(txn => {
+          const monthIndex = new Date(txn.date).getMonth();
+          const quarterIndex = Math.floor(monthIndex / 3);
+          quarters[quarterIndex].amount += Math.abs(txn.amount);
+        });
+
+      return quarters;
+    } else {
+      // Overall view: show monthly breakdown across all years
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyData = monthNames.map(month => ({ day: month, amount: 0 }));
+
+      transactions
+        .filter(txn => txn.amount < 0)
+        .forEach(txn => {
+          const monthIndex = new Date(txn.date).getMonth();
+          monthlyData[monthIndex].amount += Math.abs(txn.amount);
+        });
+
+      return monthlyData;
+    }
   };
 
-  // Cumulative net savings trend
+  // Cumulative net savings trend (daily for monthly, monthly for yearly)
   const getCumulativeSavingsData = () => {
-    const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
-    const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
-    
-    const dailySavings = {};
-    let cumulative = 0;
+    if (viewMode === 'monthly') {
+      // Monthly view: daily cumulative
+      const monthStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+      const monthEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
+      
+      const dailySavings = {};
+      let cumulative = 0;
 
-    transactions
-      .filter(txn => {
-        const txnDate = new Date(txn.date);
-        return txnDate >= monthStart && txnDate <= monthEnd;
-      })
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-      .forEach(txn => {
-        const date = new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        cumulative += txn.amount;
-        dailySavings[date] = cumulative;
-      });
+      transactions
+        .filter(txn => {
+          const txnDate = new Date(txn.date);
+          return txnDate >= monthStart && txnDate <= monthEnd;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .forEach(txn => {
+          const date = new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          cumulative += txn.amount;
+          dailySavings[date] = cumulative;
+        });
 
-    return Object.entries(dailySavings)
-      .map(([date, savings]) => ({ date, savings: Math.max(0, savings) }))
-      .slice(-14);
+      return Object.entries(dailySavings)
+        .map(([date, savings]) => ({ date, savings: Math.max(0, savings) }))
+        .slice(-14);
+    } else {
+      // Yearly view: monthly cumulative
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlySavings = {};
+      let cumulative = 0;
+
+      for (let month = 0; month < 12; month++) {
+        const monthStart = new Date(selectedMonth.year, month, 1);
+        const monthEnd = new Date(selectedMonth.year, month + 1, 0);
+        let monthTotal = 0;
+
+        transactions
+          .filter(txn => {
+            const txnDate = new Date(txn.date);
+            return txnDate >= monthStart && txnDate <= monthEnd;
+          })
+          .forEach(txn => {
+            monthTotal += txn.amount;
+          });
+
+        cumulative += monthTotal;
+        monthlySavings[monthNames[month]] = cumulative;
+      }
+
+      return Object.entries(monthlySavings)
+        .map(([date, savings]) => ({ date, savings: Math.max(0, savings) }));
+    }
   };
 
-  // Monthly comparison (current vs previous month)
+  // Comparison data (monthly vs previous for monthly view, quarters for yearly)
   const getMonthlyComparisonData = () => {
-    const prevMonth = selectedMonth.month === 1 ? { year: selectedMonth.year - 1, month: 12 } : { year: selectedMonth.year, month: selectedMonth.month - 1 };
-    
-    const currentMonthIncome = analytics?.total_income || 0;
-    const currentMonthExpenses = analytics?.total_expenses || 0;
-    
-    const prevMonthStart = new Date(prevMonth.year, prevMonth.month - 1, 1);
-    const prevMonthEnd = new Date(prevMonth.year, prevMonth.month, 0);
-    
-    let prevMonthIncome = 0;
-    let prevMonthExpenses = 0;
-    
-    transactions.forEach(txn => {
-      const txnDate = new Date(txn.date);
-      if (txnDate >= prevMonthStart && txnDate <= prevMonthEnd) {
-        if (txn.amount > 0) {
-          prevMonthIncome += txn.amount;
-        } else {
-          prevMonthExpenses += Math.abs(txn.amount);
+    if (viewMode === 'monthly') {
+      const prevMonth = selectedMonth.month === 1 ? { year: selectedMonth.year - 1, month: 12 } : { year: selectedMonth.year, month: selectedMonth.month - 1 };
+      
+      const currentMonthIncome = analytics?.total_income || 0;
+      const currentMonthExpenses = analytics?.total_expenses || 0;
+      
+      const prevMonthStart = new Date(prevMonth.year, prevMonth.month - 1, 1);
+      const prevMonthEnd = new Date(prevMonth.year, prevMonth.month, 0);
+      
+      let prevMonthIncome = 0;
+      let prevMonthExpenses = 0;
+      
+      transactions.forEach(txn => {
+        const txnDate = new Date(txn.date);
+        if (txnDate >= prevMonthStart && txnDate <= prevMonthEnd) {
+          if (txn.amount > 0) {
+            prevMonthIncome += txn.amount;
+          } else {
+            prevMonthExpenses += Math.abs(txn.amount);
+          }
         }
-      }
-    });
-    
-    return [
-      { month: 'Previous', income: prevMonthIncome, expenses: prevMonthExpenses },
-      { month: 'Current', income: currentMonthIncome, expenses: currentMonthExpenses },
-    ];
+      });
+      
+      return [
+        { month: 'Previous', income: prevMonthIncome, expenses: prevMonthExpenses },
+        { month: 'Current', income: currentMonthIncome, expenses: currentMonthExpenses },
+      ];
+    } else {
+      // Yearly view: show quarters
+      const quarters = [
+        { month: 'Q1', income: 0, expenses: 0 },
+        { month: 'Q2', income: 0, expenses: 0 },
+        { month: 'Q3', income: 0, expenses: 0 },
+        { month: 'Q4', income: 0, expenses: 0 }
+      ];
+
+      transactions
+        .filter(txn => new Date(txn.date).getFullYear() === selectedMonth.year)
+        .forEach(txn => {
+          const quarterIndex = Math.floor(new Date(txn.date).getMonth() / 3);
+          if (txn.amount > 0) {
+            quarters[quarterIndex].income += txn.amount;
+          } else {
+            quarters[quarterIndex].expenses += Math.abs(txn.amount);
+          }
+        });
+
+      return quarters;
+    }
   };
 
   const dailySpendingData = getDailySpendingData();
@@ -662,12 +755,12 @@ function Dashboard() {
   const cumulativeSavingsData = getCumulativeSavingsData();
   const monthlyComparisonData = getMonthlyComparisonData();
 
-  // Enhanced custom tooltip style for dark mode with better visual hierarchy
+  // Enhanced custom tooltip style with theme support
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-xl p-4 shadow-2xl">
-          <p className="text-white font-semibold mb-2 text-sm">{label}</p>
+        <div className={`${theme === 'dark' ? 'bg-slate-900/95 border-slate-600/50' : 'bg-white/95 border-slate-300/50'} backdrop-blur-md border rounded-xl p-4 shadow-2xl`}>
+          <p className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-semibold mb-2 text-sm`}>{label}</p>
           <div className="space-y-1">
             {payload.map((entry, index) => (
               <div key={index} className="flex items-center justify-between gap-3">
@@ -676,9 +769,9 @@ function Dashboard() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: entry.color }}
                   ></div>
-                  <span className="text-slate-300 text-sm">{entry.name}:</span>
+                  <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>{entry.name}:</span>
                 </div>
-                <span className="text-white font-medium text-sm">
+                <span className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-medium text-sm`}>
                   ${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
                 </span>
               </div>
@@ -691,129 +784,182 @@ function Dashboard() {
   };
 
   return (
-    <div className="overflow-x-hidden bg-[#0a0e27]">
+    <div className={`overflow-x-hidden ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
       {/* Section 1: Header & Summary Cards */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0f172a]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0f172a]' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
         <div className="max-w-7xl mx-auto w-full">
       {/* Personalized Greeting */}
       {user && (
         <div className="mb-6 text-center">
-          <h2 className="text-3xl font-light text-slate-300 mb-1">
-            Welcome back, <span className="font-semibold text-white">{user.username}</span>
+          <h2 className={`text-3xl font-light ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} mb-1`}>
+            Welcome back, <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{user.first_name}</span>
           </h2>
-          <p className="text-lg text-slate-400">
-            Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          <p className={`text-lg ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+            Here's your financial overview for {viewMode === 'monthly' ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : `${selectedMonth.year}`}
           </p>
         </div>
       )}
 
       {/* Main Header */}
       <div className="text-center mb-12">
-        <h1 className="text-6xl font-bold text-white mb-4 flex items-center justify-center gap-4">
+        <h1 className={`text-6xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center justify-center gap-4`}>
           <span className="text-amber-400">💼</span>
           Financial Dashboard
         </h1>
-        <p className="text-xl text-slate-400 mb-8">Complete financial overview & insights</p>
+        <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-8`}>Complete financial overview & insights</p>
 
-        {/* Month Navigator */}
-        <div className="flex items-center justify-center gap-3 bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 border border-slate-700 max-w-md mx-auto">
-          <button
-            onClick={() => changeMonth(-1)}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-xl text-slate-300 hover:text-white"
-          >
-            ◀
-          </button>
-              <span className="font-bold text-white min-w-[160px] text-center text-lg">
-            {new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
-              month: 'long',
-              year: 'numeric',
-            })}
-          </span>
-          <button
-            onClick={() => changeMonth(1)}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-xl text-slate-300 hover:text-white"
-          >
-            ▶
-          </button>
+        {/* View Mode Toggle & Date Selector */}
+        <div className="flex flex-col items-center justify-center gap-4 mb-6">
+          {/* View Mode Toggle */}
+          <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-lg p-1 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} border`}>
+            <button
+              onClick={() => setViewMode('monthly')}
+              className={`px-4 py-2 rounded-md font-medium transition-all ${
+                viewMode === 'monthly'
+                  ? 'bg-blue-500/80 text-white shadow-lg'
+                  : theme === 'dark'
+                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setViewMode('yearly')}
+              className={`px-4 py-2 rounded-md font-medium transition-all ${
+                viewMode === 'yearly'
+                  ? 'bg-blue-500/80 text-white shadow-lg'
+                  : theme === 'dark'
+                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              Yearly
+            </button>
+            <button
+              onClick={() => setViewMode('overall')}
+              className={`px-4 py-2 rounded-md font-medium transition-all ${
+                viewMode === 'overall'
+                  ? 'bg-blue-500/80 text-white shadow-lg'
+                  : theme === 'dark'
+                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              Overall
+            </button>
+          </div>
+
+          {/* Date Selector */}
+          <div className={`flex items-center justify-center gap-3 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} border`}>
+            {viewMode !== 'overall' && (
+              <>
+                <button
+                  onClick={() => viewMode === 'monthly' ? changeMonth(-1) : changeYear(-1)}
+                      className={`p-2 hover:${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-lg transition-colors text-xl ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  ◀
+                </button>
+                    <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} min-w-[160px] text-center text-lg`}>
+                  {viewMode === 'monthly'
+                    ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                      })
+                    : `Year ${selectedMonth.year}`
+                  }
+                </span>
+                <button
+                  onClick={() => viewMode === 'monthly' ? changeMonth(1) : changeYear(1)}
+                      className={`p-2 hover:${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-lg transition-colors text-xl ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  ▶
+                </button>
+              </>
+            )}
+            {viewMode === 'overall' && (
+              <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-lg`}>All Time Data</span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Income Card */}
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-green-500/50 transition-all hover:shadow-2xl hover:scale-105">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-green-500/50' : 'border-slate-200 hover:border-green-400/50'} border transition-all hover:shadow-2xl hover:scale-105`}>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Income</span>
-                <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-7 h-7 text-green-400" strokeWidth={2} />
+                <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Income</span>
+                <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100'} rounded-lg flex items-center justify-center`}>
+                  <TrendingUp className={`w-7 h-7 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} strokeWidth={2} />
                 </div>
           </div>
-              <p className="text-4xl font-bold text-green-400 mb-2">
+              <p className={`text-4xl font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'} mb-2`}>
             ${analytics?.total_income?.toFixed(2) || '0.00'}
           </p>
-              <p className="text-sm text-slate-400">This month</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{viewMode === 'monthly' ? 'This month' : viewMode === 'yearly' ? 'This year' : 'All time'}</p>
         </div>
 
             {/* Expenses Card */}
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-red-500/50 transition-all hover:shadow-2xl hover:scale-105">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-red-500/50' : 'border-slate-200 hover:border-red-400/50'} border transition-all hover:shadow-2xl hover:scale-105`}>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Expenses</span>
-                <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <TrendingDown className="w-7 h-7 text-red-400" strokeWidth={2} />
+                <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Expenses</span>
+                <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-red-500/20' : 'bg-red-100'} rounded-lg flex items-center justify-center`}>
+                  <TrendingDown className={`w-7 h-7 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`} strokeWidth={2} />
                 </div>
           </div>
-              <p className="text-4xl font-bold text-red-400 mb-2">
+              <p className={`text-4xl font-bold ${theme === 'dark' ? 'text-red-400' : 'text-red-600'} mb-2`}>
             ${analytics?.total_expenses?.toFixed(2) || '0.00'}
           </p>
-              <p className="text-sm text-slate-400">This month</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{viewMode === 'monthly' ? 'This month' : viewMode === 'yearly' ? 'This year' : 'All time'}</p>
         </div>
 
             {/* Net Savings Card */}
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-amber-500/50 transition-all hover:shadow-2xl hover:scale-105">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-amber-500/50' : 'border-slate-200 hover:border-amber-400/50'} border transition-all hover:shadow-2xl hover:scale-105`}>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Net Savings</span>
-                <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                  <Wallet className="w-7 h-7 text-amber-400" strokeWidth={2} />
+                <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Net Savings</span>
+                <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-100'} rounded-lg flex items-center justify-center`}>
+                  <Wallet className={`w-7 h-7 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={2} />
                 </div>
           </div>
-              <p className={`text-4xl font-bold mb-2 ${(analytics?.net_savings || 0) >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
+              <p className={`text-4xl font-bold mb-2 ${(analytics?.net_savings || 0) >= 0 ? (theme === 'dark' ? 'text-amber-400' : 'text-amber-600') : (theme === 'dark' ? 'text-red-400' : 'text-red-600')}`}>
             ${Math.abs(analytics?.net_savings || 0).toFixed(2)}
           </p>
-              <p className="text-sm text-slate-400">This month</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{viewMode === 'monthly' ? 'This month' : viewMode === 'yearly' ? 'This year' : 'All time'}</p>
         </div>
 
             {/* Savings Rate Card */}
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-2xl hover:scale-105">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-blue-500/50' : 'border-slate-200 hover:border-blue-400/50'} border transition-all hover:shadow-2xl hover:scale-105`}>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Savings Rate</span>
-                <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <Percent className="w-7 h-7 text-blue-400" strokeWidth={2} />
+                <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Savings Rate</span>
+                <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-100'} rounded-lg flex items-center justify-center`}>
+                  <Percent className={`w-7 h-7 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} strokeWidth={2} />
                 </div>
           </div>
-              <p className={`text-4xl font-bold mb-2 ${savingsRate >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+              <p className={`text-4xl font-bold mb-2 ${savingsRate >= 0 ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600') : (theme === 'dark' ? 'text-red-400' : 'text-red-600')}`}>
             {savingsRate}%
           </p>
-              <p className="text-sm text-slate-400">Of income saved</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Of income saved</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Section 2: Main Charts - Income vs Expenses & Category Breakdown */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-[#0f172a]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <LayoutDashboard className="w-11 h-11 text-amber-400" strokeWidth={2} />
+            <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3 flex items-center justify-center gap-3`}>
+              <LayoutDashboard className={`w-11 h-11 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={2} />
               Financial Overview
             </h2>
-            <p className="text-xl text-slate-400">Income, expenses, and spending breakdown</p>
+            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Income, expenses, and spending breakdown</p>
       </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Bar Chart */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-emerald-400">💵</span>
                 Income vs Expenses
               </h2>
@@ -829,16 +975,16 @@ function Dashboard() {
                       <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.4}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} opacity={0.3} />
                   <XAxis
                     dataKey="name"
-                    stroke="#94a3b8"
+                    stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    stroke="#94a3b8"
+                    stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -858,19 +1004,19 @@ function Dashboard() {
             </div>
 
         {/* Pie Chart */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-teal-400">🥧</span>
                 Spending by Category
               </h2>
           {pieData.length === 0 ? (
-                <div className="flex items-center justify-center h-[300px] text-slate-400">
+                <div className={`flex items-center justify-center h-[300px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-slate-700/50 rounded-full flex items-center justify-center">
+                    <div className={`w-16 h-16 mx-auto mb-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200'} rounded-full flex items-center justify-center`}>
                       <span className="text-2xl">📊</span>
                     </div>
                     <p className="text-lg font-medium">No expense data for this month</p>
-                    <p className="text-sm text-slate-500 mt-1">Add some transactions to see the breakdown</p>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'} mt-1`}>Add some transactions to see the breakdown</p>
                   </div>
             </div>
           ) : (
@@ -886,7 +1032,7 @@ function Dashboard() {
                   innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
-                  stroke="#1e293b"
+                  stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'}
                   strokeWidth={2}
                 >
                   {pieData.map((entry, index) => (
@@ -910,31 +1056,31 @@ function Dashboard() {
       </section>
 
       {/* Section 3: Spending Trends & Patterns */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-[#0a0e27] to-[#1a1f3a]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0e27] to-[#1a1f3a]' : 'bg-gradient-to-br from-slate-50 to-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <TrendingUp className="w-11 h-11 text-blue-400" strokeWidth={2} />
+            <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3 flex items-center justify-center gap-3`}>
+              <TrendingUp className={`w-11 h-11 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} strokeWidth={2} />
               Spending Trends
             </h2>
-            <p className="text-xl text-slate-400">Daily patterns and weekly insights</p>
+            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Daily patterns and weekly insights</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Daily Spending Trend */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-orange-400">📅</span>
                 Daily Spending Trend (Last 14 Days)
               </h2>
               {dailySpendingData.length === 0 ? (
-                <div className="flex items-center justify-center h-[300px] text-slate-400">
+                <div className={`flex items-center justify-center h-[300px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-slate-700/50 rounded-full flex items-center justify-center">
+                    <div className={`w-16 h-16 mx-auto mb-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200'} rounded-full flex items-center justify-center`}>
                       <span className="text-2xl">📈</span>
                     </div>
                     <p className="text-lg font-medium">No spending data available</p>
-                    <p className="text-sm text-slate-500 mt-1">Add expenses to see daily trends</p>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'} mt-1`}>Add expenses to see daily trends</p>
                   </div>
                 </div>
               ) : (
@@ -946,19 +1092,19 @@ function Dashboard() {
                         <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.05}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} opacity={0.3} />
                     <XAxis
                       dataKey="date"
                       angle={-45}
                       textAnchor="end"
                       height={80}
-                      stroke="#94a3b8"
+                      stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                       fontSize={11}
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
-                      stroke="#94a3b8"
+                      stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
@@ -980,8 +1126,8 @@ function Dashboard() {
             </div>
 
             {/* Weekly Spending Pattern */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-purple-400">📆</span>
                 Weekly Spending Pattern
               </h2>
@@ -993,16 +1139,16 @@ function Dashboard() {
                       <stop offset="95%" stopColor="#4ecdc4" stopOpacity={0.3}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} opacity={0.3} />
                   <XAxis
                     dataKey="day"
-                    stroke="#94a3b8"
+                    stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    stroke="#94a3b8"
+                    stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -1029,20 +1175,20 @@ function Dashboard() {
       </section>
 
       {/* Section 4: Monthly Comparison & Savings Trend */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-[#0f172a]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <Scale className="w-11 h-11 text-amber-400" strokeWidth={2} />
+            <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3 flex items-center justify-center gap-3`}>
+              <Scale className={`w-11 h-11 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={2} />
               Progress & Comparison
             </h2>
-            <p className="text-xl text-slate-400">Monthly comparison and savings growth</p>
+            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Monthly comparison and savings growth</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Monthly Comparison */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-blue-400">📊</span>
                 Monthly Comparison
               </h2>
@@ -1058,16 +1204,16 @@ function Dashboard() {
                       <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.4}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} opacity={0.3} />
                   <XAxis
                     dataKey="month"
-                    stroke="#94a3b8"
+                    stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    stroke="#94a3b8"
+                    stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -1076,7 +1222,7 @@ function Dashboard() {
                   <Tooltip content={<CustomTooltip />} />
                   <Legend
                     wrapperStyle={{
-                      color: '#94a3b8',
+                      color: theme === 'dark' ? '#94a3b8' : '#475569',
                       fontSize: '12px',
                       paddingTop: '10px'
                     }}
@@ -1100,19 +1246,19 @@ function Dashboard() {
             </div>
 
             {/* Cumulative Savings Trend */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`bg-gradient-to-br ${theme === 'dark' ? 'from-slate-800/60 to-slate-900/60' : 'from-slate-200/60 to-slate-300/60'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border border-slate-700/50 hover:border-slate-600/50' : 'border border-slate-400/50 hover:border-slate-300/50'} transition-all`}>
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-yellow-400">💎</span>
                 Cumulative Savings Trend
               </h2>
               {cumulativeSavingsData.length === 0 ? (
-                <div className="flex items-center justify-center h-[300px] text-slate-400">
+                <div className={`flex items-center justify-center h-[300px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-slate-700/50 rounded-full flex items-center justify-center">
+                    <div className={`w-16 h-16 mx-auto mb-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-300/50'} rounded-full flex items-center justify-center`}>
                       <span className="text-2xl">💰</span>
                     </div>
                     <p className="text-lg font-medium">No savings data available</p>
-                    <p className="text-sm text-slate-500 mt-1">Add income transactions to see savings growth</p>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'} mt-1`}>Add income transactions to see savings growth</p>
                   </div>
                 </div>
               ) : (
@@ -1129,19 +1275,19 @@ function Dashboard() {
                         <stop offset="100%" stopColor="#ffb347" />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} opacity={0.3} />
                     <XAxis
                       dataKey="date"
                       angle={-45}
                       textAnchor="end"
                       height={80}
-                      stroke="#94a3b8"
+                      stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                       fontSize={11}
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
-                      stroke="#94a3b8"
+                      stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
@@ -1155,8 +1301,8 @@ function Dashboard() {
                       fillOpacity={1}
                       fill="url(#colorSavings)"
                       strokeWidth={3}
-                      dot={{ fill: '#ffd93d', r: 4, strokeWidth: 2, stroke: '#ffffff' }}
-                      activeDot={{ r: 6, fill: '#ffd93d', strokeWidth: 2, stroke: '#ffffff' }}
+                      dot={{ fill: '#ffd93d', r: 4, strokeWidth: 2, stroke: theme === 'dark' ? '#ffffff' : '#000000' }}
+                      activeDot={{ r: 6, fill: '#ffd93d', strokeWidth: 2, stroke: theme === 'dark' ? '#ffffff' : '#000000' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -1167,11 +1313,11 @@ function Dashboard() {
       </section>
 
       {/* Section 5: AI Financial Insights */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-gradient-to-br from-[#1a1f3a] via-[#0f172a] to-[#0a0e27]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-gradient-to-br from-[#1a1f3a] via-[#0f172a] to-[#0a0e27]' : 'bg-gradient-to-br from-slate-100 via-white to-slate-100'}`}>
         <div className="max-w-7xl mx-auto w-full">
-          <div className="relative overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-3xl shadow-2xl border border-slate-700">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/5 rounded-full -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full -ml-24 -mb-24"></div>
+          <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 border-slate-700' : 'bg-gradient-to-br from-white via-slate-50 to-white border-slate-200'} rounded-3xl shadow-2xl border`}>
+            <div className={`absolute top-0 right-0 w-64 h-64 ${theme === 'dark' ? 'bg-amber-400/5' : 'bg-amber-400/10'} rounded-full -mr-32 -mt-32`}></div>
+            <div className={`absolute bottom-0 left-0 w-48 h-48 ${theme === 'dark' ? 'bg-blue-500/5' : 'bg-blue-500/10'} rounded-full -ml-24 -mb-24`}></div>
             
             {/* Model Badge - Top Right Corner */}
             {aiModelUsed && (
@@ -1213,18 +1359,18 @@ function Dashboard() {
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center gap-1">
               <div className="p-3">
-                <Bot className="w-11 h-11 text-amber-400" strokeWidth={1.8} />
+                <Bot className={`w-11 h-11 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
               </div>
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white">AI Financial Insight</h2>
-                    <p className="text-slate-400 text-sm">Powered by multiple frontier models</p>
+                <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Financial Insight</h2>
+                    <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Powered by multiple frontier models</p>
               </div>
             </div>
           </div>
 
           {aiSummary ? (
                 <div className="space-y-6">
-                  <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-slate-700/50">
+                  <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} backdrop-blur-md rounded-2xl p-8 shadow-2xl border`}>
               {formatAISummary(aiSummary)}
                   </div>
                   
@@ -1235,7 +1381,7 @@ function Dashboard() {
                         <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                         <span className="text-sm text-green-400 font-medium">Analysis Complete</span>
                       </div>
-                      <div className="text-xs text-slate-400">
+                      <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                         Generated {new Date().toLocaleTimeString('en-US', { 
                           hour: '2-digit', 
                           minute: '2-digit' 
@@ -1244,7 +1390,7 @@ function Dashboard() {
                 </div>
                 <button
                   onClick={handleGenerateAI}
-                      className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border border-slate-600 hover:border-amber-400/30"
+                      className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600 hover:border-amber-400/30' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border`}
                 >
                     <RefreshCw className="w-5 h-5" strokeWidth={2.2} />
                       <span>Refresh Analysis</span>
@@ -1252,7 +1398,7 @@ function Dashboard() {
               </div>
             </div>
           ) : (
-                <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border border-slate-700">
+                <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border`}>
                   <div className="inline-block p-4">
                     {aiLoading && currentTryingModel ? (
                       (() => {
@@ -1272,15 +1418,15 @@ function Dashboard() {
                       <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-400 border-t-transparent"></div>
                     ) : (
                 <Sparkles 
-                  className="w-10 h-10 text-amber-300 animate-pulse" 
+                  className={`w-10 h-10 ${theme === 'dark' ? 'text-amber-300' : 'text-amber-600'} animate-pulse`}
                   strokeWidth={1.5} 
                 />
                     )}
               </div>
-                  <h3 className="text-xl font-bold text-white mb-2">
+                  <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>
                     {aiLoading && currentTryingModel ? (
                       <span className="flex items-center justify-center gap-2">
-                        Analyzing with <span className="text-amber-400">{getModelInfo(currentTryingModel).name}</span>
+                        Analyzing with <span className={theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}>{getModelInfo(currentTryingModel).name}</span>
                       </span>
                     ) : aiLoading ? (
                       'Analyzing Your Finances...'
@@ -1288,7 +1434,7 @@ function Dashboard() {
                       'Get Personalized Financial Advice'
                     )}
               </h3>
-                  <p className="text-slate-400 mb-6 max-w-md mx-auto">
+                  <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-6 max-w-md mx-auto`}>
                     {aiLoading
                       ? 'Our AI is processing your financial data and generating personalized insights.'
                       : 'Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.'
@@ -1317,25 +1463,25 @@ function Dashboard() {
       </section>
 
       {/* Section 6: Recent Activity */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-[#0a0e27]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <History className="w-10 h-10 text-slate-400" strokeWidth={1.8} />
+            <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3 flex items-center justify-center gap-3`}>
+              <History className={`w-10 h-10 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`} strokeWidth={1.8} />
               Recent Activity
             </h2>
-            <p className="text-xl text-slate-400">Your latest transactions</p>
+            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Your latest transactions</p>
           </div>
           
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-slate-700">
+          <div className={`${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur-sm rounded-2xl shadow-xl p-8 border`}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <ArrowLeftRight className="w-7 h-7 text-amber-400" strokeWidth={1.8} />
+              <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-2`}>
+                <ArrowLeftRight className={`w-7 h-7 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
                 Recent Transactions
           </h2>
           <a
             href="/history"
-                className="text-amber-400 hover:text-amber-300 font-medium text-sm flex items-center gap-1 transition-colors"
+                className={`${theme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-amber-600 hover:text-amber-700'} font-medium text-sm flex items-center gap-1 transition-colors`}
           >
             View All
             <span>→</span>
@@ -1344,13 +1490,13 @@ function Dashboard() {
         
         {recentTransactions.length === 0 ? (
           <div className="text-center py-12">
-                <div className="inline-block p-4 bg-slate-700/50 rounded-full mb-4">
+                <div className={`inline-block p-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-full mb-4`}>
               <span className="text-4xl">📊</span>
             </div>
-                <p className="text-slate-400 mb-4">No transactions yet</p>
+                <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-4`}>No transactions yet</p>
             <a
               href="/transactions"
-                  className="inline-block px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all"
+                  className={`inline-block px-6 py-3 ${theme === 'dark' ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 hover:from-amber-500 hover:to-amber-600' : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'} rounded-lg font-semibold transition-all`}
             >
               Add Your First Transaction
             </a>
@@ -1360,7 +1506,7 @@ function Dashboard() {
             {recentTransactions.map((txn) => (
               <div
                 key={txn.id}
-                    className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl hover:bg-slate-700/50 transition-all border border-slate-600/50"
+                    className={`flex items-center justify-between p-4 ${theme === 'dark' ? 'bg-slate-700/30 hover:bg-slate-700/50 border-slate-600/50' : 'bg-slate-100/50 hover:bg-slate-200/50 border-slate-300/50'} rounded-xl transition-all border`}
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
@@ -1369,8 +1515,8 @@ function Dashboard() {
                     {txn.category_icon}
                   </div>
                   <div>
-                        <p className="font-semibold text-white">{txn.description}</p>
-                        <p className="text-sm text-slate-400">{txn.category_name}</p>
+                        <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txn.description}</p>
+                        <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>{txn.category_name}</p>
                   </div>
                 </div>
                     <p className={`text-lg font-bold ${txn.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>

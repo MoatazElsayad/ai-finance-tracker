@@ -39,6 +39,37 @@ body {
   --border-color: #334155;
 }
 
+/* Light Mode Theme */
+:root.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-gold: #d97706;
+  --accent-blue: #0ea5e9;
+  --income-green: #059669;
+  --expense-red: #dc2626;
+  --border-color: #cbd5e1;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+html.dark {
+  color-scheme: dark;
+  background-color: #0a0e27;
+  color: #e2e8f0;
+}
+
+html.light {
+  color-scheme: light;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
 /* Custom scrollbar for dark theme */
 ::-webkit-scrollbar {
   width: 8px;

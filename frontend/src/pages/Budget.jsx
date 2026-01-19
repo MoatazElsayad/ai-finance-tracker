@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
+import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
 import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil } from 'lucide-react';
@@ -48,12 +49,12 @@ const CHART_COLORS = {
   neutral: '#64748b',    // Neutral gray for backgrounds
 };
 
-// Enhanced custom tooltip style for dark mode with better visual hierarchy
-const CustomTooltip = ({ active, payload, label }) => {
+// Enhanced custom tooltip style with theme support
+const CustomTooltipComponent = (theme) => ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-xl p-4 shadow-2xl">
-        <p className="text-white font-semibold mb-2 text-sm">{label}</p>
+      <div className={`${theme === 'dark' ? 'bg-slate-900/95 border-slate-600/50' : 'bg-white/95 border-slate-300/50'} backdrop-blur-md border rounded-xl p-4 shadow-2xl`}>
+        <p className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-semibold mb-2 text-sm`}>{label}</p>
         <div className="space-y-1">
           {payload.map((entry, index) => (
             <div key={index} className="flex items-center justify-between gap-3">
@@ -62,9 +63,9 @@ const CustomTooltip = ({ active, payload, label }) => {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: entry.color }}
                 ></div>
-                <span className="text-slate-300 text-sm">{entry.name}:</span>
+                <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>{entry.name}:</span>
               </div>
-              <span className="text-white font-medium text-sm">
+              <span className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-medium text-sm`}>
                 ${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
               </span>
             </div>
@@ -158,6 +159,7 @@ function BudgetPlanning() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [newBudget, setNewBudget] = useState({ category_id: '', amount: '' });
@@ -168,11 +170,12 @@ function BudgetPlanning() {
   const [budgetModelUsed, setBudgetModelUsed] = useState(null);
   const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
   const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
+  const { theme } = useTheme();
 
 
   useEffect(() => {
     loadData();
-  }, [selectedMonth]);
+  }, [selectedMonth, viewMode]);
 
   // Generate AI insights when budgets or transactions change
   useEffect(() => {
@@ -186,7 +189,25 @@ function BudgetPlanning() {
       // Clear AI insights cache since budget data changed
       clearInsightsCache(); // Clear any partial or invalid cache
     }
-  }, [budgets, loading, transactions, selectedMonth]);
+  }, [budgets, loading, transactions, selectedMonth, viewMode]);
+
+  // Get date range based on view mode
+  const getDateRange = () => {
+    if (viewMode === 'monthly') {
+      // Monthly: from 1st to last day of selected month
+      const startDate = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+      const endDate = new Date(selectedMonth.year, selectedMonth.month, 0);
+      return { startDate, endDate };
+    } else if (viewMode === 'yearly') {
+      // Yearly: entire year
+      const startDate = new Date(selectedMonth.year, 0, 1);
+      const endDate = new Date(selectedMonth.year, 11, 31);
+      return { startDate, endDate };
+    } else {
+      // Overall: all time (very far past to future)
+      return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -197,20 +218,37 @@ function BudgetPlanning() {
         getBudgets(selectedMonth.year, selectedMonth.month),
         getCategories()
       ]);
+
+      // Filter transactions based on view mode
+      let periodStart, periodEnd;
+      if (viewMode === 'monthly') {
+        periodStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
+        periodEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
+      } else {
+        // Yearly view
+        periodStart = new Date(selectedMonth.year, 0, 1);
+        periodEnd = new Date(selectedMonth.year, 11, 31);
+      }
+
+      const filteredTransactions = transactionsData.filter(txn => {
+        const txnDate = new Date(txn.date);
+        return txnDate >= periodStart && txnDate <= periodEnd;
+      });
+
       setAnalytics(analyticsData);
-      setTransactions(transactionsData);
+      setTransactions(filteredTransactions);
       setBudgets(budgetsData);
       setCategories(categoriesData);
 
       // Debug logging
       console.log('🔍 Budget Connection Debug:');
-      console.log('📊 Transactions loaded:', transactionsData.length);
+      console.log('📊 Transactions loaded:', filteredTransactions.length);
       console.log('💰 Budgets loaded:', budgetsData.length);
       console.log('📂 Categories loaded:', categoriesData.length);
 
       // Show sample data
-      if (transactionsData.length > 0) {
-        console.log('📋 Sample transaction:', transactionsData[0]);
+      if (filteredTransactions.length > 0) {
+        console.log('📋 Sample transaction:', filteredTransactions[0]);
       }
       if (budgetsData.length > 0) {
         console.log('🎯 Sample budget:', budgetsData[0]);
@@ -382,19 +420,20 @@ function BudgetPlanning() {
     }
   };
 
-  // Calculate actual spending by category for current month
+  // Calculate actual spending by category for current period (month or year)
   const getActualSpending = () => {
-    const currentMonthTransactions = transactions.filter(t => {
+    const { startDate, endDate } = getDateRange();
+    const periodTransactions = transactions.filter(t => {
       const transactionDate = new Date(t.date);
-      return transactionDate.getFullYear() === selectedMonth.year &&
-             transactionDate.getMonth() + 1 === selectedMonth.month &&
+      return transactionDate >= startDate &&
+             transactionDate <= endDate &&
              t.amount < 0; // Negative amounts = expenses
     });
 
-    console.log('💸 Current month expense transactions:', currentMonthTransactions.length);
+    console.log('💸 Period expense transactions:', periodTransactions.length);
 
     const spendingByCategory = {};
-    currentMonthTransactions.forEach(t => {
+    periodTransactions.forEach(t => {
       const category = t.category_name || 'Uncategorized';
       spendingByCategory[category] = (spendingByCategory[category] || 0) + Math.abs(t.amount);
     });
@@ -546,6 +585,25 @@ function BudgetPlanning() {
     setNewBudget({ category_id: '', amount: '' });
   };
 
+  const changeMonth = (offset) => {
+    let newMonth = selectedMonth.month + offset;
+    let newYear = selectedMonth.year;
+
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    } else if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+
+    setSelectedMonth({ year: newYear, month: newMonth });
+  };
+
+  const changeYear = (offset) => {
+    setSelectedMonth({ ...selectedMonth, year: selectedMonth.year + offset });
+  };
+
   // Chart data for budget vs actual
   const chartData = budgetData.map(item => ({
     name: item.category.length > 12 ? item.category.substring(0, 12) + '...' : item.category,
@@ -556,17 +614,17 @@ function BudgetPlanning() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-white via-slate-100 to-white'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-slate-400 text-lg">Loading budget data...</p>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg`}>Loading budget data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-white via-slate-100 to-white'}`}>
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in">
@@ -586,31 +644,84 @@ function BudgetPlanning() {
                 <span className="text-4xl">💰</span>
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-white">Budget Planning</h1>
-                <p className="text-xl text-slate-400">Take control of your finances</p>
+                <h1 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Budget Planning</h1>
+                <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Take control of your finances</p>
               </div>
             </div>
 
-            {/* Month Selector */}
-            <div className="flex items-center justify-center gap-3 bg-slate-800/50 backdrop-blur-sm rounded-xl px-6 py-3 border border-slate-700 max-w-md mx-auto">
-              <button
-                onClick={() => changeMonth(-1)}
-                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
-              >
-                ◀
-              </button>
-              <span className="font-medium text-white min-w-[140px] text-center">
-                {new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </span>
-              <button
-                onClick={() => changeMonth(1)}
-                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
-              >
-                ▶
-              </button>
+            {/* View Mode Toggle & Date Selector */}
+            <div className="flex flex-col items-center justify-center gap-4 mb-6">
+              {/* View Mode Toggle */}
+              <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-200/50 border-slate-300'} backdrop-blur-sm rounded-lg p-1 border`}>
+                <button
+                  onClick={() => setViewMode('monthly')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'monthly'
+                      ? 'bg-blue-500/80 text-white shadow-lg'
+                      : theme === 'dark'
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setViewMode('yearly')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'yearly'
+                      ? 'bg-blue-500/80 text-white shadow-lg'
+                      : theme === 'dark'
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  Yearly
+                </button>
+                <button
+                  onClick={() => setViewMode('overall')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'overall'
+                      ? 'bg-blue-500/80 text-white shadow-lg'
+                      : theme === 'dark'
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  Overall
+                </button>
+              </div>
+
+              {/* Date Selector */}
+              <div className={`flex items-center justify-center gap-3 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-200/50 border-slate-300'} backdrop-blur-sm rounded-xl px-6 py-3 border`}>
+                {viewMode !== 'overall' && (
+                  <>
+                    <button
+                      onClick={() => viewMode === 'monthly' ? changeMonth(-1) : changeYear(-1)}
+                      className={`p-2 ${theme === 'dark' ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-slate-300 text-slate-600 hover:text-slate-900'} rounded-lg transition-colors`}
+                    >
+                      ◀
+                    </button>
+                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'} min-w-[140px] text-center`}>
+                      {viewMode === 'monthly'
+                        ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : `Year ${selectedMonth.year}`
+                      }
+                    </span>
+                    <button
+                      onClick={() => viewMode === 'monthly' ? changeMonth(1) : changeYear(1)}
+                      className={`p-2 ${theme === 'dark' ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-slate-300 text-slate-600 hover:text-slate-900'} rounded-lg transition-colors`}
+                    >
+                      ▶
+                    </button>
+                  </>
+                )}
+                {viewMode === 'overall' && (
+                  <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>All Time Data</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -671,7 +782,7 @@ function BudgetPlanning() {
 
           {/* AI Budget Insights - Smart Caching */}
           {/* Caches insights based on budget + transaction data. Only regenerates when data changes. */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-2xl relative">
+          <div className={`bg-gradient-to-br ${theme === 'dark' ? 'from-slate-800 to-slate-900 border-slate-700' : 'from-slate-100 to-slate-200 border-slate-300'} rounded-xl shadow-xl p-6 border hover:border-blue-500/50 transition-all hover:shadow-2xl relative`}>
             {/* Model Badge - Top Right Corner */}
             {budgetModelUsed && (
               <div className="absolute top-4 right-4 z-10">
@@ -730,26 +841,26 @@ function BudgetPlanning() {
                 <Bot className="w-7 h-7 text-amber-400" strokeWidth={1.5} />
                 )}
               </div>
-              <h3 className="text-lg font-bold text-white">AI Budget Insights</h3>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Budget Insights</h3>
             </div>
 
             <div className="space-y-2 pr-20">
               {budgetInsightsLoading ? (
                 <div className="space-y-2">
-                  <div className="h-4 bg-slate-700/50 rounded animate-pulse"></div>
-                  <div className="h-4 bg-slate-700/50 rounded animate-pulse w-3/4"></div>
-                  <div className="h-4 bg-slate-700/50 rounded animate-pulse w-1/2"></div>
+                  <div className={`h-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded animate-pulse`}></div>
+                  <div className={`h-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded animate-pulse w-3/4`}></div>
+                  <div className={`h-4 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded animate-pulse w-1/2`}></div>
                 </div>
               ) : aiBudgetInsights ? (
                 aiBudgetInsights.split('\n\n').map((line, index) => (
                   <p
                     key={index}
-                    className="text-slate-300 leading-relaxed"
+                    className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} leading-relaxed`}
                     dangerouslySetInnerHTML={{ __html: line }}
                   />
                 ))
               ) : (
-                <p className="text-slate-400">Loading budget insights...</p>
+                <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Loading budget insights...</p>
               )}
             </div>
 
@@ -764,8 +875,7 @@ function BudgetPlanning() {
               className={`
                 absolute bottom-4 right-4
                 p-2.5 rounded-full
-                bg-slate-700/80 hover:bg-slate-600/90
-                text-slate-300 hover:text-amber-400
+                ${theme === 'dark' ? 'bg-slate-700/80 hover:bg-slate-600/90 text-slate-300 hover:text-amber-400' : 'bg-slate-300/80 hover:bg-slate-400/90 text-slate-700 hover:text-amber-600'}
                 transition-all duration-200
                 disabled:opacity-50 disabled:cursor-not-allowed
                 ${budgetInsightsLoading ? 'animate-pulse' : 'hover:rotate-180 hover:scale-110'}
@@ -782,20 +892,20 @@ function BudgetPlanning() {
       </section>
 
       {/* Section 2: Budget vs Actual Analysis */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12 bg-[#0f172a]">
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-              <Wallet className="w-11 h-11 text-amber-400" strokeWidth={1.8} />
+            <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3 flex items-center justify-center gap-3`}>
+              <Wallet className={`w-11 h-11 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
               Budget vs Actual Spending
             </h2>
-            <p className="text-xl text-slate-400">Track your financial discipline</p>
+            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Track your financial discipline</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Budget vs Actual Bar Chart */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-slate-700/50 hover:border-slate-600/50' : 'bg-gradient-to-br from-slate-100/60 to-white/60 border-slate-300/50 hover:border-slate-400/50'} backdrop-blur-sm rounded-xl shadow-xl p-6 border transition-all`}>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-blue-400">📈</span>
                 Monthly Comparison
               </h3>
@@ -826,10 +936,10 @@ function BudgetPlanning() {
                     axisLine={false}
                     tickFormatter={(value) => `$${value}`}
                   />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={CustomTooltipComponent(theme)} />
                   <Legend
                     wrapperStyle={{
-                      color: '#94a3b8',
+                      color: theme === 'dark' ? '#94a3b8' : '#475569',
                       fontSize: '12px',
                       paddingTop: '10px'
                     }}
@@ -853,8 +963,8 @@ function BudgetPlanning() {
             </div>
 
             {/* Budget Performance Pie Chart */}
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div className={`bg-gradient-to-br ${theme === 'dark' ? 'from-slate-800/60 to-slate-900/60 border-slate-700/50 hover:border-slate-600/50' : 'from-slate-100/60 to-white/60 border-slate-300/50 hover:border-slate-400/50'} backdrop-blur-sm rounded-xl shadow-xl p-6 border transition-all`}>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2`}>
                 <span className="text-green-400">🎯</span>
                 Budget Performance
               </h3>
@@ -888,10 +998,10 @@ function BudgetPlanning() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={CustomTooltipComponent(theme)} />
                   <Legend
                     wrapperStyle={{
-                      color: '#94a3b8',
+                      color: theme === 'dark' ? '#94a3b8' : '#475569',
                       fontSize: '12px',
                       paddingTop: '10px'
                     }}
@@ -909,11 +1019,11 @@ function BudgetPlanning() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Category</label>
+                  <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2`}>Category</label>
                   <select
                     value={newBudget.category_id}
                     onChange={(e) => setNewBudget({...newBudget, category_id: e.target.value})}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    className={`w-full px-3 py-2 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400`}
                   >
                     <option value="">Select category</option>
                     {categories
@@ -926,14 +1036,14 @@ function BudgetPlanning() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Monthly Budget ($)</label>
+                  <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2`}>Monthly Budget ($)</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={newBudget.amount}
                     onChange={(e) => setNewBudget({...newBudget, amount: e.target.value})}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    className={`w-full px-3 py-2 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400`}
                     placeholder="500.00"
                   />
                 </div>
@@ -956,7 +1066,7 @@ function BudgetPlanning() {
                 <button
                   onClick={cancelForm}
                   disabled={budgetLoading}
-                  className="px-6 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`px-6 py-2 ${theme === 'dark' ? 'bg-slate-600 hover:bg-slate-500 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-900'} rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   Cancel
                 </button>
@@ -965,10 +1075,10 @@ function BudgetPlanning() {
           )}
 
           {/* Budget Categories Table */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl border border-slate-700 overflow-hidden">
-            <div className="p-6 border-b border-slate-700">
+          <div className={`${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-sm rounded-xl shadow-xl border overflow-hidden`}>
+            <div className={`p-6 ${theme === 'dark' ? 'border-b border-slate-700' : 'border-b border-slate-300'}`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white">Budget Categories</h3>
+                <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Budget Categories</h3>
                 <button
                   onClick={() => setShowBudgetForm(true)}
                   className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2"
@@ -980,29 +1090,29 @@ function BudgetPlanning() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-700/50">
+                <thead className={theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'}>
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Category</th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase">Budgeted</th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase">Spent</th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase">Remaining</th>
-                    <th className="px-6 py-4 text-center text-xs font-medium text-slate-400 uppercase">Progress</th>
-                    <th className="px-6 py-4 text-center text-xs font-medium text-slate-400 uppercase">Actions</th>
+                    <th className={`px-6 py-4 text-left text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Category</th>
+                    <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Budgeted</th>
+                    <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Spent</th>
+                    <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Remaining</th>
+                    <th className={`px-6 py-4 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Progress</th>
+                    <th className={`px-6 py-4 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className={`divide-y ${theme === 'dark' ? 'divide-slate-700' : 'divide-slate-300'}`}>
                   {budgetData.map((budget) => (
-                    <tr key={budget.category} className="hover:bg-slate-700/30 transition-colors">
+                    <tr key={budget.category} className={`${theme === 'dark' ? 'hover:bg-slate-700/30' : 'hover:bg-slate-200/30'} transition-colors`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{budget.icon}</span>
-                          <span className="font-medium text-white">{budget.category}</span>
+                          <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{budget.category}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-300">
+                      <td className={`px-6 py-4 text-right font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                         ${budget.budgeted.toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-300">
+                      <td className={`px-6 py-4 text-right font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                         ${budget.actual.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-green-400">
@@ -1010,7 +1120,7 @@ function BudgetPlanning() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-slate-700 rounded-full h-2">
+                          <div className={`flex-1 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-full h-2`}>
                             <div
                               className={`h-2 rounded-full transition-all ${
                                 budget.overBudget ? 'bg-red-500' : 'bg-green-500'

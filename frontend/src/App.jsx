@@ -4,17 +4,30 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, Outlet } from 'react-router-dom';
 import { isAuthenticated, logout, getCurrentUser } from './api';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { SidebarProvider, useSidebarCollapsed } from './context/SidebarContext';
 import UserAvatar from './components/UserAvatar';
 
-// Import pages
+// Import pages and components
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Budget from './pages/Budget';
 import Landing from "./pages/Landing";
 import Profile from './pages/Profile';
+import Sidebar from './components/Sidebar';
 
 function App() {
+  return (
+    <ThemeProvider>
+      <SidebarProvider>
+        <AppContent />
+      </SidebarProvider>
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
@@ -61,6 +74,8 @@ function ProtectedRoute({ children }) {
 // Layout with navigation
 function Layout() {
   const [user, setUser] = useState(null);
+  const { theme, toggleTheme } = useTheme();
+  const { isCollapsed, setIsCollapsed } = useSidebarCollapsed();
 
   useEffect(() => {
     // Get current user info
@@ -69,72 +84,75 @@ function Layout() {
       .catch(console.error);
   }, []);
 
+  const isDark = theme === 'dark';
+
   return (
-    <div className="min-h-screen bg-[#0a0e27]">
-      {/* Navigation Bar - Dark Theme */}
-      <nav className="bg-slate-900/80 backdrop-blur-md shadow-lg border-b border-slate-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4">
+    <div className={isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}>
+      {/* Sidebar */}
+      <Sidebar user={user} />
+
+      {/* Overlay Backdrop - Dims content when sidebar is open on mobile */}
+      {!isCollapsed && (
+        <div
+          className="fixed inset-0 bg-black/50 md:hidden z-30 transition-opacity duration-300"
+          onClick={() => setIsCollapsed(true)}
+        />
+      )}
+
+      {/* Navigation Bar */}
+      <nav className={`${isDark ? 'bg-slate-900/80' : 'bg-white/80'} backdrop-blur-md shadow-lg ${isDark ? 'border-slate-700' : 'border-slate-200'} border-b sticky top-0 z-40 transition-all duration-300 ${
+        isCollapsed ? 'md:ml-20' : 'md:ml-64'
+      }`}>
+        <div className="px-4 md:px-6">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-400/20 rounded-lg flex items-center justify-center border border-amber-400/30">
+              <div className={`w-10 h-10 ${isDark ? 'bg-amber-400/20' : 'bg-amber-100'} rounded-lg flex items-center justify-center ${isDark ? 'border-amber-400/30' : 'border-amber-300'} border`}>
                 <span className="text-xl">💼</span>
               </div>
-              <span className="font-bold text-xl text-white">Finance Tracker</span>
+              <span className={`font-bold text-lg md:text-xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Finance Tracker</span>
             </div>
 
-            {/* Navigation Links */}
-            <div className="flex gap-6">
+            {/* Navigation Links - Hidden on Mobile */}
+            <div className="hidden md:flex gap-6">
               <Link 
                 to="/dashboard" 
-                className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
+                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
               >
                 Dashboard
               </Link>
               <Link 
                 to="/transactions" 
-                className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
+                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
               >
                 Transactions
               </Link>
               <Link 
                 to="/budget"
-                className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
+                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
               >
                 Budget
               </Link>
-              <Link 
-                to="/profile" 
-                className="text-slate-300 hover:text-amber-400 transition-colors"
-              >
-                Profile
-              </Link>
             </div>
 
-            {/* User Menu */}
-            <div className="flex items-center gap-4">
+            {/* User Info - Show on Desktop */}
+            <div className="hidden md:flex items-center gap-3">
               {user && <UserAvatar user={user} size="w-10 h-10" />}
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-amber-400">
+                <span className={`text-sm font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                   {user?.first_name || user?.username || 'User'}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   {user?.email}
                 </span>
               </div>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg transition-colors font-medium"
-              >
-                Logout
-              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Main Content - Full width for dashboard sections */}
-      <main>
+      {/* Main Content */}
+      <main className={`transition-all duration-300 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'} min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
         <Outlet />
       </main>
     </div>

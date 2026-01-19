@@ -4,8 +4,9 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
+import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
@@ -15,6 +16,13 @@ function Transactions() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showCustomCategoryCreator, setShowCustomCategoryCreator] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const { theme } = useTheme();
 
   // Form state
   const [categoryId, setCategoryId] = useState('');
@@ -30,6 +38,30 @@ function Transactions() {
   const [sortBy, setSortBy] = useState('date'); // 'date', 'amount', 'category'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
   const [dateRange, setDateRange] = useState('all'); // 'all', 'today', 'week', 'month', 'year'
+
+  // Get date range based on view mode
+  const getDateRange = () => {
+    if (viewMode === 'monthly') {
+      const start = new Date(selectedMonth.year, selectedMonth.month, 1);
+      const end = new Date(selectedMonth.year, selectedMonth.month + 1, 0);
+      return { startDate: start, endDate: end };
+    } else if (viewMode === 'yearly') {
+      const start = new Date(selectedMonth.year, 0, 1);
+      const end = new Date(selectedMonth.year, 11, 31);
+      return { startDate: start, endDate: end };
+    } else {
+      return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+    }
+  };
+
+  const changeMonth = (offset) => {
+    const newDate = new Date(selectedMonth.year, selectedMonth.month + offset, 1);
+    setSelectedMonth({ year: newDate.getFullYear(), month: newDate.getMonth() });
+  };
+
+  const changeYear = (offset) => {
+    setSelectedMonth(prev => ({ ...prev, year: prev.year + offset }));
+  };
 
   useEffect(() => {
     loadData();
@@ -96,12 +128,19 @@ function Transactions() {
 
   // Calculate totals
   const totals = useMemo(() => {
-    const income = transactions
+    const { startDate, endDate } = getDateRange();
+    
+    const periodTransactions = transactions.filter(t => {
+      const txnDate = new Date(t.date);
+      return txnDate >= startDate && txnDate <= endDate;
+    });
+    
+    const income = periodTransactions
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
     
     const expenses = Math.abs(
-      transactions
+      periodTransactions
         .filter(t => t.amount < 0)
         .reduce((sum, t) => sum + t.amount, 0)
     );
@@ -110,9 +149,9 @@ function Transactions() {
       income,
       expenses,
       net: income - expenses,
-      count: transactions.length
+      count: periodTransactions.length
     };
-  }, [transactions]);
+  }, [transactions, viewMode, selectedMonth]);
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
@@ -172,10 +211,20 @@ function Transactions() {
     return filtered;
   }, [transactions, searchQuery, filterType, filterCategory, dateRange, sortBy, sortOrder]);
 
+  // Filter to last 3 days if not showing all
+  const displayTransactions = useMemo(() => {
+    if (showAllTransactions) return filteredTransactions;
+    
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    return filteredTransactions.filter(txn => new Date(txn.date) >= threeDaysAgo);
+  }, [filteredTransactions, showAllTransactions]);
+
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
     const groups = {};
-    filteredTransactions.forEach(txn => {
+    displayTransactions.forEach(txn => {
       const dateKey = new Date(txn.date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -187,7 +236,7 @@ function Transactions() {
       groups[dateKey].push(txn);
     });
     return groups;
-  }, [filteredTransactions]);
+  }, [displayTransactions]);
 
   // Filter categories by type
   const filteredCategories = categories.filter(
@@ -211,22 +260,22 @@ function Transactions() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-[#0a0e27]">
+      <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-slate-400 text-lg">Loading transactions...</p>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg`}>Loading transactions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e27] px-6 py-8">
+    <div className={`min-h-screen px-6 py-8 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in">
-          <div className="bg-green-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-green-400/30">
-            <Check className="w-8 h-8 text-white" strokeWidth={1.8} />
+          <div className={`${theme === 'dark' ? 'bg-green-500/90' : 'bg-green-100'} backdrop-blur-sm ${theme === 'dark' ? 'text-white' : 'text-green-900'} px-6 py-3 rounded-xl shadow-xl flex items-center gap-2 ${theme === 'dark' ? 'border-green-400/30' : 'border-green-300'} border`}>
+            <Check className="w-8 h-8" strokeWidth={1.8} />
             <span className="font-medium">Transaction saved successfully!</span>
           </div>
         </div>
@@ -234,61 +283,147 @@ function Transactions() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-          <div className="p-2 bg-amber-400/20 rounded-lg">
-            <CreditCard className="w-8 h-8 text-amber-400" />
+        <h1 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2 flex items-center gap-3`}>
+          <div className={`p-2 ${theme === 'dark' ? 'bg-amber-400/20' : 'bg-amber-100'} rounded-lg`}>
+            <CreditCard className={`w-8 h-8 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} />
           </div>
           Transactions
         </h1>
-        <p className="text-slate-400 text-lg">Manage your income and expenses</p>
+        <p className={`text-lg ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Manage your income and expenses</p>
+      </div>
+
+      {/* View Mode Toggle */}
+      <div className="mb-6 flex flex-wrap gap-4 items-center">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode('monthly')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              viewMode === 'monthly'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 shadow-lg scale-105'
+                : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-300'}`
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setViewMode('yearly')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              viewMode === 'yearly'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 shadow-lg scale-105'
+                : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-300'}`
+            }`}
+          >
+            Yearly
+          </button>
+          <button
+            onClick={() => setViewMode('overall')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              viewMode === 'overall'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 shadow-lg scale-105'
+                : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-300'}`
+            }`}
+          >
+            Overall
+          </button>
+        </div>
+        
+        {viewMode !== 'overall' && (
+          <div className="flex items-center gap-3 ml-auto">
+            {viewMode === 'monthly' && (
+              <>
+                <button
+                  onClick={() => changeMonth(-1)}
+                  className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all"
+                >
+                  ← Previous
+                </button>
+                <span className="text-slate-300 font-semibold min-w-[180px] text-center">
+                  {new Date(selectedMonth.year, selectedMonth.month, 1).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long'
+                  })}
+                </span>
+                <button
+                  onClick={() => changeMonth(1)}
+                  className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all"
+                >
+                  Next →
+                </button>
+              </>
+            )}
+            {viewMode === 'yearly' && (
+              <>
+                <button
+                  onClick={() => changeYear(-1)}
+                  className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all"
+                >
+                  ← Previous
+                </button>
+                <span className="text-slate-300 font-semibold min-w-[100px] text-center">
+                  {selectedMonth.year}
+                </span>
+                <button
+                  onClick={() => changeYear(1)}
+                  className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all"
+                >
+                  Next →
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        
+        {viewMode === 'overall' && (
+          <span className="ml-auto text-slate-300 font-semibold">All Time Data</span>
+        )}
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-green-500/50 transition-all">
+        <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-green-500/50' : 'border-slate-200 hover:border-green-400/50'} border transition-all`}>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Income</span>
-            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center border border-green-500/30">
-              <TrendingUp className="w-6 h-6 text-green-400" />
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Total Income</span>
+            <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100'} rounded-lg flex items-center justify-center ${theme === 'dark' ? 'border-green-500/30' : 'border-green-300'} border`}>
+              <TrendingUp className={`w-6 h-6 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-green-400">
+          <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>
             ${totals.income.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-red-500/50 transition-all">
+        <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-red-500/50' : 'border-slate-200 hover:border-red-400/50'} border transition-all`}>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Expenses</span>
-            <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center border border-red-500/30">
-              <TrendingDown className="w-6 h-6 text-red-400" />
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Total Expenses</span>
+            <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-red-500/20' : 'bg-red-100'} rounded-lg flex items-center justify-center ${theme === 'dark' ? 'border-red-500/30' : 'border-red-300'} border`}>
+              <TrendingDown className={`w-6 h-6 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-red-400">
+          <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
             ${totals.expenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-amber-500/50 transition-all">
+        <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-amber-500/50' : 'border-slate-200 hover:border-amber-400/50'} border transition-all`}>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Net Balance</span>
-            <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center border border-amber-500/30">
-              <DollarSign className="w-6 h-6 text-amber-400" />
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Net Balance</span>
+            <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-amber-500/20' : 'bg-amber-100'} rounded-lg flex items-center justify-center ${theme === 'dark' ? 'border-amber-500/30' : 'border-amber-300'} border`}>
+              <Wallet className={`w-7 h-7 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={2} />
             </div>
           </div>
-          <p className={`text-3xl font-bold ${totals.net >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
+          <p className={`text-3xl font-bold ${totals.net >= 0 ? (theme === 'dark' ? 'text-amber-400' : 'text-amber-600') : (theme === 'dark' ? 'text-red-400' : 'text-red-600')}`}>
             ${Math.abs(totals.net).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all">
+        <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-blue-500/50' : 'border-slate-200 hover:border-blue-400/50'} border transition-all`}>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">Total Count</span>
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
-              <BarChart3 className="w-6 h-6 text-blue-400" />
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wide`}>Total Count</span>
+            <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-100'} rounded-lg flex items-center justify-center ${theme === 'dark' ? 'border-blue-500/30' : 'border-blue-300'} border`}>
+              <Hash className={`w-6 h-6 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-blue-400">{totals.count}</p>
+          <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{totals.count}</p>
         </div>
       </div>
 
@@ -307,15 +442,15 @@ function Transactions() {
 
       {/* Add Transaction Form */}
       {showForm && (
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700 mb-8">
+        <div className={`${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-sm rounded-xl shadow-xl p-6 border mb-8`}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-2`}>
               <span className="text-amber-400">➕</span>
               Add New Transaction
             </h2>
             <button
               onClick={() => setShowForm(false)}
-              className="text-slate-400 hover:text-white transition-colors"
+              className={`${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}
             >
               ✕
             </button>
@@ -335,7 +470,7 @@ function Transactions() {
                   className={`p-4 rounded-xl font-semibold transition-all border-2 ${
                     isExpense
                       ? 'bg-gradient-to-r from-red-500/20 to-rose-500/20 text-red-400 border-red-500/50 shadow-lg scale-105'
-                      : 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700'
+                      : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-600 border-slate-300 hover:bg-slate-300'}`
                   }`}
                 >
                   <span className="text-2xl mb-2 block">💸</span>
@@ -350,7 +485,7 @@ function Transactions() {
                   className={`p-4 rounded-xl font-semibold transition-all border-2 ${
                     !isExpense
                       ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border-green-500/50 shadow-lg scale-105'
-                      : 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700'
+                      : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-600 border-slate-300 hover:bg-slate-300'}`
                   }`}
                 >
                   <DollarSign className="w-6 h-6 mb-2 mx-auto" />
@@ -362,7 +497,7 @@ function Transactions() {
             {/* Quick Category Selection */}
             {recentCategories.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Quick Select (Recent)</label>
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Quick Select (Recent)</label>
                 <div className="flex flex-wrap gap-2">
                   {recentCategories.map(cat => (
                     cat.type === (isExpense ? 'expense' : 'income') && (
@@ -373,7 +508,7 @@ function Transactions() {
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
                           categoryId === cat.id.toString()
                             ? 'bg-amber-400/20 text-amber-400 border-amber-400/50'
-                            : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
+                            : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 border-slate-300 hover:bg-slate-200'}`
                         }`}
                       >
                         {cat.icon} {cat.name}
@@ -387,13 +522,13 @@ function Transactions() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
                   Category
                 </label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                  className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                   required
                 >
                   <option value="">Select category</option>
@@ -407,18 +542,18 @@ function Transactions() {
 
               {/* Amount */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
                   Amount
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-3 text-slate-400 font-semibold">$</span>
+                  <span className={`absolute left-4 top-3 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} font-semibold`}>$</span>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-8 pr-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all placeholder-slate-500"
+                    className={`w-full pl-8 pr-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-100/50 border-slate-300 text-slate-900 placeholder-slate-500'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                     placeholder="0.00"
                     required
                   />
@@ -429,14 +564,14 @@ function Transactions() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
                   Description
                 </label>
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all placeholder-slate-500"
+                  className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-100/50 border-slate-300 text-slate-900 placeholder-slate-500'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                   placeholder="e.g., Grocery shopping"
                   required
                 />
@@ -444,14 +579,14 @@ function Transactions() {
 
               {/* Date */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
                   Date
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                  className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                   required
                 />
               </div>
@@ -467,14 +602,14 @@ function Transactions() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-6 py-3 bg-slate-700/50 text-slate-300 rounded-xl font-medium hover:bg-slate-700 transition-all"
+                className={`px-6 py-3 ${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-200'} rounded-xl font-medium transition-all`}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => setShowCustomCategoryCreator(true)}
-                className="px-6 py-3 bg-slate-700/50 text-slate-300 rounded-xl font-medium hover:bg-slate-700 transition-all flex items-center gap-2"
+                className={`px-6 py-3 ${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-200'} rounded-xl font-medium transition-all flex items-center gap-2`}
               >
                 <Plus className="w-4 h-4" />
                 New Category
@@ -496,18 +631,18 @@ function Transactions() {
       />
 
       {/* Filters and Search */}
-      <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700 mb-8">
+      <div className={`${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-sm rounded-xl shadow-xl p-6 border mb-8`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Search</label>
+            <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Search</label>
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
+              <Search className={`absolute left-3 top-2.5 w-5 h-5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-700/50 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all placeholder-slate-500"
+                className={`w-full pl-10 pr-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-100/50 border-slate-300 text-slate-900 placeholder-slate-500'} border-2 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                 placeholder="Search transactions..."
               />
             </div>
@@ -515,11 +650,11 @@ function Transactions() {
 
           {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Type</label>
+            <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Type</label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700/50 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+              className={`w-full px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
             >
               <option value="all">All</option>
               <option value="income">Income</option>
@@ -529,11 +664,11 @@ function Transactions() {
 
           {/* Category Filter */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
+            <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Category</label>
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700/50 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+              className={`w-full px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -546,11 +681,11 @@ function Transactions() {
 
           {/* Date Range */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Date Range</label>
+            <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Date Range</label>
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700/50 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+              className={`w-full px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
             >
               <option value="all">All Time</option>
               <option value="today">Today</option>
@@ -564,11 +699,11 @@ function Transactions() {
         {/* Sort Options */}
         <div className="mt-4 flex flex-wrap gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Sort By</label>
+            <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Sort By</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 bg-slate-700/50 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+              className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
             >
               <option value="date">Date</option>
               <option value="amount">Amount</option>
@@ -576,11 +711,11 @@ function Transactions() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Order</label>
+            <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>Order</label>
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="px-4 py-2 bg-slate-700/50 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+              className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
             >
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
@@ -596,44 +731,56 @@ function Transactions() {
                 setSortBy('date');
                 setSortOrder('desc');
               }}
-              className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 transition-all text-sm font-medium"
+              className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-200'} rounded-lg transition-all text-sm font-medium flex gap-2`}
             >
-              🔄 Reset Filters
+              <RefreshCw className="w-5 h-5" strokeWidth={2} /> Reset Filters
             </button>
           </div>
         </div>
       </div>
 
       {/* Transactions List */}
-      <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-xl border border-slate-700 overflow-hidden">
-        <div className="p-6 bg-slate-700/30 border-b border-slate-600">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-amber-400" />
-            Transactions ({filteredTransactions.length})
-          </h2>
+      <div className={`${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-sm rounded-xl shadow-xl border overflow-hidden`}>
+        <div className={`p-6 ${theme === 'dark' ? 'bg-slate-700/30 border-b border-slate-600' : 'bg-slate-100/30 border-b border-slate-300'}`}>
+          <div className="flex items-center justify-between">
+            <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-2`}>
+              <ArrowLeftRight className="w-7 h-7 text-amber-400" strokeWidth={1.8} />
+              Transactions ({displayTransactions.length})
+            </h2>
+            <button
+              onClick={() => setShowAllTransactions(!showAllTransactions)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                showAllTransactions
+                  ? 'bg-amber-400/20 text-amber-400 border border-amber-400/50'
+                  : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 border border-slate-600 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 border border-slate-300 hover:bg-slate-200'}`
+              }`}
+            >
+              {showAllTransactions ? 'Show Last 3 Days' : 'View All'}
+            </button>
+          </div>
         </div>
 
-        {filteredTransactions.length === 0 ? (
+        {displayTransactions.length === 0 ? (
           <div className="text-center py-16">
-            <div className="inline-block p-6 bg-slate-700/50 rounded-full mb-4">
-              <FileText className="w-12 h-12 text-slate-400" />
+            <div className={`inline-block p-6 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-full mb-4`}>
+              <FileText className={`w-12 h-12 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`} />
             </div>
-            <p className="text-slate-400 text-lg mb-2">No transactions found</p>
-            <p className="text-slate-500 text-sm">
+            <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg mb-2`}>No transactions found</p>
+            <p className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'} text-sm`}>
               {searchQuery || filterType !== 'all' || filterCategory !== 'all' || dateRange !== 'all'
                 ? 'Try adjusting your filters'
                 : 'Add your first transaction above to get started!'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-700">
+          <div className={`divide-y ${theme === 'dark' ? 'divide-slate-700' : 'divide-slate-200'}`}>
             {Object.entries(groupedTransactions).map(([date, txns]) => (
               <div key={date}>
-                <div className="px-6 py-3 bg-slate-700/20 border-b border-slate-600">
+                <div className={`px-6 py-3 ${theme === 'dark' ? 'bg-slate-700/20 border-b border-slate-600' : 'bg-slate-100/30 border-b border-slate-300'}`}>
                   <h3 className="text-sm font-semibold text-amber-400 uppercase tracking-wide">
                     {date}
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mt-1`}>
                     {txns.length} transaction{txns.length !== 1 ? 's' : ''} • 
                     Total: ${txns.reduce((sum, t) => sum + Math.abs(t.amount), 0).toFixed(2)}
                   </p>
@@ -641,7 +788,7 @@ function Transactions() {
                 {txns.map((txn) => (
                   <div
                     key={txn.id}
-                    className="px-6 py-4 hover:bg-slate-700/20 transition-all border-b border-slate-700/50 last:border-b-0"
+                    className={`px-6 py-4 transition-all ${theme === 'dark' ? 'hover:bg-slate-700/20 border-b border-slate-700/50 last:border-b-0' : 'hover:bg-slate-100/20 border-b border-slate-200/50 last:border-b-0'}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1">
@@ -654,12 +801,12 @@ function Transactions() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            <p className="font-semibold text-white">{txn.description}</p>
-                            <span className="px-2 py-1 bg-slate-700/50 text-slate-300 rounded text-xs">
+                            <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txn.description}</p>
+                            <span className={`px-2 py-1 ${theme === 'dark' ? 'bg-slate-700/50 text-slate-300' : 'bg-slate-200/50 text-slate-700'} rounded text-xs`}>
                               {txn.category_name}
                             </span>
                           </div>
-                          <p className="text-sm text-slate-400 mt-1">
+                          <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mt-1`}>
                             {new Date(txn.date).toLocaleTimeString('en-US', { 
                               hour: '2-digit', 
                               minute: '2-digit' 
@@ -677,7 +824,7 @@ function Transactions() {
                           onClick={() => handleDelete(txn.id)}
                           className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-medium text-sm transition-all border border-red-500/30"
                         >
-                          🗑️
+                          <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300 transition-colors" strokeWidth={2} />
                         </button>
                       </div>
                     </div>
