@@ -42,8 +42,10 @@ FREE_MODELS = [
     "mistralai/devstral-2512:free",
     "nvidia/nemotron-3-nano-30b-a3b:free",       # Nvidia    - Nemotron
     "qwen/qwen-2.5-vl-7b-instruct:free",
+    "qwen/qwen3-coder:free",                     # Alibaba   - Qwen 3 Coder
     "xiaomi/mimo-v2-flash:free",
-    "tngtech/tng-r1t-chimera:free",
+    "z-ai/glm-4.5-air:free",                     # Z-AI      - GLM 4.5 Air
+    "tngtech/tng-r1t-chimera:free"
 ]
 
 SECRET_KEY = os.getenv("SECRET_KEY")
