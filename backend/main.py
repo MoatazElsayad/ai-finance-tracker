@@ -26,6 +26,10 @@ import asyncio
 from database import get_db, init_database
 from models import User, Transaction, Category, Budget
 from dotenv import load_dotenv
+from ocr_utils import parse_receipt
+from fastapi import File, UploadFile
+import tempfile
+import shutil
 
 load_dotenv()
 
@@ -1097,6 +1101,145 @@ def update_profile(
     }
 
 # ============================================
+# ============================================
+# OCR & RECEIPT PARSING ROUTES
+# ============================================
+
+class ReceiptUpload(BaseModel):
+    """Schema for receipt upload with image"""
+    pass
+
+class ReceiptData(BaseModel):
+    """Schema for receipt data confirmation"""
+    merchant: str
+    amount: float
+    date: str  # Format: "2026-01-15"
+    category_id: int
+    description: str = ""
+
+@app.post("/ocr/upload-receipt")
+async def upload_receipt(
+    file: UploadFile = File(...),
+    token: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Upload a receipt image and extract data using OCR
+    Returns extracted merchant, amount, date, and suggested category
+    """
+    try:
+        # Get current user if authenticated (optional for testing)
+        user = None
+        if token:
+            try:
+                user = get_current_user(token, db)
+            except:
+                pass
+        
+        # Save uploaded file temporarily
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, file.filename)
+        
+        try:
+            with open(temp_file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            # Get available categories for categorization
+            categories_db = db.query(Category).filter(
+                (Category.user_id == None) | (Category.user_id == (user.id if user else None))
+            ).all()
+            
+            categories_list = [
+                {
+                    "id": cat.id,
+                    "name": cat.name,
+                    "type": cat.type,
+                    "keywords": cat.name.lower().split()
+                }
+                for cat in categories_db
+            ]
+            
+            # Parse receipt
+            result = parse_receipt(temp_file_path, categories_list)
+            
+            if result["success"]:
+                return {
+                    "success": True,
+                    "data": {
+                        "merchant": result["merchant"],
+                        "amount": result["amount"],
+                        "date": result["date"],
+                        "category_id": result["category_id"],
+                        "confidence": result["confidence"],
+                        "reasoning": result["reasoning"],
+                        "extracted_text": result["extracted_text"][:500]  # Limit text preview
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": result["error"]
+                }
+        
+        finally:
+            # Clean up temporary files
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to process receipt: {str(e)}"
+        }
+
+@app.post("/ocr/confirm-receipt")
+def confirm_receipt(
+    data: ReceiptData,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Confirm and save extracted receipt data as a transaction
+    Called after user reviews and confirms OCR extraction
+    """
+    try:
+        user = get_current_user(token, db)
+        
+        # Validate category exists and belongs to user or is default
+        category = db.query(Category).filter(
+            Category.id == data.category_id
+        ).first()
+        
+        if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+        
+        # Create transaction
+        transaction = Transaction(
+            user_id=user.id,
+            category_id=data.category_id,
+            amount=data.amount,  # Could be negative for expenses
+            description=f"Receipt: {data.merchant}" if not data.description else data.description,
+            date=datetime.fromisoformat(data.date)
+        )
+        
+        db.add(transaction)
+        db.commit()
+        db.refresh(transaction)
+        
+        return {
+            "success": True,
+            "message": "Transaction created from receipt",
+            "transaction_id": transaction.id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        return {
+            "success": False,
+            "error": f"Failed to save transaction: {str(e)}"
+        }
+
 # TEST SSE ROUTE
 # ============================================
 

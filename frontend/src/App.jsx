@@ -15,6 +15,7 @@ import Transactions from './pages/Transactions';
 import Budget from './pages/Budget';
 import Landing from "./pages/Landing";
 import Profile from './pages/Profile';
+import ReceiptUpload from './pages/ReceiptUpload';
 import Sidebar from './components/Sidebar';
 
 function App() {
@@ -50,7 +51,8 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/budget" element={<Budget />} />
-          <Route path="/profile" element={<Profile />} />           {/* ← added here */}
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/receipt-upload" element={<ReceiptUpload />} />
         </Route>
 
         {/* Catch-all */}
