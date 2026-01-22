@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser, askAIQuestion, createAIChatProgressStream } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, MessageSquare } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -56,6 +56,13 @@ function Dashboard() {
   const [chatModelUsed, setChatModelUsed] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatTryingModel, setChatTryingModel] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isChatWidgetOpen, setIsChatWidgetOpen] = useState(false);
+  const [chatWidgetMessages, setChatWidgetMessages] = useState([]);
+  const [chatWidgetInput, setChatWidgetInput] = useState('');
+  const [chatWidgetLoading, setChatWidgetLoading] = useState(false);
+  const [chatWidgetTryingModel, setChatWidgetTryingModel] = useState(null);
+  const [chatWidgetModelUsed, setChatWidgetModelUsed] = useState(null);
   const [user, setUser] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -81,6 +88,18 @@ function Dashboard() {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    if (aiMode === 'chat' && chatMessages.length === 0) {
+      setChatMessages([{ role: 'assistant', text: 'Hi! How can I help you?' }]);
+    }
+  }, [aiMode]);
+
+  useEffect(() => {
+    if (isChatWidgetOpen && chatWidgetMessages.length === 0) {
+      setChatWidgetMessages([{ role: 'assistant', text: 'Hi! How can I help you?' }]);
+    }
+  }, [isChatWidgetOpen]);
+
   // Get date range based on view mode
   const getDateRange = () => {
     if (viewMode === 'monthly') {
@@ -96,6 +115,93 @@ function Dashboard() {
     } else {
       // Overall: all time (very far past to future)
       return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+    }
+  };
+
+  const handleWidgetAsk = async () => {
+    if (!chatWidgetInput.trim()) return;
+    setChatWidgetMessages(prev => [...prev, { role: 'user', text: chatWidgetInput }]);
+    const question = chatWidgetInput;
+    setChatWidgetInput('');
+    setChatWidgetModelUsed(null);
+    setChatWidgetLoading(true);
+    setChatWidgetTryingModel(null);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: 'Please log in again to use AI chat.' }]);
+        setChatWidgetLoading(false);
+        return;
+      }
+
+      const eventSourceUrl = `${apiUrl}/ai/chat_progress?year=${selectedMonth.year}&month=${selectedMonth.month}&question=${encodeURIComponent(question)}&token=${token}`;
+      const eventSource = new EventSource(eventSourceUrl);
+      let hasReceivedMessage = false;
+
+      const timeout = setTimeout(() => {
+        if (!hasReceivedMessage) {
+          eventSource.close();
+          fallbackToRegularChat();
+        }
+      }, 5000);
+
+      const fallbackToRegularChat = async () => {
+        try {
+          const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, question);
+          setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: result.answer }]);
+          setChatWidgetModelUsed(result.model_used || null);
+        } catch {
+          setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: 'Unable to connect to AI services. Please try again later.' }]);
+        } finally {
+          setChatWidgetLoading(false);
+        }
+      };
+
+      eventSource.onmessage = (event) => {
+        hasReceivedMessage = true;
+        clearTimeout(timeout);
+        try {
+          const data = JSON.parse(event.data);
+          switch (data.type) {
+            case 'trying_model':
+              setChatWidgetTryingModel(data.model);
+              break;
+            case 'success':
+              setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: data.answer }]);
+              setChatWidgetModelUsed(data.model);
+              setChatWidgetLoading(false);
+              eventSource.close();
+              break;
+            case 'error':
+              setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: `All Models Busy\n\n${data.message}\n\nPlease try again in a few minutes.` }]);
+              setChatWidgetLoading(false);
+              eventSource.close();
+              break;
+          }
+        } catch {}
+      };
+
+      eventSource.onerror = () => {
+        clearTimeout(timeout);
+        if (!hasReceivedMessage) {
+          fallbackToRegularChat();
+        } else {
+          setChatWidgetLoading(false);
+        }
+        eventSource.close();
+      };
+    } catch {
+      try {
+        const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, question);
+        setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: result.answer }]);
+        setChatWidgetModelUsed(result.model_used || null);
+      } catch {
+        setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: 'Unable to connect to AI services. Please try again later.' }]);
+      } finally {
+        setChatWidgetLoading(false);
+      }
     }
   };
 
@@ -293,7 +399,8 @@ function Dashboard() {
 
   const handleAskAI = async () => {
     if (!chatQuestion.trim()) return;
-    setAiChatAnswer('');
+    setChatMessages(prev => [...prev, { role: 'user', text: chatQuestion }]);
+    setChatQuestion('');
     setChatModelUsed(null);
     setChatLoading(true);
     setChatTryingModel(null);
@@ -321,10 +428,10 @@ function Dashboard() {
       const fallbackToRegularChat = async () => {
         try {
           const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, chatQuestion);
-          setAiChatAnswer(result.answer);
+          setChatMessages(prev => [...prev, { role: 'assistant', text: result.answer }]);
           setChatModelUsed(result.model_used || null);
         } catch (err) {
-          setAiChatAnswer('Unable to connect to AI services. Please try again later.');
+          setChatMessages(prev => [...prev, { role: 'assistant', text: 'Unable to connect to AI services. Please try again later.' }]);
         } finally {
           setChatLoading(false);
         }
@@ -342,13 +449,13 @@ function Dashboard() {
             case 'model_failed':
               break;
             case 'success':
-              setAiChatAnswer(data.answer);
+              setChatMessages(prev => [...prev, { role: 'assistant', text: data.answer }]);
               setChatModelUsed(data.model);
               setChatLoading(false);
               eventSource.close();
               break;
             case 'error':
-              setAiChatAnswer(`All Models Busy\n\n${data.message}\n\nPlease try again in a few minutes.`);
+              setChatMessages(prev => [...prev, { role: 'assistant', text: `All Models Busy\n\n${data.message}\n\nPlease try again in a few minutes.` }]);
               setChatLoading(false);
               eventSource.close();
               break;
@@ -370,10 +477,10 @@ function Dashboard() {
     } catch {
       try {
         const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, chatQuestion);
-        setAiChatAnswer(result.answer);
+        setChatMessages(prev => [...prev, { role: 'assistant', text: result.answer }]);
         setChatModelUsed(result.model_used || null);
       } catch {
-        setAiChatAnswer('Unable to connect to AI services. Please try again later.');
+        setChatMessages(prev => [...prev, { role: 'assistant', text: 'Unable to connect to AI services. Please try again later.' }]);
       } finally {
         setChatLoading(false);
       }
@@ -1409,10 +1516,43 @@ function Dashboard() {
       {/* Section 5: AI Financial Insights */}
       <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
-          <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} rounded-3xl shadow-xl border`}>
-            
-            
-            {/* Model Badge - Top Right Corner */}
+          <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} rounded-3xl shadow-xl border relative overflow-hidden`}>
+            {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (
+              <div className="absolute top-6 right-6 z-10">
+                {(() => {
+                  const activeModel = aiMode === 'summary' ? aiModelUsed : chatModelUsed;
+                  const modelInfo = getModelInfo(activeModel);
+                  const colorMap = {
+                    emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
+                    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
+                    purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/50 text-purple-300',
+                    cyan: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300',
+                    pink: 'from-pink-500/20 to-rose-500/20 border-pink-400/50 text-pink-300',
+                    amber: 'from-amber-500/20 to-yellow-500/20 border-amber-400/50 text-amber-300',
+                    green: 'from-green-500/20 to-emerald-500/20 border-green-400/50 text-green-300',
+                    orange: 'from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300',
+                    gray: 'from-slate-400/20 to-slate-600/20 border-slate-400/50 text-slate-200',
+                    'blue-700': 'from-blue-700/20 to-cyan-600/20 border-blue-600/50 text-blue-300',
+                    'blue-600': 'from-blue-600/20 to-cyan-500/20 border-blue-500/50 text-blue-300',
+                    'slate-100': 'from-slate-200/20 to-slate-400/20 border-slate-300/50 text-slate-800'
+                  };
+                  const colorClass = colorMap[modelInfo.color] || colorMap.amber;
+                  return (
+                    <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5`}>
+                      {modelInfo.logo.startsWith('http') ? (
+                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-5 h-5 object-contain rounded-sm" />
+                      ) : (
+                        <span className="text-lg">{modelInfo.logo}</span>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
+                        <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
         <div className="p-8">
           <div className="max-w-4xl mx-auto w-full">
             <div className="flex items-center justify-between mb-6">
@@ -1551,62 +1691,62 @@ function Dashboard() {
             </div>
             )
           ) : (
-            aiChatAnswer ? (
-              <div className="space-y-6">
-                <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} rounded-2xl p-6 shadow-md border max-h-[340px] overflow-y-auto`}>
-                  <div className={`${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'} whitespace-pre-wrap leading-relaxed text-sm`}>
-                    {aiChatAnswer}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-green-500/30">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                    <span className="text-xs text-green-400 font-medium">Answer Ready</span>
-                  </div>
-                  <button
-                    onClick={() => { setAiChatAnswer(''); setChatModelUsed(null); }}
-                    className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/60 hover:bg-slate-700 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-blue-400 font-medium rounded-lg flex items-center gap-2 transition-all border`}
-                  >
-                    <RefreshCw className="w-5 h-5" strokeWidth={2.2} />
-                    <span>Ask Another</span>
-                  </button>
-                </div>
+            <div className="space-y-4">
+              <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} rounded-2xl p-6 shadow-md border max-h-[340px] overflow-y-auto`}>
+                {chatMessages.map((m, idx) => {
+                  const isAssistant = m.role === 'assistant';
+                  const isLast = idx === chatMessages.length - 1;
+                  const modelInfo = chatModelUsed ? getModelInfo(chatModelUsed) : (chatTryingModel ? getModelInfo(chatTryingModel) : null);
+                  return (
+                    <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'} mb-3`}>
+                      <div className={`max-w-[75%] ${isAssistant ? (theme === 'dark' ? 'bg-slate-700/60 text-slate-100' : 'bg-slate-100 text-slate-800') : (theme === 'dark' ? 'bg-blue-600/80 text-white' : 'bg-blue-500/90 text-white')} rounded-xl px-4 py-3`}>
+                        {isAssistant && isLast && modelInfo && (
+                          <div className="flex items-center gap-2 mb-2">
+                            {modelInfo.logo.startsWith('http') ? (
+                              <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4 rounded-sm object-contain" />
+                            ) : (
+                              <span className="text-base">{modelInfo.logo}</span>
+                            )}
+                            <span className="text-[11px] font-semibold">{chatModelUsed ? `Answered by ${modelInfo.name}` : `Using ${modelInfo.name}`}</span>
+                          </div>
+                        )}
+                        <div className="text-sm whitespace-pre-wrap leading-relaxed">{m.text}</div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} rounded-xl p-6 shadow-md border`}>
-                <div className="mb-3">
-                  <label className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm font-medium mb-2 block`}>Ask about your data</label>
+              <div className="flex items-center justify-between">
+                <div className="h-6 flex items-center">
+                  {chatLoading && (
+                    <>
+                      {chatTryingModel ? (
+                        <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Trying {getModelInfo(chatTryingModel).name}...</span>
+                      ) : (
+                        <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Connecting to AI...</span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={chatQuestion}
                     onChange={(e) => setChatQuestion(e.target.value)}
-                    placeholder="How much did I spend on food this month?"
-                    className={`w-full px-4 py-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-300 text-slate-800 placeholder:text-slate-400'}`}
+                    placeholder="Type your message..."
+                    className={`w-64 px-4 py-2 rounded-lg border ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-300 text-slate-800 placeholder:text-slate-400'}`}
                     disabled={chatLoading}
                   />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="h-6 flex items-center">
-                    {chatLoading && (
-                      <>
-                        {chatTryingModel ? (
-                          <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Trying {getModelInfo(chatTryingModel).name}...</span>
-                        ) : (
-                          <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Connecting to AI...</span>
-                        )}
-                      </>
-                    )}
-                  </div>
                   <button
                     onClick={handleAskAI}
                     disabled={chatLoading || !chatQuestion.trim()}
-                    className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold shadow transition-all hover:scale-105 disabled:opacity-50"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold shadow transition-all hover:scale-105 disabled:opacity-50"
                   >
-                    {chatLoading ? 'Asking...' : 'Ask'}
+                    {chatLoading ? 'Send...' : 'Send'}
                   </button>
                 </div>
               </div>
-            )
+            </div>
           )}
         </div>
       </div>
@@ -1681,8 +1821,85 @@ function Dashboard() {
       </div>
         </div>
       </section>
+    {/* Floating Chat Widget Button */}
+    <button
+      onClick={() => setIsChatWidgetOpen(prev => !prev)}
+      className={`fixed bottom-6 right-6 z-50 rounded-full p-4 shadow-lg transition-all hover:scale-105 ${theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`}
+      aria-label="Open AI Chat"
+    >
+      <MessageSquare className="w-6 h-6" />
+    </button>
+
+    {/* Chat Widget Popup */}
+    {isChatWidgetOpen && (
+      <div className={`fixed bottom-20 right-6 z-50 w-96 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-slate-800'} backdrop-blur-md shadow-2xl rounded-2xl border`}>
+        <div className={`flex items-center justify-between px-4 py-3 ${theme === 'dark' ? 'bg-slate-800/70 border-b border-slate-700' : 'bg-slate-100/70 border-b border-slate-300'} rounded-t-2xl`}>
+          <div className="flex items-center gap-2">
+            <Bot className={`${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'} w-5 h-5`} />
+            <span className="font-semibold text-sm">AI Chat</span>
+          </div>
+          {(() => {
+            const activeModel = chatWidgetModelUsed || chatWidgetTryingModel;
+            if (!activeModel) return null;
+            const modelInfo = getModelInfo(activeModel);
+            return (
+              <div className={`flex items-center gap-2 rounded-md px-2 py-1 border ${theme === 'dark' ? 'bg-slate-800/60 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
+                {modelInfo.logo.startsWith('http') ? (
+                  <img src={modelInfo.logo} alt={modelInfo.name} className="w-3.5 h-3.5 object-contain rounded-sm" />
+                ) : (
+                  <span className="text-sm">{modelInfo.logo}</span>
+                )}
+                <span className="text-[10px] font-semibold">{chatWidgetModelUsed ? modelInfo.name : `Trying ${modelInfo.name}`}</span>
+              </div>
+            );
+          })()}
+          <button onClick={() => setIsChatWidgetOpen(false)} className={`${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} text-sm`}>×</button>
+        </div>
+        <div className="p-4 max-h-[320px] overflow-y-auto">
+          {chatWidgetMessages.map((m, idx) => {
+            const isAssistant = m.role === 'assistant';
+            const isLast = idx === chatWidgetMessages.length - 1;
+            const modelInfo = chatWidgetModelUsed ? getModelInfo(chatWidgetModelUsed) : (chatWidgetTryingModel ? getModelInfo(chatWidgetTryingModel) : null);
+            return (
+              <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'} mb-3`}>
+                <div className={`max-w-[80%] ${isAssistant ? (theme === 'dark' ? 'bg-slate-800/60 text-slate-100' : 'bg-slate-100 text-slate-800') : (theme === 'dark' ? 'bg-blue-600/80 text-white' : 'bg-blue-500/90 text-white')} rounded-xl px-4 py-3`}>
+                  {isAssistant && isLast && modelInfo && (
+                    <div className="flex items-center gap-2 mb-2">
+                      {modelInfo.logo.startsWith('http') ? (
+                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-3.5 h-3.5 rounded-sm object-contain" />
+                      ) : (
+                        <span className="text-sm">{modelInfo.logo}</span>
+                      )}
+                      <span className="text-[10px] font-semibold">{chatWidgetModelUsed ? `Answered by ${modelInfo.name}` : `Using ${modelInfo.name}`}</span>
+                    </div>
+                  )}
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed">{m.text}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className={`flex items-center gap-2 px-4 py-3 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} rounded-b-2xl`}>
+          <input
+            type="text"
+            value={chatWidgetInput}
+            onChange={(e) => setChatWidgetInput(e.target.value)}
+            placeholder="Type your message..."
+            className={`flex-1 px-3 py-2 rounded-lg border ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-300 text-slate-800 placeholder:text-slate-400'}`}
+            disabled={chatWidgetLoading}
+          />
+          <button
+            onClick={handleWidgetAsk}
+            disabled={chatWidgetLoading || !chatWidgetInput.trim()}
+            className="px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold shadow transition-all hover:scale-105 disabled:opacity-50"
+          >
+            {chatWidgetLoading ? 'Send...' : 'Send'}
+          </button>
+        </div>
+      </div>
+    )}
     </div>
   );
 }
-
+ 
 export default Dashboard;
