@@ -143,7 +143,7 @@ function Sidebar({ user }) {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 title={isCollapsed ? item.label : ''}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all border ${
+                className={`group flex items-center ${isCollapsed ? 'justify-center gap-0 px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all border ${
                   isActive(item.path)
                     ? isDark
                       ? 'bg-gradient-to-r from-amber-400/15 to-amber-500/10 text-amber-400 border-amber-400/40 shadow-lg'
@@ -153,8 +153,8 @@ function Sidebar({ user }) {
                     : 'text-slate-600 hover:bg-slate-100 hover:text-amber-600 border-slate-200'
                 }`}
               >
-                {isActive(item.path) && <span className="w-1.5 h-6 rounded-full bg-amber-400" />}
-                <Icon className="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" />
+                {!isCollapsed && isActive(item.path) && <span className="w-1.5 h-6 rounded-full bg-amber-400" />}
+                <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? '' : ''}`} />
                 {!isCollapsed && <span className="font-medium">{item.label}</span>}
               </Link>
             );
