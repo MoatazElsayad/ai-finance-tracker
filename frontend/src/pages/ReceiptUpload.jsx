@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Upload, Camera, Check, AlertCircle, Loader } from 'lucide-react';
+import { Upload, Camera, Check, AlertCircle, Loader, ArrowRight, RefreshCw } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function ReceiptUpload() {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const isDark = theme === 'dark';
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -15,6 +17,7 @@ export default function ReceiptUpload() {
   const [error, setError] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [editData, setEditData] = useState({
     merchant: '',
     amount: '',
@@ -119,7 +122,7 @@ export default function ReceiptUpload() {
           description: ''
         });
         setPreviewImage(null);
-        alert('Receipt saved as transaction!');
+        setShowSuccess(true);
       } else {
         setError(result.error || 'Failed to save transaction');
       }
@@ -129,6 +132,52 @@ export default function ReceiptUpload() {
       setSubmitting(false);
     }
   };
+
+  const handleReset = () => {
+    setShowSuccess(false);
+    setExtractedData(null);
+    setPreviewImage(null);
+    setError(null);
+  };
+
+  if (showSuccess) {
+    return (
+      <div className={`p-6 max-w-2xl mx-auto ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} min-h-screen flex flex-col items-center justify-center`}>
+        <div className={`text-center p-8 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-white'} shadow-lg max-w-md w-full`}>
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-green-600" />
+          </div>
+          <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Transaction Saved!
+          </h2>
+          <p className={`mb-8 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Your receipt has been successfully processed and added to your transactions.
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate('/transactions')}
+              className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            >
+              View Transactions
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleReset}
+              className={`flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg font-medium transition-colors ${
+                isDark 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Upload Another
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`p-6 max-w-2xl mx-auto ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} min-h-screen`}>

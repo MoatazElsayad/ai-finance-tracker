@@ -1212,11 +1212,16 @@ def confirm_receipt(
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
         
+        # Determine correct sign for amount
+        final_amount = abs(data.amount)
+        if category.type == "expense":
+            final_amount = -final_amount
+        
         # Create transaction
         transaction = Transaction(
             user_id=user.id,
             category_id=data.category_id,
-            amount=data.amount,  # Could be negative for expenses
+            amount=final_amount,
             description=f"Receipt: {data.merchant}" if not data.description else data.description,
             date=datetime.fromisoformat(data.date)
         )
