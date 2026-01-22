@@ -9,7 +9,7 @@ services:
       - "8000:8000"
     environment:
       - SECRET_KEY=your-secret-key-change-this
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     volumes:
       - ./backend:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
