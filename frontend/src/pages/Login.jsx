@@ -52,8 +52,8 @@ function Login() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-12">
-          <div className="inline-block p-4 bg-amber-400/20 backdrop-blur-sm rounded-2xl mb-6 border border-amber-400/30 shadow-lg">
-            <span className="text-5xl">💼</span>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400/30 to-purple-500/30 backdrop-blur-sm rounded-2xl mb-6 border border-amber-400/30 shadow-lg">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500"></div>
           </div>
           <h1 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>AI Finance Tracker</h1>
           <p className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} style={{ fontSize: '1.125rem' }}>
@@ -67,7 +67,7 @@ function Login() {
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-sm border border-red-500/30 rounded-xl text-red-300 text-sm">
               <div className="flex items-center gap-2">
-                <span className="text-lg">⚠️</span>
+                <AlertTriangle className="w-5 h-5" />
                 <span>{error}</span>
               </div>
             </div>
