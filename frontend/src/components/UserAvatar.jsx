@@ -9,7 +9,8 @@ function UserAvatar({ user, size = "w-10 h-10", showName = false }) {
   
   // DiceBear API URL with avataaars style
   // Format: https://api.dicebear.com/9.x/{style}/svg?seed={seed}
-  const avatarUrl = user?.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(seed)}&scale=80`;
+  const style = (user?.gender === 'female') ? 'adventurer-neutral' : 'adventurer';
+  const avatarUrl = user?.avatar || `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&scale=80`;
 
   return (
     <div className="flex items-center gap-3">

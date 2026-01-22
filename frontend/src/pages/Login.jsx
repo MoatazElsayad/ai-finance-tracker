@@ -19,6 +19,7 @@ function Login() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('male');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,7 @@ function Login() {
         await login(email, password);
       } else {
         // Register - include all new fields
-        await register(email, username, firstName, lastName, phone, password);
+        await register(email, username, firstName, lastName, phone, gender, password);
       }
       
       navigate('/dashboard');
@@ -150,6 +151,23 @@ function Login() {
                   className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' : 'bg-slate-100/50 border-slate-300 text-slate-900 placeholder-slate-500'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                   placeholder="+201234567890"
                 />
+              </div>
+            )}
+
+            {/* Gender (only for registration) */}
+            {!isLogin && (
+              <div>
+                <label className={`block text-sm font-semibold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
+                  Gender
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </div>
             )}
 
