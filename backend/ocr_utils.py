@@ -324,25 +324,30 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
     
     prompt = f"""
-    Extract the following information from this receipt text:
-    1. Merchant Name
-    2. Total Amount
-    3. Date (YYYY-MM-DD)
-    4. Category ID (Choose the best fit from the list below)
+    Analyze the following receipt text and extract structured data.
     
     Receipt Text:
     \"\"\"
     {text}
     \"\"\"
     
-    Available Categories:
+    Task:
+    1. Identify the Merchant Name.
+    2. Identify the Total Amount.
+    3. Identify the Date (YYYY-MM-DD).
+    4. SELECT THE BEST CATEGORY from the provided list below based on the merchant and items.
+    
+    Available Categories (ID: Name - Type):
     {categories_str}
     
-    Return ONLY a JSON object with keys: "merchant", "amount", "date", "category_id".
-    If a field is missing, make a best guess or use null.
-    For date, use YYYY-MM-DD format. If year is missing, assume current year.
-    For amount, use a number (float).
-    For category_id, use the integer ID from the list.
+    Instructions:
+    - You MUST choose one Category ID from the list above. Do not invent new categories.
+    - If the merchant is a restaurant/cafe, choose 'Food & Dining'.
+    - If it's a gas station/uber, choose 'Transportation'.
+    - If unsure, choose the closest match or 'Other Expense'.
+    
+    Return ONLY a valid JSON object with these keys: "merchant", "amount", "date", "category_id".
+    Example: {{"merchant": "Walmart", "amount": 45.20, "date": "2023-05-12", "category_id": 3}}
     """
     
     url = "https://openrouter.ai/api/v1/chat/completions"

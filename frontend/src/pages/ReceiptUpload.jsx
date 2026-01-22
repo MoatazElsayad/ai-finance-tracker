@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Upload, Camera, Check, AlertCircle, Loader, ArrowRight, RefreshCw } from 'lucide-react';
+import { Upload, Camera, Check, AlertCircle, Loader, ArrowRight, RefreshCw, ScanLine, DollarSign, Calendar, Tag, FileText, X } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -143,9 +143,9 @@ export default function ReceiptUpload() {
   if (showSuccess) {
     return (
       <div className={`p-6 max-w-2xl mx-auto ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} min-h-screen flex flex-col items-center justify-center`}>
-        <div className={`text-center p-8 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-white'} shadow-lg max-w-md w-full`}>
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
+        <div className={`text-center p-8 rounded-2xl ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white shadow-xl'} max-w-md w-full`}>
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <Check className="w-10 h-10 text-green-600" strokeWidth={3} />
           </div>
           <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Transaction Saved!
@@ -157,20 +157,20 @@ export default function ReceiptUpload() {
           <div className="flex flex-col gap-3">
             <button
               onClick={() => navigate('/transactions')}
-              className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg"
             >
               View Transactions
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </button>
             <button
               onClick={handleReset}
-              className={`flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-xl font-semibold transition-all ${
                 isDark 
                   ? 'bg-slate-700 hover:bg-slate-600 text-white' 
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
               }`}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-5 h-5" />
               Upload Another
             </button>
           </div>
@@ -180,271 +180,323 @@ export default function ReceiptUpload() {
   }
 
   return (
-    <div className={`p-6 max-w-2xl mx-auto ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} min-h-screen`}>
-      <h1 className={`text-3xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-        Receipt Scanner
-      </h1>
-
-      {/* Upload Section */}
-      {!extractedData && (
-        <div className={`rounded-lg p-8 mb-6 border-2 border-dashed transition-colors ${
-          isDark ? 'border-slate-600 bg-slate-800/30 hover:bg-slate-800/50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'
-        } cursor-pointer`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="flex flex-col items-center gap-4">
-            <Upload className={`w-12 h-12 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-            <div className="text-center">
-              <p className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Drop receipt image here
-              </p>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                or click to browse
-              </p>
-            </div>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </div>
-      )}
-
-      {/* Camera Button */}
-      {!extractedData && (
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              isDark
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
-          >
-            <Camera className="w-4 h-4" />
-            Take Photo
-          </button>
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className={`rounded-lg p-8 flex flex-col items-center gap-4 ${
-          isDark ? 'bg-slate-800' : 'bg-white'
-        }`}>
-          <Loader className={`w-8 h-8 animate-spin ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-          <p className={isDark ? 'text-slate-300' : 'text-slate-700'}>
-            Analyzing receipt...
-          </p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className={`rounded-lg p-4 flex gap-3 mb-6 ${
-          isDark ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-200'
-        }`}>
-          <AlertCircle className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
-          <p className={isDark ? 'text-red-200' : 'text-red-800'}>{error}</p>
-        </div>
-      )}
-
-      {/* Preview Image */}
-      {previewImage && (
-        <div className="mb-6 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600">
-          <img src={previewImage} alt="Receipt preview" className="w-full max-h-96 object-contain" />
-        </div>
-      )}
-
-      {/* Extracted Data Form */}
-      {extractedData && (
-        <div className={`rounded-lg p-6 mb-6 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
-          <div className="flex items-center gap-2 mb-4">
-            <Check className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
-            <p className={`font-semibold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-              Receipt analyzed (Confidence: {Math.round(extractedData.confidence)}%)
+    <div className={`min-h-screen px-6 py-8 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className={`text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'} flex items-center gap-3`}>
+              <div className={`p-2 rounded-lg ${isDark ? 'bg-amber-400/20 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
+                <ScanLine className="w-8 h-8" />
+              </div>
+              Smart Receipt Scanner
+            </h1>
+            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              Upload a receipt and let AI extract the details for you.
             </p>
           </div>
+          
+          {extractedData && (
+             <button
+              onClick={() => {
+                if (window.confirm('Discard changes and upload new?')) {
+                   handleReset();
+                }
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm'
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              New Upload
+            </button>
+          )}
+        </div>
 
-          <div className="space-y-4">
-            {/* Merchant */}
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                Merchant Name
-              </label>
+        {/* Error State */}
+        {error && (
+          <div className={`rounded-xl p-4 flex gap-3 mb-6 ${
+            isDark ? 'bg-red-900/20 border border-red-800/50' : 'bg-red-50 border border-red-200'
+          }`}>
+            <AlertCircle className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+            <p className={`font-medium ${isDark ? 'text-red-200' : 'text-red-800'}`}>{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto"><X className={`w-4 h-4 ${isDark ? 'text-red-400' : 'text-red-600'}`} /></button>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        {!extractedData && !loading ? (
+          // Upload Screen
+          <div className="max-w-2xl mx-auto mt-12">
+            <div 
+              className={`relative group rounded-3xl p-10 border-3 border-dashed transition-all duration-300 cursor-pointer text-center ${
+                isDark 
+                  ? 'border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-amber-400/50' 
+                  : 'border-slate-300 bg-white hover:bg-slate-50 hover:border-amber-400'
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
+                isDark ? 'bg-slate-700 text-amber-400' : 'bg-amber-50 text-amber-600'
+              }`}>
+                <Upload className="w-10 h-10" />
+              </div>
+              
+              <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Click to upload or drag & drop
+              </h3>
+              <p className={`text-sm mb-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Supports JPG, PNG, WEBP (Max 10MB)
+              </p>
+              
+              <div className="flex justify-center gap-4">
+                 <button 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     fileInputRef.current?.click();
+                   }}
+                   className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                     isDark ? 'bg-amber-400 text-slate-900 hover:bg-amber-300' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-md'
+                   }`}
+                 >
+                   Select File
+                 </button>
+                 <button 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     cameraInputRef.current?.click();
+                   }}
+                   className={`px-6 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                     isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                   }`}
+                 >
+                   <Camera className="w-5 h-5" />
+                   Camera
+                 </button>
+              </div>
+
               <input
-                type="text"
-                value={editData.merchant}
-                onChange={(e) => setEditData({ ...editData, merchant: e.target.value })}
-                className={`w-full px-3 py-2 rounded border transition-colors ${
-                  isDark
-                    ? 'bg-slate-700 border-slate-600 text-white focus:border-amber-400'
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-amber-600'
-                } focus:outline-none`}
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                className="hidden"
               />
             </div>
-
-            {/* Amount */}
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                Amount
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={editData.amount}
-                onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
-                className={`w-full px-3 py-2 rounded border transition-colors ${
-                  isDark
-                    ? 'bg-slate-700 border-slate-600 text-white focus:border-amber-400'
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-amber-600'
-                } focus:outline-none`}
-              />
+            
+            <div className={`mt-8 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'} text-sm`}>
+              <p>Powered by Advanced AI OCR Models</p>
             </div>
-
-            {/* Date */}
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                Date
-              </label>
-              <input
-                type="date"
-                value={editData.date}
-                onChange={(e) => setEditData({ ...editData, date: e.target.value })}
-                className={`w-full px-3 py-2 rounded border transition-colors ${
-                  isDark
-                    ? 'bg-slate-700 border-slate-600 text-white focus:border-amber-400'
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-amber-600'
-                } focus:outline-none`}
-              />
+          </div>
+        ) : loading ? (
+          // Loading Screen
+          <div className="flex flex-col items-center justify-center min-h-[50vh]">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full border-4 border-slate-200 dark:border-slate-700"></div>
+              <div className="absolute top-0 left-0 w-24 h-24 rounded-full border-4 border-amber-400 border-t-transparent animate-spin"></div>
+              <ScanLine className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-amber-400" />
             </div>
-
-            {/* Category */}
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                Category
-              </label>
-              <select
-                value={editData.category_id}
-                onChange={(e) => setEditData({ ...editData, category_id: e.target.value })}
-                className={`w-full px-3 py-2 rounded border transition-colors ${
-                  isDark
-                    ? 'bg-slate-700 border-slate-600 text-white focus:border-amber-400'
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-amber-600'
-                } focus:outline-none`}
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                Description (optional)
-              </label>
-              <input
-                type="text"
-                value={editData.description}
-                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                className={`w-full px-3 py-2 rounded border transition-colors ${
-                  isDark
-                    ? 'bg-slate-700 border-slate-600 text-white focus:border-amber-400'
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-amber-600'
-                } focus:outline-none`}
-              />
-            </div>
-
-            {/* OCR Text Preview */}
-            {extractedData.extracted_text && (
-              <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  Extracted Text
-                </label>
-                <textarea
-                  readOnly
-                  value={extractedData.extracted_text}
-                  className={`w-full px-3 py-2 rounded border text-xs h-24 ${
-                    isDark
-                      ? 'bg-slate-700 border-slate-600 text-slate-300'
-                      : 'bg-slate-50 border-slate-300 text-slate-700'
-                  }`}
+            <h3 className={`mt-8 text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Analyzing Receipt...
+            </h3>
+            <p className={`mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              Extracting merchant, date, and amount
+            </p>
+          </div>
+        ) : (
+          // Results Split View
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            {/* Left Column: Image Preview */}
+            <div className={`sticky top-8 rounded-2xl overflow-hidden shadow-lg border ${
+              isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            }`}>
+              <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+                <h3 className={`font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Original Receipt</h3>
+              </div>
+              <div className="p-4 bg-slate-900/50 flex justify-center">
+                <img 
+                  src={previewImage} 
+                  alt="Receipt preview" 
+                  className="max-h-[600px] w-auto object-contain rounded-lg shadow-sm" 
                 />
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={handleConfirmReceipt}
-              disabled={submitting}
-              className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
-                isDark
-                  ? 'bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-700'
-                  : 'bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-400'
-              }`}
-            >
-              {submitting ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  Save Transaction
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setExtractedData(null);
-                setEditData({ merchant: '', amount: '', date: '', category_id: '', description: '' });
-                setPreviewImage(null);
-                setError(null);
-              }}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                isDark
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                  : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
-              }`}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Right Column: Edit Form */}
+            <div className={`rounded-2xl shadow-xl border overflow-hidden ${
+              isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            }`}>
+               <div className={`p-6 border-b ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Review Details</h2>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${
+                      extractedData.confidence > 80 
+                        ? (isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700')
+                        : (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
+                    }`}>
+                      {extractedData.confidence > 80 ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                      {Math.round(extractedData.confidence)}% Confidence
+                    </div>
+                  </div>
+                  <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Please verify the extracted information below before saving.
+                  </p>
+               </div>
 
-      {/* Info Section */}
-      {!extractedData && (
-        <div className={`rounded-lg p-6 ${isDark ? 'bg-slate-800' : 'bg-blue-50 border border-blue-200'}`}>
-          <h3 className={`font-semibold mb-2 ${isDark ? 'text-blue-400' : 'text-blue-900'}`}>
-            How it works
-          </h3>
-          <ul className={`text-sm space-y-1 ${isDark ? 'text-slate-300' : 'text-blue-800'}`}>
-            <li>📷 Upload or take a photo of your receipt</li>
-            <li>🤖 AI automatically extracts merchant, amount, and date</li>
-            <li>✏️ Review and adjust the extracted data</li>
-            <li>💾 Save as a new transaction</li>
-          </ul>
-        </div>
-      )}
+               <div className="p-6 space-y-6">
+                  {/* Merchant Input */}
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Merchant Name
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Tag className={`h-5 w-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                      </div>
+                      <input
+                        type="text"
+                        value={editData.merchant}
+                        onChange={(e) => setEditData({ ...editData, merchant: e.target.value })}
+                        placeholder="e.g. Starbucks"
+                        className={`block w-full pl-10 pr-3 py-3 rounded-xl border transition-colors ${
+                          isDark
+                            ? 'bg-slate-900/50 border-slate-600 text-white focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                            : 'bg-white border-slate-300 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Amount Input */}
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        Total Amount
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <DollarSign className={`h-5 w-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editData.amount}
+                          onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
+                          placeholder="0.00"
+                          className={`block w-full pl-10 pr-3 py-3 rounded-xl border transition-colors ${
+                            isDark
+                              ? 'bg-slate-900/50 border-slate-600 text-white focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                              : 'bg-white border-slate-300 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Date Input */}
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        Date
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className={`h-5 w-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                        </div>
+                        <input
+                          type="date"
+                          value={editData.date}
+                          onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+                          className={`block w-full pl-10 pr-3 py-3 rounded-xl border transition-colors ${
+                            isDark
+                              ? 'bg-slate-900/50 border-slate-600 text-white focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                              : 'bg-white border-slate-300 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Category Selection */}
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Category
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setEditData({ ...editData, category_id: cat.id })}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-sm transition-all text-left ${
+                            parseInt(editData.category_id) === cat.id
+                              ? (isDark ? 'bg-amber-400/20 border-amber-400 text-amber-400' : 'bg-amber-50 border-amber-500 text-amber-700')
+                              : (isDark ? 'bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
+                          }`}
+                        >
+                          <span>{cat.icon}</span>
+                          <span className="truncate">{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Description Input */}
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Description <span className="text-slate-500 font-normal">(Optional)</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 pt-3 pointer-events-none">
+                        <FileText className={`h-5 w-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                      </div>
+                      <textarea
+                        value={editData.description}
+                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                        rows="2"
+                        placeholder="Add notes about this transaction..."
+                        className={`block w-full pl-10 pr-3 py-3 rounded-xl border transition-colors resize-none ${
+                          isDark
+                            ? 'bg-slate-900/50 border-slate-600 text-white focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                            : 'bg-white border-slate-300 text-slate-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <button
+                    onClick={handleConfirmReceipt}
+                    disabled={submitting}
+                    className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
+                      isDark
+                        ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed'
+                        : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader className="w-5 h-5 animate-spin" />
+                        Saving Transaction...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Confirm & Save
+                      </>
+                    )}
+                  </button>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
