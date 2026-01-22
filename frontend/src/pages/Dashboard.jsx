@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser, askAIQuestion, createAIChatProgressStream } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, MessageSquare } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -1592,20 +1592,6 @@ function Dashboard() {
                     Chat
                   </button>
                 </div>
-                {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (() => {
-                  const activeModel = aiMode === 'summary' ? aiModelUsed : chatModelUsed;
-                  const modelInfo = getModelInfo(activeModel);
-                  return (
-                    <div className={`flex items-center gap-2 rounded-md px-3 py-2 border ${theme === 'dark' ? 'bg-slate-800/60 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
-                      {modelInfo.logo.startsWith('http') ? (
-                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4 object-contain rounded-sm" />
-                      ) : (
-                        <span className="text-base">{modelInfo.logo}</span>
-                      )}
-                      <span className="text-xs font-semibold">{modelInfo.name}</span>
-                    </div>
-                  );
-                })()}
               </div>
             </div>
 
@@ -1721,7 +1707,48 @@ function Dashboard() {
                   {chatLoading && (
                     <>
                       {chatTryingModel ? (
-                        <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Trying {getModelInfo(chatTryingModel).name}...</span>
+                        <div className="h-6 flex items-center">
+                          {chatLoading && (
+                            <>
+                              {chatTryingModel ? (
+                                <span
+                                  className={`${
+                                    theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
+                                  } text-sm flex items-center gap-1.5`}
+                                >
+                                  <span>Trying</span>
+                                  {(() => {
+                                    const model = getModelInfo(chatTryingModel);
+                                    return model ? (
+                                      <>
+                                        {model.logo ? (
+                                          <img
+                                            src={model.logo}
+                                            alt={model.name || "Model"}
+                                            className="w-4 h-4 rounded-sm object-contain"
+                                          />
+                                        ) : (
+                                          <span className="w-4 h-4 rounded-sm bg-gray-200 dark:bg-gray-700 inline-block" />
+                                        )}
+                                        <span>{model.name || chatTryingModel}...</span>
+                                      </>
+                                    ) : (
+                                      <span>{chatTryingModel || "AI"}...</span>
+                                    );
+                                  })()}
+                                </span>
+                              ) : (
+                                <span
+                                  className={`${
+                                    theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
+                                  } text-sm`}
+                                >
+                                  Connecting to AI...
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
                       ) : (
                         <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Connecting to AI...</span>
                       )}
@@ -1824,10 +1851,29 @@ function Dashboard() {
     {/* Floating Chat Widget Button */}
     <button
       onClick={() => setIsChatWidgetOpen(prev => !prev)}
-      className={`fixed bottom-6 right-6 z-50 rounded-full p-4 shadow-lg transition-all hover:scale-105 ${theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`}
+      className={`
+        fixed bottom-6 right-6 z-50
+        rounded-full p-4
+        bg-gradient-to-tr from-blue-500 to-cyan-400
+        text-white
+        shadow-[0_8px_32px_rgba(245,158,11,0.35)]
+        backdrop-blur-sm
+        transition-all duration-400
+        hover:shadow-[0_16px_48px_rgba(245,158,11,0.45)] hover:-translate-y-1.5
+        active:scale-95 active:shadow-inner
+        flex items-center justify-center
+      `}
       aria-label="Open AI Chat"
     >
-      <MessageSquare className="w-6 h-6" />
+      {/* Ripple effect layer */}
+      <span className="
+        absolute inset-0 rounded-full
+        bg-white/20 scale-0 opacity-0
+        group-active:scale-150 group-active:opacity-0
+        group-active:transition-all group-active:duration-500 group-active:ease-out
+      " />
+
+      <Bot className="w-6 h-6 relative z-10" />
     </button>
 
     {/* Chat Widget Popup */}
