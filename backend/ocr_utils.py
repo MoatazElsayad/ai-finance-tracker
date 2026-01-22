@@ -12,22 +12,20 @@ import os
 import json
 import random
 
+# Vision-capable models
+VISION_MODELS = [
+    "google/gemini-2.0-flash-exp:free",
+    "qwen/qwen-2.5-vl-7b-instruct:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free"
+]
+
 # Models list (synced with main.py)
 FREE_MODELS = [
-    "openai/gpt-oss-120b:free",
     "google/gemini-2.0-flash-exp:free",
-    "google/gemma-3-27b-it:free",
-    "deepseek/deepseek-r1-0528:free",
-    "tngtech/deepseek-r1t2-chimera:free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "mistralai/devstral-2512:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "deepseek/deepseek-r1-distill-llama-70b:free",
     "qwen/qwen-2.5-vl-7b-instruct:free",
-    "qwen/qwen3-coder:free",
-    "xiaomi/mimo-v2-flash:free",
-    "z-ai/glm-4.5-air:free",
-    "tngtech/tng-r1t-chimera:free"
+    "mistralai/mistral-7b-instruct:free",
 ]
 
 # Try to use Google Generative AI (vision)
@@ -312,6 +310,111 @@ def categorize_transaction(
         "reasoning": f"Matched {best_score} keywords for category"
     }
 
+async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -> Optional[Dict[str, Any]]:
+    """
+    Use Vision AI to parse receipt image directly
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        print("No OpenRouter API key found, skipping AI parsing")
+        return None
+        
+    try:
+        with open(image_path, "rb") as image_file:
+            base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+    except Exception as e:
+        print(f"Failed to read image for AI: {e}")
+        return None
+
+    categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
+    
+    prompt = f"""
+    Analyze this receipt image and extract structured data.
+    
+    Task:
+    1. Identify the Merchant Name (business name at the top).
+    2. Identify the Total Amount.
+    3. Identify the Date (YYYY-MM-DD).
+    4. SELECT THE BEST CATEGORY from the provided list below based on the merchant and items.
+    
+    Available Categories (ID: Name - Type):
+    {categories_str}
+    
+    Instructions:
+    - You MUST choose one Category ID from the list above.
+    - Return ONLY a valid JSON object.
+    - Keys: "merchant", "amount", "date", "category_id".
+    """
+    
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Finance Tracker AI",
+    }
+    
+    # Try vision models
+    models = VISION_MODELS.copy()
+    random.shuffle(models)
+    
+    for model in models:
+        try:
+            print(f"Attempting Vision AI parsing with {model}...")
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "temperature": 0.1,
+            }
+            
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+                
+                if response.status_code == 200:
+                    content = response.json()['choices'][0]['message']['content']
+                    # Clean up markdown
+                    content = content.replace("```json", "").replace("```", "").strip()
+                    
+                    try:
+                        # Extract JSON from potential chatter
+                        match = re.search(r'\{.*\}', content, re.DOTALL)
+                        if match:
+                            data = json.loads(match.group(0))
+                        else:
+                            data = json.loads(content)
+                            
+                        # Basic validation
+                        if "merchant" in data and "amount" in data:
+                            if data.get("amount"):
+                                data["amount"] = float(str(data["amount"]).replace("$", "").replace(",", ""))
+                            if data.get("category_id"):
+                                data["category_id"] = int(data["category_id"])
+                            print(f"Vision AI success with {model}")
+                            return data
+                    except:
+                        print(f"Vision AI JSON parse failed for {model}")
+                        continue
+                else:
+                    print(f"Vision AI API error {response.status_code} for {model}")
+        except Exception as e:
+            print(f"Vision AI parsing failed with model {model}: {e}")
+            continue
+            
+    return None
+
 async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[Dict[str, Any]]:
     """
     Use AI to parse receipt text into structured data
@@ -417,15 +520,24 @@ async def parse_receipt(
 ) -> Dict[str, any]:
     """
     Complete receipt parsing pipeline
-    Extracts text, merchant, amount, date, and suggests category
-    
-    Args:
-        image_path: Path to receipt image
-        available_categories: List of available categories from database
-        
-    Returns:
-        Dict with extracted data and suggestions
+    Prioritizes Vision AI, falls back to OCR + Text AI
     """
+    # 1. Try Vision AI first (Strongest method)
+    if available_categories:
+        vision_data = await parse_receipt_image_with_ai(image_path, available_categories)
+        if vision_data:
+            return {
+                "success": True,
+                "extracted_text": "Processed by Vision AI", 
+                "merchant": vision_data.get("merchant", "Unknown"),
+                "amount": vision_data.get("amount", 0.0),
+                "date": vision_data.get("date", datetime.now().strftime('%Y-%m-%d')),
+                "category_id": vision_data.get("category_id", 5),
+                "confidence": 95,
+                "reasoning": "Vision AI Analysis (High Confidence)"
+            }
+
+    # 2. Fallback to Traditional OCR + Text AI
     try:
         # Extract text from image
         extracted_text = extract_text_from_image(image_path)
@@ -447,7 +559,7 @@ async def parse_receipt(
             "reasoning": categorization["reasoning"]
         }
         
-        # Try AI enhancement
+        # Try Text AI enhancement
         if available_categories:
             ai_data = await parse_receipt_with_ai(extracted_text, available_categories)
             if ai_data:
@@ -461,7 +573,7 @@ async def parse_receipt(
                 if ai_data.get("category_id"):
                     result["category_id"] = ai_data["category_id"]
                     result["confidence"] = 90  # AI is usually more confident
-                    result["reasoning"] = "AI Analysis of receipt text"
+                    result["reasoning"] = "AI Analysis of extracted text"
         
         return result
 
