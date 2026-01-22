@@ -7,6 +7,7 @@ import { isAuthenticated, logout, getCurrentUser } from './api';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { SidebarProvider, useSidebarCollapsed } from './context/SidebarContext';
 import UserAvatar from './components/UserAvatar';
+import { Sun, Moon, ScanLine, CirclePlus } from 'lucide-react';
 
 // Import pages and components
 import Login from './pages/Login';
@@ -111,8 +112,10 @@ function Layout() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 ${isDark ? 'bg-amber-400/20' : 'bg-amber-100'} rounded-lg flex items-center justify-center ${isDark ? 'border-amber-400/30' : 'border-amber-300'} border`}>
-                <span className="text-xl">💼</span>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isDark ? 'bg-gradient-to-br from-amber-400/30 to-amber-500/30 border border-amber-400/40' : 'bg-gradient-to-br from-amber-100 to-amber-200 border border-amber-300'
+              }`}>
+                <span className={`${isDark ? 'text-slate-900' : 'text-amber-700'} font-bold`}>FT</span>
               </div>
               <span className={`font-bold text-lg md:text-xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Finance Tracker</span>
             </div>
@@ -147,6 +150,33 @@ function Layout() {
 
             {/* User Info - Show on Desktop */}
             <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/receipt-upload"
+                className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
+                  isDark ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                } transition-colors border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}
+              >
+                <ScanLine className="w-5 h-5" />
+                <span className="text-sm font-semibold">Scan</span>
+              </Link>
+              <Link
+                to="/transactions"
+                className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
+                  isDark ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                } transition-colors border ${isDark ? 'border-amber-400/40' : 'border-amber-300'}`}
+              >
+                <CirclePlus className="w-5 h-5" />
+                <span className="text-sm font-semibold">Add</span>
+              </Link>
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg ${
+                  isDark ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                } transition-colors border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}
+                title={isDark ? 'Light Mode' : 'Dark Mode'}
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
               {user && <UserAvatar user={user} size="w-10 h-10" />}
               <div className="flex flex-col">
                 <span className={`text-sm font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
