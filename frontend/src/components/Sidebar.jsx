@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus } from 'lucide-react';
+import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useSidebarCollapsed } from '../context/SidebarContext';
 import { logout } from '../api';
@@ -22,6 +22,7 @@ function Sidebar({ user }) {
     { path: '/budget', label: 'Budget', icon: Wallet },
     { path: '/receipt-upload', label: 'Receipt Upload', icon: ImagePlus },
     { path: '/profile', label: 'Profile', icon: User },
+    { path: '/about', label: 'About', icon: Info },
   ];
 
   const isActive = (path) => location.pathname === path;

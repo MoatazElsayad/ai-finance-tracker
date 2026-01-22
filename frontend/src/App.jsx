@@ -16,6 +16,7 @@ import Budget from './pages/Budget';
 import Landing from "./pages/Landing";
 import Profile from './pages/Profile';
 import ReceiptUpload from './pages/ReceiptUpload';
+import About from './pages/About';
 import Sidebar from './components/Sidebar';
 
 function App() {
@@ -53,6 +54,7 @@ function AppContent() {
           <Route path="/budget" element={<Budget />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/receipt-upload" element={<ReceiptUpload />} />
+          <Route path="/about" element={<About />} />
         </Route>
 
         {/* Catch-all */}
@@ -134,6 +136,12 @@ function Layout() {
                 className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
               >
                 Budget
+              </Link>
+              <Link 
+                to="/about"
+                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
+              >
+                About
               </Link>
             </div>
 
