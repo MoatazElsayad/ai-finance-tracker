@@ -152,6 +152,7 @@ function Layout() {
             <div className="hidden md:flex items-center gap-3">
               <Link
                 to="/receipt-upload"
+                state={{ fromNavbarScan: true }}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
                   isDark ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 } transition-colors border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}
@@ -161,6 +162,7 @@ function Layout() {
               </Link>
               <Link
                 to="/transactions"
+                state={{ openForm: true }}
                 className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
                   isDark ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                 } transition-colors border ${isDark ? 'border-amber-400/40' : 'border-amber-300'}`}
