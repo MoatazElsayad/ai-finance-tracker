@@ -303,6 +303,7 @@ def create_transaction(
     user = get_current_user(token, db)
     
     # Create transaction
+    print(f"DEBUG: Manually creating transaction for User {user.id}: Amount={data.amount}, Cat={data.category_id}")
     transaction = Transaction(
         user_id=user.id,
         category_id=data.category_id,
@@ -1210,6 +1211,7 @@ def confirm_receipt(
         ).first()
         
         if not category:
+            print(f"DEBUG: Category {data.category_id} not found")
             raise HTTPException(status_code=404, detail="Category not found")
         
         # Determine correct sign for amount
@@ -1217,6 +1219,8 @@ def confirm_receipt(
         if category.type == "expense":
             final_amount = -final_amount
         
+        print(f"DEBUG: Creating transaction for User {user.id}: Amount={final_amount}, Merch={data.merchant}, Cat={data.category_id}")
+
         # Create transaction
         transaction = Transaction(
             user_id=user.id,

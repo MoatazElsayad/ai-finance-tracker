@@ -58,7 +58,7 @@ export default function ReceiptUpload() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_URL}/ocr/upload-receipt`, {
+      const response = await fetch(`${API_URL}/ocr/upload-receipt?token=${localStorage.getItem('token')}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -95,7 +95,7 @@ export default function ReceiptUpload() {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${API_URL}/ocr/confirm-receipt`, {
+      const response = await fetch(`${API_URL}/ocr/confirm-receipt?token=${localStorage.getItem('token')}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
