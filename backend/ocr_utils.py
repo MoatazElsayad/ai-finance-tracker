@@ -9,6 +9,26 @@ import base64
 import httpx
 import asyncio
 import os
+import json
+import random
+
+# Models list (synced with main.py)
+FREE_MODELS = [
+    "openai/gpt-oss-120b:free",
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemma-3-27b-it:free",
+    "deepseek/deepseek-r1-0528:free",
+    "tngtech/deepseek-r1t2-chimera:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "mistralai/devstral-2512:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "qwen/qwen-2.5-vl-7b-instruct:free",
+    "qwen/qwen3-coder:free",
+    "xiaomi/mimo-v2-flash:free",
+    "z-ai/glm-4.5-air:free",
+    "tngtech/tng-r1t-chimera:free"
+]
 
 # Try to use Google Generative AI (vision)
 try:
@@ -292,7 +312,101 @@ def categorize_transaction(
         "reasoning": f"Matched {best_score} keywords for category"
     }
 
-def parse_receipt(
+async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[Dict[str, Any]]:
+    """
+    Use AI to parse receipt text into structured data
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        print("No OpenRouter API key found, skipping AI parsing")
+        return None
+        
+    categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
+    
+    prompt = f"""
+    Extract the following information from this receipt text:
+    1. Merchant Name
+    2. Total Amount
+    3. Date (YYYY-MM-DD)
+    4. Category ID (Choose the best fit from the list below)
+    
+    Receipt Text:
+    \"\"\"
+    {text}
+    \"\"\"
+    
+    Available Categories:
+    {categories_str}
+    
+    Return ONLY a JSON object with keys: "merchant", "amount", "date", "category_id".
+    If a field is missing, make a best guess or use null.
+    For date, use YYYY-MM-DD format. If year is missing, assume current year.
+    For amount, use a number (float).
+    For category_id, use the integer ID from the list.
+    """
+    
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Finance Tracker AI",
+    }
+    
+    # Try a few models
+    models = FREE_MODELS.copy()
+    random.shuffle(models)
+    
+    # Limit to top 3 to save time
+    for model in models[:3]:
+        try:
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "You are a receipt parser. Output valid JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1, # Low temperature for consistent formatting
+            }
+            
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.post(url, headers=headers, json=payload, timeout=15.0)
+                
+                if response.status_code == 200:
+                    content = response.json()['choices'][0]['message']['content']
+                    # Clean up markdown code blocks if present
+                    content = content.replace("```json", "").replace("```", "").strip()
+                    
+                    try:
+                        data = json.loads(content)
+                    except json.JSONDecodeError:
+                        # Try to find JSON object in text
+                        match = re.search(r'\{.*\}', content, re.DOTALL)
+                        if match:
+                            data = json.loads(match.group(0))
+                        else:
+                            continue
+                    
+                    # Validate keys
+                    if "merchant" in data and "amount" in data:
+                        # Ensure types
+                        try:
+                            if data.get("amount"):
+                                data["amount"] = float(str(data["amount"]).replace("$", "").replace(",", ""))
+                            
+                            if data.get("category_id"):
+                                data["category_id"] = int(data["category_id"])
+                                
+                            return data
+                        except:
+                            continue
+        except Exception as e:
+            print(f"AI parsing failed with model {model}: {e}")
+            continue
+            
+    return None
+
+async def parse_receipt(
     image_path: str,
     available_categories: List[Dict] = None
 ) -> Dict[str, any]:
@@ -311,13 +425,13 @@ def parse_receipt(
         # Extract text from image
         extracted_text = extract_text_from_image(image_path)
         
-        # Parse components
+        # Default results from regex/heuristics
         merchant = extract_merchant_from_text(extracted_text)
         amount = extract_amount_from_text(extracted_text)
         date = extract_date_from_text(extracted_text)
-        categorization = categorize_transaction(extracted_text, merchant, amount or 0, available_categories)
+        categorization = categorize_transaction(extracted_text, merchant or "Unknown", amount or 0, available_categories)
         
-        return {
+        result = {
             "success": True,
             "extracted_text": extracted_text,
             "merchant": merchant,
@@ -327,6 +441,25 @@ def parse_receipt(
             "confidence": categorization["confidence"],
             "reasoning": categorization["reasoning"]
         }
+        
+        # Try AI enhancement
+        if available_categories:
+            ai_data = await parse_receipt_with_ai(extracted_text, available_categories)
+            if ai_data:
+                # Merge AI data if present and valid
+                if ai_data.get("merchant"):
+                    result["merchant"] = ai_data["merchant"]
+                if ai_data.get("amount"):
+                    result["amount"] = ai_data["amount"]
+                if ai_data.get("date"):
+                    result["date"] = ai_data["date"]
+                if ai_data.get("category_id"):
+                    result["category_id"] = ai_data["category_id"]
+                    result["confidence"] = 90  # AI is usually more confident
+                    result["reasoning"] = "AI Analysis of receipt text"
+        
+        return result
+
     except Exception as e:
         return {
             "success": False,

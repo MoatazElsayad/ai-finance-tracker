@@ -1160,7 +1160,7 @@ async def upload_receipt(
             ]
             
             # Parse receipt
-            result = parse_receipt(temp_file_path, categories_list)
+            result = await parse_receipt(temp_file_path, categories_list)
             
             if result["success"]:
                 return {
