@@ -1145,8 +1145,8 @@ function Dashboard() {
             </ResponsiveContainer>
           )}
         </div>
-      </div>
         </div>
+      </div>
       </section>
 
       {/* Section 3: Spending Trends & Patterns */}
@@ -1407,121 +1407,91 @@ function Dashboard() {
       </section>
 
       {/* Section 5: AI Financial Insights */}
-      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-gradient-to-br from-[#1a1f3a] via-[#0f172a] to-[#0a0e27]' : 'bg-gradient-to-br from-slate-100 via-white to-slate-100'}`}>
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
-          <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 border-slate-700' : 'bg-gradient-to-br from-white via-slate-50 to-white border-slate-200'} rounded-3xl shadow-2xl border`}>
-            <div className={`absolute top-0 right-0 w-64 h-64 ${theme === 'dark' ? 'bg-amber-400/5' : 'bg-amber-400/10'} rounded-full -mr-32 -mt-32`}></div>
-            <div className={`absolute bottom-0 left-0 w-48 h-48 ${theme === 'dark' ? 'bg-blue-500/5' : 'bg-blue-500/10'} rounded-full -ml-24 -mb-24`}></div>
+          <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} rounded-3xl shadow-xl border`}>
+            
             
             {/* Model Badge - Top Right Corner */}
-            {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (
-              <div className="absolute top-6 right-6 z-10">
-                {(() => {
+        <div className="p-8">
+          <div className="max-w-4xl mx-auto w-full">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-xl ${theme === 'dark' ? 'bg-amber-500/10' : 'bg-amber-100'}`}>
+                  <Bot className={`w-9 h-9 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
+                </div>
+                <div className="flex flex-col">
+                  <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Financial Insights</h2>
+                  <span className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-xs`}>Based on your actual transactions</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/60' : 'bg-slate-200/60'} rounded-lg p-1 border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'}`}>
+                  <button
+                    onClick={() => setAiMode('summary')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      aiMode === 'summary'
+                        ? 'bg-amber-500/80 text-slate-900 shadow'
+                        : theme === 'dark'
+                        ? 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Summary
+                  </button>
+                  <button
+                    onClick={() => setAiMode('chat')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      aiMode === 'chat'
+                        ? 'bg-blue-500/80 text-white shadow'
+                        : theme === 'dark'
+                        ? 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Chat
+                  </button>
+                </div>
+                {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (() => {
                   const activeModel = aiMode === 'summary' ? aiModelUsed : chatModelUsed;
                   const modelInfo = getModelInfo(activeModel);
-                  const colorMap = {
-                    emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
-                    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
-                    purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/50 text-purple-300',
-                    cyan: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300',
-                    pink: 'from-pink-500/20 to-rose-500/20 border-pink-400/50 text-pink-300',
-                    amber: 'from-amber-500/20 to-yellow-500/20 border-amber-400/50 text-amber-300'
-                  };
-                  const colorClass = colorMap[modelInfo.color] || colorMap.amber;
-                  
                   return (
-                    <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5 hover:scale-105 transition-transform`}>
+                    <div className={`flex items-center gap-2 rounded-md px-3 py-2 border ${theme === 'dark' ? 'bg-slate-800/60 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
                       {modelInfo.logo.startsWith('http') ? (
-                      <img
-                        src={modelInfo.logo}
-                        alt={modelInfo.name}
-                        className="w-5 h-5 object-contain rounded-sm"
-                      />
-                    ) : (
-                      <span className="text-lg">{modelInfo.logo}</span>
-                    )}
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
-                        <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
-                      </div>
+                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4 object-contain rounded-sm" />
+                      ) : (
+                        <span className="text-base">{modelInfo.logo}</span>
+                      )}
+                      <span className="text-xs font-semibold">{modelInfo.name}</span>
                     </div>
                   );
                 })()}
               </div>
-            )}
-        
-        <div className="relative p-8">
-          {/* Summary / Chat Toggle */}
-          <div className={`flex items-center justify-center mb-6 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-lg p-1 border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'}`}>
-            <button
-              onClick={() => setAiMode('summary')}
-              className={`px-4 py-2 rounded-md font-medium transition-all ${
-                aiMode === 'summary'
-                  ? 'bg-amber-500/80 text-slate-900 shadow-lg'
-                  : theme === 'dark'
-                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-              }`}
-            >
-              Summary
-            </button>
-            <button
-              onClick={() => setAiMode('chat')}
-              className={`px-4 py-2 rounded-md font-medium transition-all ${
-                aiMode === 'chat'
-                  ? 'bg-blue-500/80 text-white shadow-lg'
-                  : theme === 'dark'
-                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-              }`}
-            >
-              Chat
-            </button>
-          </div>
-          <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center gap-1">
-              <div className="p-3">
-                <Bot className={`w-11 h-11 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
-              </div>
-              <div className="text-center">
-                <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Financial Insight</h2>
-                    <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Powered by multiple frontier models</p>
-              </div>
             </div>
-          </div>
 
           {aiMode === 'summary' ? (
             aiSummary ? (
-                <div className="space-y-6">
-                  <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} backdrop-blur-md rounded-2xl p-8 shadow-2xl border`}>
-              {formatAISummary(aiSummary)}
-                  </div>
-                  
-                  {/* Footer with actions */}
-                  <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-lg border border-green-500/30">
-                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                        <span className="text-sm text-green-400 font-medium">Analysis Complete</span>
-                      </div>
-                      <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Generated {new Date().toLocaleTimeString('en-US', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
+              <div className="space-y-6">
+                <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} rounded-2xl p-6 shadow-md border max-h-[340px] overflow-y-auto`}>
+                  {formatAISummary(aiSummary)}
                 </div>
-                <button
-                  onClick={handleGenerateAI}
-                      className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600 hover:border-amber-400/30' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-amber-400 hover:text-amber-300 font-medium rounded-lg flex items-center gap-2 transition-all border`}
-                >
+                  
+                <div className="flex items-center justify-between px-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-green-500/30">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                    <span className="text-xs text-green-400 font-medium">Analysis Complete</span>
+                  </div>
+                  <button
+                    onClick={handleGenerateAI}
+                    className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/60 hover:bg-slate-700 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-amber-400 font-medium rounded-lg flex items-center gap-2 transition-all border`}
+                  >
                     <RefreshCw className="w-5 h-5" strokeWidth={2.2} />
-                      <span>Refresh Analysis</span>
-                </button>
+                    <span>Refresh</span>
+                  </button>
+                </div>
               </div>
-            </div>
             ) : (
-                <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border`}>
+              <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} rounded-xl p-8 text-center shadow-md border`}>
                   <div className="inline-block p-4">
                     {aiLoading && currentTryingModel ? (
                       (() => {
@@ -1531,7 +1501,7 @@ function Dashboard() {
                           <img
                             src={modelInfo.logo}
                             alt={modelInfo.name}
-                            className="w-12 h-12 object-contain animate-pulse-fast rounded"
+                            className="w-12 h-12 object-contain animate-pulse-fast rounded-md"
                           />
                         ) : (
                           <span className="text-5xl animate-pulse-fast">{modelInfo.logo}</span>
@@ -1566,7 +1536,7 @@ function Dashboard() {
               <button
                 onClick={handleGenerateAI}
                 disabled={aiLoading}
-                    className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
+                    className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold shadow transition-all hover:scale-105 disabled:opacity-50"
                   >
                     {aiLoading ? (
                       <div className="flex items-center gap-2">
@@ -1583,21 +1553,19 @@ function Dashboard() {
           ) : (
             aiChatAnswer ? (
               <div className="space-y-6">
-                <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} backdrop-blur-md rounded-2xl p-8 shadow-2xl border`}>
+                <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} rounded-2xl p-6 shadow-md border max-h-[340px] overflow-y-auto`}>
                   <div className={`${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'} whitespace-pre-wrap leading-relaxed text-sm`}>
                     {aiChatAnswer}
                   </div>
                 </div>
                 <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-lg border border-green-500/30">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                      <span className="text-sm text-green-400 font-medium">Answer Ready</span>
-                    </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-green-500/30">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                    <span className="text-xs text-green-400 font-medium">Answer Ready</span>
                   </div>
                   <button
                     onClick={() => { setAiChatAnswer(''); setChatModelUsed(null); }}
-                    className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600 hover:border-blue-400/30' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-blue-400 hover:text-blue-300 font-medium rounded-lg flex items-center gap-2 transition-all border`}
+                    className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/60 hover:bg-slate-700 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-blue-400 font-medium rounded-lg flex items-center gap-2 transition-all border`}
                   >
                     <RefreshCw className="w-5 h-5" strokeWidth={2.2} />
                     <span>Ask Another</span>
@@ -1605,8 +1573,8 @@ function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur-md rounded-xl p-8 shadow-2xl border`}>
-                <div className="mb-4">
+              <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} rounded-xl p-6 shadow-md border`}>
+                <div className="mb-3">
                   <label className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm font-medium mb-2 block`}>Ask about your data</label>
                   <input
                     type="text"
@@ -1632,7 +1600,7 @@ function Dashboard() {
                   <button
                     onClick={handleAskAI}
                     disabled={chatLoading || !chatQuestion.trim()}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
+                    className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold shadow transition-all hover:scale-105 disabled:opacity-50"
                   >
                     {chatLoading ? 'Asking...' : 'Ask'}
                   </button>
@@ -1642,6 +1610,7 @@ function Dashboard() {
           )}
         </div>
       </div>
+        </div>
         </div>
       </section>
 
