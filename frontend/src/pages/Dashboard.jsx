@@ -3,7 +3,7 @@
  * Professional financial dashboard with unified dark theme
  */
 import { useState, useEffect } from 'react';
-import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser } from '../api';
+import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser, askAIQuestion, createAIChatProgressStream } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
@@ -50,6 +50,12 @@ function Dashboard() {
   const [currentTryingModel, setCurrentTryingModel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiMode, setAiMode] = useState('summary'); // 'summary' | 'chat'
+  const [chatQuestion, setChatQuestion] = useState('');
+  const [aiChatAnswer, setAiChatAnswer] = useState('');
+  const [chatModelUsed, setChatModelUsed] = useState(null);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatTryingModel, setChatTryingModel] = useState(null);
   const [user, setUser] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -285,6 +291,94 @@ function Dashboard() {
     }
   };
 
+  const handleAskAI = async () => {
+    if (!chatQuestion.trim()) return;
+    setAiChatAnswer('');
+    setChatModelUsed(null);
+    setChatLoading(true);
+    setChatTryingModel(null);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in again');
+        setChatLoading(false);
+        return;
+      }
+
+      const eventSourceUrl = `${apiUrl}/ai/chat_progress?year=${selectedMonth.year}&month=${selectedMonth.month}&question=${encodeURIComponent(chatQuestion)}&token=${token}`;
+      const eventSource = new EventSource(eventSourceUrl);
+      let hasReceivedMessage = false;
+
+      const timeout = setTimeout(() => {
+        if (!hasReceivedMessage) {
+          eventSource.close();
+          fallbackToRegularChat();
+        }
+      }, 5000);
+
+      const fallbackToRegularChat = async () => {
+        try {
+          const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, chatQuestion);
+          setAiChatAnswer(result.answer);
+          setChatModelUsed(result.model_used || null);
+        } catch (err) {
+          setAiChatAnswer('Unable to connect to AI services. Please try again later.');
+        } finally {
+          setChatLoading(false);
+        }
+      };
+
+      eventSource.onmessage = (event) => {
+        hasReceivedMessage = true;
+        clearTimeout(timeout);
+        try {
+          const data = JSON.parse(event.data);
+          switch (data.type) {
+            case 'trying_model':
+              setChatTryingModel(data.model);
+              break;
+            case 'model_failed':
+              break;
+            case 'success':
+              setAiChatAnswer(data.answer);
+              setChatModelUsed(data.model);
+              setChatLoading(false);
+              eventSource.close();
+              break;
+            case 'error':
+              setAiChatAnswer(`All Models Busy\n\n${data.message}\n\nPlease try again in a few minutes.`);
+              setChatLoading(false);
+              eventSource.close();
+              break;
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      };
+
+      eventSource.onerror = () => {
+        clearTimeout(timeout);
+        if (!hasReceivedMessage) {
+          fallbackToRegularChat();
+        } else {
+          setChatLoading(false);
+        }
+        eventSource.close();
+      };
+    } catch {
+      try {
+        const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, chatQuestion);
+        setAiChatAnswer(result.answer);
+        setChatModelUsed(result.model_used || null);
+      } catch {
+        setAiChatAnswer('Unable to connect to AI services. Please try again later.');
+      } finally {
+        setChatLoading(false);
+      }
+    }
+  };
   // Get model info (name and icon)
   const getModelInfo = (modelId) => {
     if (!modelId) return { name: 'AI Model', logo: '🤖', color: 'amber' };
@@ -1320,10 +1414,11 @@ function Dashboard() {
             <div className={`absolute bottom-0 left-0 w-48 h-48 ${theme === 'dark' ? 'bg-blue-500/5' : 'bg-blue-500/10'} rounded-full -ml-24 -mb-24`}></div>
             
             {/* Model Badge - Top Right Corner */}
-            {aiModelUsed && (
+            {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (
               <div className="absolute top-6 right-6 z-10">
                 {(() => {
-                  const modelInfo = getModelInfo(aiModelUsed);
+                  const activeModel = aiMode === 'summary' ? aiModelUsed : chatModelUsed;
+                  const modelInfo = getModelInfo(activeModel);
                   const colorMap = {
                     emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
                     blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
@@ -1356,6 +1451,33 @@ function Dashboard() {
             )}
         
         <div className="relative p-8">
+          {/* Summary / Chat Toggle */}
+          <div className={`flex items-center justify-center mb-6 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-lg p-1 border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'}`}>
+            <button
+              onClick={() => setAiMode('summary')}
+              className={`px-4 py-2 rounded-md font-medium transition-all ${
+                aiMode === 'summary'
+                  ? 'bg-amber-500/80 text-slate-900 shadow-lg'
+                  : theme === 'dark'
+                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              Summary
+            </button>
+            <button
+              onClick={() => setAiMode('chat')}
+              className={`px-4 py-2 rounded-md font-medium transition-all ${
+                aiMode === 'chat'
+                  ? 'bg-blue-500/80 text-white shadow-lg'
+                  : theme === 'dark'
+                  ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              Chat
+            </button>
+          </div>
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center gap-1">
               <div className="p-3">
@@ -1368,7 +1490,8 @@ function Dashboard() {
             </div>
           </div>
 
-          {aiSummary ? (
+          {aiMode === 'summary' ? (
+            aiSummary ? (
                 <div className="space-y-6">
                   <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} backdrop-blur-md rounded-2xl p-8 shadow-2xl border`}>
               {formatAISummary(aiSummary)}
@@ -1397,7 +1520,7 @@ function Dashboard() {
                 </button>
               </div>
             </div>
-          ) : (
+            ) : (
                 <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur-md rounded-xl p-12 text-center shadow-2xl border`}>
                   <div className="inline-block p-4">
                     {aiLoading && currentTryingModel ? (
@@ -1456,6 +1579,66 @@ function Dashboard() {
                     ) : 'Generate AI Insights'}
               </button>
             </div>
+            )
+          ) : (
+            aiChatAnswer ? (
+              <div className="space-y-6">
+                <div className={`${theme === 'dark' ? 'bg-slate-800/90 border-slate-700/50' : 'bg-white border-slate-200/50'} backdrop-blur-md rounded-2xl p-8 shadow-2xl border`}>
+                  <div className={`${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'} whitespace-pre-wrap leading-relaxed text-sm`}>
+                    {aiChatAnswer}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-lg border border-green-500/30">
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                      <span className="text-sm text-green-400 font-medium">Answer Ready</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setAiChatAnswer(''); setChatModelUsed(null); }}
+                    className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600 hover:border-blue-400/30' : 'bg-slate-200 hover:bg-slate-300 border-slate-300'} text-blue-400 hover:text-blue-300 font-medium rounded-lg flex items-center gap-2 transition-all border`}
+                  >
+                    <RefreshCw className="w-5 h-5" strokeWidth={2.2} />
+                    <span>Ask Another</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur-md rounded-xl p-8 shadow-2xl border`}>
+                <div className="mb-4">
+                  <label className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm font-medium mb-2 block`}>Ask about your data</label>
+                  <input
+                    type="text"
+                    value={chatQuestion}
+                    onChange={(e) => setChatQuestion(e.target.value)}
+                    placeholder="How much did I spend on food this month?"
+                    className={`w-full px-4 py-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-300 text-slate-800 placeholder:text-slate-400'}`}
+                    disabled={chatLoading}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="h-6 flex items-center">
+                    {chatLoading && (
+                      <>
+                        {chatTryingModel ? (
+                          <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Trying {getModelInfo(chatTryingModel).name}...</span>
+                        ) : (
+                          <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>Connecting to AI...</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleAskAI}
+                    disabled={chatLoading || !chatQuestion.trim()}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
+                  >
+                    {chatLoading ? 'Asking...' : 'Ask'}
+                  </button>
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>
