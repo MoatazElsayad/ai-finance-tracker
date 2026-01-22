@@ -118,6 +118,7 @@ class ProfileUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
+    avatar: str | None = None
 
 class CategoryCreate(BaseModel):
     name: str
@@ -257,7 +258,48 @@ def get_me(token: str, db: Session = Depends(get_db)):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,
+        "avatar": user.avatar,
         "createdAt": user.created_at.isoformat() if user.created_at else None
+    }
+
+
+@app.put("/auth/profile")
+def update_profile(data: ProfileUpdate, token: str, db: Session = Depends(get_db)):
+    """
+    Update user profile
+    """
+    user = get_current_user(token, db)
+    
+    if data.username:
+        # Check uniqueness if changing
+        if data.username != user.username:
+            existing = db.query(User).filter(User.username == data.username).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Username already taken")
+        user.username = data.username
+        
+    if data.first_name is not None:
+        user.first_name = data.first_name
+    if data.last_name is not None:
+        user.last_name = data.last_name
+    if data.phone is not None:
+        user.phone = data.phone
+    if data.avatar is not None:
+        user.avatar = data.avatar
+        
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "message": "Profile updated successfully",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "avatar": user.avatar
+        }
     }
 
 

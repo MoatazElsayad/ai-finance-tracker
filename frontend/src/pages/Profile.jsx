@@ -3,9 +3,9 @@
  * Dark Mode Finance Tracker - Professional user profile with user information & avatar
  */
 import { useState, useEffect } from 'react';
-import { getCurrentUser, updateUserProfile } from '../api'; // Adjust import path as needed
+import { getCurrentUser, updateProfile } from '../api'; // Adjust import path as needed
 import { useTheme } from '../context/ThemeContext';
-import { User, Mail, Calendar, Shield, Edit, Save, X, Upload } from 'lucide-react';
+import { User, Mail, Calendar, Shield, Edit, Save, X, Upload, RefreshCw } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 
 function Profile() {
@@ -19,6 +19,7 @@ function Profile() {
     first_name: '',
     last_name: '',
     phone: '',
+    avatar: '',
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' }); // success / error
@@ -34,6 +35,7 @@ function Profile() {
           first_name: userData.first_name || '',
           last_name: userData.last_name || '',
           phone: userData.phone || '',
+          avatar: userData.avatar || '',
         });
       } catch (err) {
         console.error('Failed to load user profile:', err);
@@ -53,6 +55,15 @@ function Profile() {
     }));
   };
 
+  const handleRandomizeAvatar = () => {
+    const randomSeed = Math.random().toString(36).substring(7);
+    const newAvatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${randomSeed}&scale=80`;
+    setFormData(prev => ({
+      ...prev,
+      avatar: newAvatar
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -60,8 +71,8 @@ function Profile() {
 
     try {
       // You need to implement updateUserProfile in api.js
-      const updated = await updateUserProfile(formData);
-      setUser(updated);
+      const updated = await updateProfile(formData);
+      setUser(updated.user);
       setIsEditing(false);
       setMessage({ text: 'Profile updated successfully', type: 'success' });
       setTimeout(() => setMessage({ text: '', type: '' }), 4000);
@@ -91,12 +102,24 @@ function Profile() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center">
             {/* Avatar Section */}
-            <div className="mb-6 relative inline-block">
+            <div className="mb-6 relative inline-block group">
               <div className="inline-block p-1.5 bg-gradient-to-br from-amber-400/30 to-purple-500/20 rounded-full">
-                <div className={`w-32 h-32 rounded-full ${theme === 'dark' ? 'bg-gradient-to-br from-slate-700 to-slate-800' : 'bg-gradient-to-br from-slate-200 to-slate-300'} flex items-center justify-center border-4 border-amber-400/40 shadow-2xl overflow-hidden`}>
-                  {user && <UserAvatar user={user} size="w-32 h-32" />}
+                <div className={`w-32 h-32 rounded-full ${theme === 'dark' ? 'bg-gradient-to-br from-slate-700 to-slate-800' : 'bg-gradient-to-br from-slate-200 to-slate-300'} flex items-center justify-center border-4 border-amber-400/40 shadow-2xl overflow-hidden relative`}>
+                  {/* Pass formData merged with user for preview during edit */}
+                  <UserAvatar user={isEditing ? { ...user, ...formData } : user} size="w-32 h-32" />
                 </div>
               </div>
+              
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={handleRandomizeAvatar}
+                  className="absolute bottom-2 right-2 p-2 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-full shadow-lg transition-transform hover:scale-110"
+                  title="Randomize Avatar"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             <h1 className={`text-4xl md:text-5xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>

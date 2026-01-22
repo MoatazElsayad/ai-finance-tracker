@@ -97,6 +97,15 @@ export const getCurrentUser = async () => {
   return handleResponse(response);
 };
 
+export const updateProfile = async (data) => {
+  const token = getToken();
+  const response = await authFetch(`/auth/profile?token=${token}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
 // ============================================
 // TRANSACTIONS
 // ============================================
