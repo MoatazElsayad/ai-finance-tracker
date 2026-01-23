@@ -461,6 +461,35 @@ function Transactions() {
               ✕
             </button>
           </div>
+          <div className={`mb-4 rounded-xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-900/30' : 'border-slate-300 bg-slate-100/40'} px-4 py-3 flex items-center justify-between`}>
+            <div className="flex items-center gap-3">
+              {(() => {
+                const selected = categories.find(c => c.id === parseInt(categoryId));
+                if (!selected) return <span className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm`}>No category selected</span>;
+                const isImage = typeof selected.icon === 'string' && (selected.icon.startsWith('http') || selected.icon.startsWith('data:'));
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-600/40">
+                      {isImage ? (
+                        <img src={selected.icon} alt={selected.name} className="w-7 h-7 rounded-md object-cover" />
+                      ) : (
+                        <span className="text-2xl">{selected.icon}</span>
+                      )}
+                    </div>
+                    <span className={`text-sm ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'} font-semibold`}>{selected.name}</span>
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                {amount ? `${isExpense ? '-' : '+'}$${Math.abs(parseFloat(amount)).toFixed(2)}` : '$0.00'}
+              </div>
+              <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                {date}
+              </div>
+            </div>
+          </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Type Toggle */}
@@ -528,9 +557,23 @@ function Transactions() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Category */}
               <div>
-                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
-                  Category
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Category
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomCategoryCreator(true)}
+                    className={`px-2 py-1 text-xs rounded-lg flex items-center gap-1 ${
+                      theme === 'dark'
+                        ? 'bg-slate-700/50 text-slate-300 border border-slate-600 hover:bg-slate-700'
+                        : 'bg-slate-200/50 text-slate-700 border border-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Plus className="w-3 h-3" />
+                    New
+                  </button>
+                </div>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
@@ -612,7 +655,7 @@ function Transactions() {
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
               <button
                 type="submit"
                 className="px-8 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105"
@@ -626,14 +669,9 @@ function Transactions() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={() => setShowCustomCategoryCreator(true)}
-                className={`px-6 py-3 ${theme === 'dark' ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-700 hover:bg-slate-200'} rounded-xl font-medium transition-all flex items-center gap-2`}
-              >
-                <Plus className="w-4 h-4" />
-                New Category
-              </button>
+              <span className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                Tip: use “New” near Category to add custom ones
+              </span>
             </div>
           </form>
         </div>
