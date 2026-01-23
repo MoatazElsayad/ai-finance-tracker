@@ -1237,77 +1237,7 @@ function Dashboard() {
             </p>
           </div>
           
-          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8`}>
-            {/* Controls Card */}
-            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
-              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Period</h3>
-              <div className="flex flex-col gap-4">
-                <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-lg p-1 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} border`}>
-                  <button
-                    onClick={() => setViewMode('monthly')}
-                    className={`px-4 py-2 rounded-md font-medium transition-all ${
-                      viewMode === 'monthly'
-                        ? 'bg-blue-500/80 text-white shadow-lg'
-                        : theme === 'dark'
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setViewMode('yearly')}
-                    className={`px-4 py-2 rounded-md font-medium transition-all ${
-                      viewMode === 'yearly'
-                        ? 'bg-blue-500/80 text-white shadow-lg'
-                        : theme === 'dark'
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                    }`}
-                  >
-                    Yearly
-                  </button>
-                  <button
-                    onClick={() => setViewMode('overall')}
-                    className={`px-4 py-2 rounded-md font-medium transition-all ${
-                      viewMode === 'overall'
-                        ? 'bg-blue-500/80 text-white shadow-lg'
-                        : theme === 'dark'
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                    }`}
-                  >
-                    Overall
-                  </button>
-                </div>
-                {viewMode !== 'overall' && (
-                  <div className={`flex items-center justify-center gap-3 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-xl shadow px-4 py-3 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} border`}>
-                    <button
-                      onClick={() => viewMode === 'monthly' ? changeMonth(-1) : changeYear(-1)}
-                      className={`p-2 hover:${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-lg transition-colors text-xl ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      ◀
-                    </button>
-                    <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} min-w-[160px] text-center text-lg`}>
-                      {viewMode === 'monthly'
-                        ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
-                            month: 'long',
-                            year: 'numeric',
-                          })
-                        : `Year ${selectedMonth.year}`
-                      }
-                    </span>
-                    <button
-                      onClick={() => viewMode === 'monthly' ? changeMonth(1) : changeYear(1)}
-                      className={`p-2 hover:${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-lg transition-colors text-xl ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      ▶
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            
+          <div className={`grid grid-cols-1 gap-8`}>
             {/* Download Card */}
             <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-amber-500/50' : 'border-slate-200 hover:border-amber-400/50'} border transition-all`}>
               <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Download</h3>

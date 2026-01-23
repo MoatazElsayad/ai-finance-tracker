@@ -33,6 +33,7 @@ import shutil
 import io
 from typing import Optional, List, Dict
 from datetime import date
+import re
 
 load_dotenv()
 
@@ -1406,18 +1407,25 @@ def _plot_category_pie(categories: List[Dict]) -> bytes:
 
 def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, pie_png: bytes, transactions: List[Transaction], budget_status: List[Dict] | None, rec_text: str | None, rec_model: str | None) -> bytes:
     from reportlab.lib.pagesizes import A4
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, ListFlowable, ListItem, HRFlowable
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
+    accent = colors.HexColor("#f59e0b")
+    dark_text = colors.HexColor("#0f172a")
+    muted_text = colors.HexColor("#475569")
+    styles.add(ParagraphStyle(name="TitleFancy", fontName="Helvetica-Bold", fontSize=22, textColor=dark_text, spaceAfter=8))
+    styles.add(ParagraphStyle(name="Subtitle", fontName="Helvetica", fontSize=11, textColor=muted_text))
+    styles.add(ParagraphStyle(name="HeadingFancy", parent=styles["Heading2"], fontName="Helvetica-Bold", textColor=accent))
+    styles.add(ParagraphStyle(name="NormalFancy", fontName="Helvetica", fontSize=10, leading=14))
     story = []
-    title = Paragraph("Moataz Finance Tracker", styles["Title"])
-    user_line = Paragraph(f"{user.first_name or ''} {user.last_name or ''} &lt;{user.email}&gt;", styles["Normal"])
-    period_line = Paragraph(f"Report Period: {period_label}", styles["Normal"])
-    gen_line = Paragraph(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d')}", styles["Normal"])
-    story += [title, Spacer(1, 12), user_line, period_line, gen_line, Spacer(1, 24)]
+    title = Paragraph("Moataz Finance Tracker", styles["TitleFancy"])
+    user_line = Paragraph(f"{user.first_name or ''} {user.last_name or ''} &lt;{user.email}&gt;", styles["Subtitle"])
+    period_line = Paragraph(f"Report Period: {period_label}", styles["Subtitle"])
+    gen_line = Paragraph(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d')}", styles["Subtitle"])
+    story += [title, HRFlowable(width="100%", color=accent, thickness=2), Spacer(1, 10), user_line, period_line, gen_line, Spacer(1, 18)]
     data = [
         ["Total Income", f"{summary['income']:.2f}"],
         ["Total Expenses", f"{summary['expenses']:.2f}"],
@@ -1426,18 +1434,21 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         ["Average Amount", f"{summary['avg_amount']:.2f}"],
         ["Transactions", f"{summary['count']}"],
     ]
-    tbl = Table(data, hAlign="LEFT")
+    summary_rows = [["Metric", "Value"]] + data
+    tbl = Table(summary_rows, hAlign="LEFT")
     tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f59e0b")),
-        ("TEXTCOLOR", (0,0), (-1,-1), colors.black),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#d1d5db")),
-        ("BACKGROUND", (0,1), (-1,-1), colors.HexColor("#fef3c7")),
+        ("BACKGROUND", (0,0), (-1,0), accent),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+        ("FONTSIZE", (0,0), (-1,-1), 10),
+        ("ALIGN", (1,1), (1,-1), "RIGHT"),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.HexColor("#fff7ed"), colors.HexColor("#fffbeb")]),
     ]))
-    story += [tbl, Spacer(1, 24)]
+    story += [tbl, Spacer(1, 18)]
     trend_img = Image(io.BytesIO(trend_png), width=500, height=200)
-    story += [Paragraph("Monthly Trend (6 months)", styles["Heading2"]), trend_img, Spacer(1, 24)]
+    story += [Paragraph("Monthly Trend (6 months)", styles["HeadingFancy"]), trend_img, Spacer(1, 18)]
     pie_img = Image(io.BytesIO(pie_png), width=350, height=250)
-    story += [Paragraph("Category Breakdown", styles["Heading2"]), pie_img, Spacer(1, 24)]
+    story += [Paragraph("Category Breakdown", styles["HeadingFancy"]), pie_img, Spacer(1, 18)]
     if budget_status:
         bs_rows = [["Category", "Budgeted", "Spent", "Used %", "Status"]]
         for b in budget_status:
@@ -1449,12 +1460,22 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
                 "Over Budget" if b.get("status") in ["Over", "over"] else ("On Track" if b.get("status") == "on_track" else "Good")
             ])
         bs_tbl = Table(bs_rows, repeatRows=1)
-        bs_tbl.setStyle(TableStyle([
+        bs_style = TableStyle([
             ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
-            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f59e0b")),
+            ("BACKGROUND", (0,0), (-1,0), accent),
             ("TEXTCOLOR", (0,0), (-1,0), colors.black),
-        ]))
-        story += [Paragraph("Budget Status", styles["Heading2"]), bs_tbl, Spacer(1, 24)]
+            ("FONTSIZE", (0,0), (-1,-1), 9),
+        ])
+        for i in range(1, len(bs_rows)):
+            status_text = bs_rows[i][4]
+            if "Over Budget" in status_text:
+                bs_style.add("BACKGROUND", (0,i), (-1,i), colors.HexColor("#fee2e2"))
+            elif "On Track" in status_text:
+                bs_style.add("BACKGROUND", (0,i), (-1,i), colors.HexColor("#fff7ed"))
+            else:
+                bs_style.add("BACKGROUND", (0,i), (-1,i), colors.HexColor("#fef3c7"))
+        bs_tbl.setStyle(bs_style)
+        story += [Paragraph("Budget Status", styles["HeadingFancy"]), bs_tbl, Spacer(1, 18)]
     rows = [["Date", "Merchant", "Category", "Description", "Amount", "Type"]]
     for t in transactions:
         cat_name = t.category.name if t.category else "Uncategorized"
@@ -1468,17 +1489,22 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     detail = Table(rows, repeatRows=1)
     detail.setStyle(TableStyle([
         ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f59e0b")),
+        ("BACKGROUND", (0,0), (-1,0), accent),
         ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+        ("FONTSIZE", (0,0), (-1,-1), 8),
     ]))
-    story += [Paragraph("Transactions", styles["Heading2"]), detail, Spacer(1, 12)]
+    story += [Paragraph("Transactions", styles["HeadingFancy"]), detail, Spacer(1, 10)]
     subtotal = sum(t.amount for t in transactions)
-    story += [Paragraph(f"Subtotal (net): {subtotal:.2f}", styles["Normal"])]
+    story += [Paragraph(f"Subtotal (net): {subtotal:.2f}", styles["NormalFancy"])]
     if rec_text:
-        story += [Spacer(1, 24), Paragraph("Recommendations", styles["Heading2"]), Spacer(1, 6)]
-        story += [Paragraph(rec_text.replace("\n", "<br/>"), styles["Normal"]), Spacer(1, 6)]
+        rec_html = re.sub(r"\*\*(.+?)\*\*", r"<b>\\1</b>", rec_text)
+        lines = [l.strip() for l in rec_html.split("\n") if l.strip()]
+        items = [ListItem(Paragraph(l, styles["NormalFancy"])) for l in lines]
+        story += [Spacer(1, 18), HRFlowable(width="100%", color=accent, thickness=1.2), Spacer(1, 6)]
+        story += [Paragraph("Recommendations", styles["HeadingFancy"]), Spacer(1, 6)]
+        story += [ListFlowable(items, bulletType="bullet", bulletFontName="Helvetica", bulletFontSize=10, leftPadding=12), Spacer(1, 6)]
         if rec_model:
-            story += [Paragraph(f"Generated by: {rec_model}", styles["Italic"])]
+            story += [Paragraph(f"Generated by: {rec_model}", styles["Subtitle"])]
     doc.build(story)
     return buf.getvalue()
 
