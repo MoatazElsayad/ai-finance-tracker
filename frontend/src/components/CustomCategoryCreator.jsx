@@ -1,18 +1,13 @@
-/**
- * Custom Category Creator Modal
- * Allows users to create their own categories with custom icons
- */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import CategoryIconPicker from './CategoryIconPicker';
 
 function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' }) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('');
-  const [showIconPicker, setShowIconPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [suggesting, setSuggesting] = useState(false);
+  const suggestTimer = useRef(null);
 
   const localSuggestEmoji = (text) => {
     const t = (text || '').toLowerCase();
@@ -50,16 +45,12 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       return;
     }
 
-    if (!icon) {
-      setError('Please select an icon');
-      return;
-    }
-
     setLoading(true);
 
     try {
       const { createCategory } = await import('../api');
-      await createCategory(name.trim(), type, icon);
+      const chosenIcon = icon || localSuggestEmoji(name);
+      await createCategory(name.trim(), type, chosenIcon);
       
       // Reset form
       setName('');
@@ -72,6 +63,47 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (suggestTimer.current) {
+      clearTimeout(suggestTimer.current);
+    }
+    const text = name.trim();
+    if (!text) {
+      setIcon('');
+      return;
+    }
+    suggestTimer.current = setTimeout(async () => {
+      setSuggesting(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const { askAIQuestion } = await import('../api');
+          const now = new Date();
+          const { answer } = await askAIQuestion(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            `Return a single emoji that best represents the category "${text}". Only respond with the emoji, nothing else.`
+          );
+          const emoji = (answer || '').trim();
+          if (emoji) {
+            setIcon(emoji);
+          } else {
+            setIcon(localSuggestEmoji(text));
+          }
+        } else {
+          setIcon(localSuggestEmoji(text));
+        }
+      } catch {
+        setIcon(localSuggestEmoji(text));
+      } finally {
+        setSuggesting(false);
+      }
+    }, 300);
+    return () => {
+      if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    };
+  }, [name, type]);
 
   if (!isOpen) return null;
 
@@ -124,73 +156,19 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
               />
             </div>
 
-            {/* Icon Selection */}
-            <div className="relative">
+            <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Choose Icon
+                Icon
               </label>
-              <button
-                type="button"
-                onClick={() => setShowIconPicker(prev => !prev)}
-                className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-4xl flex items-center justify-center ${
+              <div
+                className={`w-full px-4 py-3 rounded-xl border-2 text-4xl flex items-center justify-center ${
                   icon
-                    ? 'bg-amber-500/20 border-amber-400/50 hover:bg-amber-500/30'
-                    : 'bg-slate-700/50 border-slate-600 hover:bg-slate-700'
+                    ? 'bg-amber-500/20 border-amber-400/50'
+                    : 'bg-slate-700/50 border-slate-600'
                 }`}
               >
-                {icon || '👆 Click to pick icon'}
-              </button>
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="button"
-                  disabled={!name.trim() || suggesting}
-                  onClick={async () => {
-                    if (!name.trim()) return;
-                    setSuggesting(true);
-                    try {
-                      const token = localStorage.getItem('token');
-                      if (token) {
-                        const { askAIQuestion } = await import('../api');
-                        const now = new Date();
-                        const { answer } = await askAIQuestion(
-                          now.getFullYear(),
-                          now.getMonth() + 1,
-                          `Return a single emoji that best represents the category "${name}". Only respond with the emoji, nothing else.`
-                        );
-                        const emoji = (answer || '').trim();
-                        if (emoji) {
-                          setIcon(emoji);
-                        } else {
-                          setIcon(localSuggestEmoji(name));
-                        }
-                      } else {
-                        setIcon(localSuggestEmoji(name));
-                      }
-                    } catch (e) {
-                      setIcon(localSuggestEmoji(name));
-                    } finally {
-                      setSuggesting(false);
-                    }
-                  }}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    suggesting
-                      ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40'
-                      : 'bg-slate-700/50 text-slate-300 border border-slate-600 hover:bg-slate-700'
-                  }`}
-                >
-                  {suggesting ? 'Suggesting…' : 'Suggest Emoji'}
-                </button>
+                {suggesting ? '⏳' : (icon || '🔖')}
               </div>
-              <CategoryIconPicker
-                isOpen={showIconPicker}
-                onClose={() => setShowIconPicker(false)}
-                onSelect={(selectedIcon) => {
-                  setIcon(selectedIcon);
-                  setShowIconPicker(false);
-                }}
-                type={type}
-                variant="inline"
-              />
             </div>
 
             {/* Buttons */}
@@ -215,7 +193,6 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
         </div>
       </div>
 
-      {/* Inline picker rendered above within the button's container */}
     </>
   );
 }
