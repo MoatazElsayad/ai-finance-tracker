@@ -229,6 +229,31 @@ export const getBudgetComparison = async (year, month) => {
   return handleResponse(response);
 };
 
+export const generateReport = async ({ startDate, endDate, format = 'pdf' }) => {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/reports/generate?token=${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      start_date: startDate || null,
+      end_date: endDate || null,
+      format,
+    }),
+  });
+  if (!response.ok) {
+    const ct = response.headers.get('content-type');
+    if (ct && ct.includes('application/json')) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to generate report');
+    }
+    throw new Error(`Server Error: ${response.status}`);
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const match = /filename="([^"]+)"/.exec(disposition);
+  const filename = match ? match[1] : `report.${format}`;
+  return { blob, filename };
+};
 // ============================================
 // AI
 // ============================================

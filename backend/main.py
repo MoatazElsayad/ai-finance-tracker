@@ -30,6 +30,9 @@ from ocr_utils import parse_receipt
 from fastapi import File, UploadFile
 import tempfile
 import shutil
+import io
+from typing import Optional, List, Dict
+from datetime import date
 
 load_dotenv()
 
@@ -125,6 +128,11 @@ class CategoryCreate(BaseModel):
     name: str
     type: str  # "income" or "expense"
     icon: str  # emoji like 🍔
+
+class ReportRequest(BaseModel):
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    format: str
 
 
 # ============================================
@@ -1280,3 +1288,225 @@ def root():
         "docs": "/docs",
         "version": "1.0 (Beginner Friendly)"
     }
+
+def _parse_date(s: Optional[str]) -> Optional[date]:
+    if not s:
+        return None
+    return datetime.fromisoformat(s).date()
+
+def _month_range_end(d: date) -> date:
+    if d.month == 12:
+        return date(d.year, 12, 31)
+    return (date(d.year, d.month + 1, 1) - timedelta(days=1))
+
+def _default_period() -> tuple[date, date]:
+    today = datetime.utcnow().date()
+    start = date(today.year, today.month, 1)
+    end = _month_range_end(start)
+    return start, end
+
+def _fetch_transactions(db: Session, user_id: int, start: date, end: date) -> List[Transaction]:
+    q = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        func.date(Transaction.date) >= start,
+        func.date(Transaction.date) <= end
+    ).order_by(Transaction.date.desc())
+    return q.all()
+
+def _summarize(transactions: List[Transaction]) -> Dict[str, float | int | Dict]:
+    income = sum(t.amount for t in transactions if t.amount > 0)
+    expenses = abs(sum(t.amount for t in transactions if t.amount < 0))
+    net = income - expenses
+    savings_rate = (net / income * 100) if income > 0 else 0
+    avg_amount = (sum(abs(t.amount) for t in transactions) / len(transactions)) if transactions else 0
+    count = len(transactions)
+    biggest_expense = min([t.amount for t in transactions if t.amount < 0], default=0)
+    return {
+        "income": round(income, 2),
+        "expenses": round(expenses, 2),
+        "net": round(net, 2),
+        "savings_rate": round(savings_rate, 2),
+        "avg_amount": round(avg_amount, 2),
+        "count": count,
+        "biggest_expense": round(abs(biggest_expense), 2)
+    }
+
+def _category_breakdown(transactions: List[Transaction]) -> List[Dict]:
+    totals: Dict[str, float] = {}
+    for t in transactions:
+        if t.amount < 0:
+            name = t.category.name if t.category else "Uncategorized"
+            totals[name] = totals.get(name, 0) + abs(t.amount)
+    total_exp = sum(totals.values())
+    items = [{"name": k, "amount": v, "percent": (v / total_exp * 100) if total_exp > 0 else 0} for k, v in totals.items()]
+    items.sort(key=lambda x: x["amount"], reverse=True)
+    return items
+
+def _top3_spending(categories: List[Dict]) -> List[Dict]:
+    return categories[:3]
+
+def _monthly_trend(db: Session, user_id: int, months: int = 6) -> Dict[str, List]:
+    today = datetime.utcnow().date()
+    labels = []
+    incomes = []
+    expenses = []
+    cur = date(today.year, today.month, 1)
+    for _ in range(months):
+        start = cur
+        end = _month_range_end(start)
+        tx = _fetch_transactions(db, user_id, start, end)
+        inc = sum(t.amount for t in tx if t.amount > 0)
+        exp = abs(sum(t.amount for t in tx if t.amount < 0))
+        labels.append(f"{start.strftime('%b %Y')}")
+        incomes.append(inc)
+        expenses.append(exp)
+        if start.month == 1:
+            cur = date(start.year - 1, 12, 1)
+        else:
+            cur = date(start.year, start.month - 1, 1)
+    labels = list(reversed(labels))
+    incomes = list(reversed(incomes))
+    expenses = list(reversed(expenses))
+    return {"labels": labels, "incomes": incomes, "expenses": expenses}
+
+def _plot_monthly_trend(trend: Dict[str, List]) -> bytes:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(8, 3))
+    x = list(range(len(trend["labels"])))
+    ax.plot(x, trend["incomes"], label="Income", color="#f59e0b")
+    ax.plot(x, trend["expenses"], label="Expenses", color="#1f2937")
+    ax.set_xticks(x)
+    ax.set_xticklabels(trend["labels"], rotation=45, ha="right")
+    ax.legend()
+    ax.grid(True, alpha=0.2)
+    buf = io.BytesIO()
+    plt.tight_layout()
+    fig.savefig(buf, format="png", dpi=150)
+    plt.close(fig)
+    return buf.getvalue()
+
+def _plot_category_pie(categories: List[Dict]) -> bytes:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    labels = [c["name"] for c in categories[:8]]
+    sizes = [c["amount"] for c in categories[:8]]
+    if not sizes:
+        sizes = [1]
+        labels = ["No data"]
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.pie(sizes, labels=labels, autopct="%1.0f%%", colors=["#f59e0b", "#fbbf24", "#fde68a", "#111827", "#374151", "#6b7280", "#9ca3af", "#d1d5db"])
+    ax.axis("equal")
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=150)
+    plt.close(fig)
+    return buf.getvalue()
+
+def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, pie_png: bytes, transactions: List[Transaction]) -> bytes:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+    styles = getSampleStyleSheet()
+    story = []
+    title = Paragraph("Moataz Finance Tracker", styles["Title"])
+    user_line = Paragraph(f"{user.first_name or ''} {user.last_name or ''} &lt;{user.email}&gt;", styles["Normal"])
+    period_line = Paragraph(f"Report Period: {period_label}", styles["Normal"])
+    gen_line = Paragraph(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d')}", styles["Normal"])
+    story += [title, Spacer(1, 12), user_line, period_line, gen_line, Spacer(1, 24)]
+    data = [
+        ["Total Income", f"{summary['income']:.2f}"],
+        ["Total Expenses", f"{summary['expenses']:.2f}"],
+        ["Net Savings", f"{summary['net']:.2f}"],
+        ["Savings Rate", f"{summary['savings_rate']:.2f}%"],
+        ["Average Amount", f"{summary['avg_amount']:.2f}"],
+        ["Transactions", f"{summary['count']}"],
+    ]
+    tbl = Table(data, hAlign="LEFT")
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f59e0b")),
+        ("TEXTCOLOR", (0,0), (-1,-1), colors.black),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#d1d5db")),
+        ("BACKGROUND", (0,1), (-1,-1), colors.HexColor("#fef3c7")),
+    ]))
+    story += [tbl, Spacer(1, 24)]
+    trend_img = Image(io.BytesIO(trend_png), width=500, height=200)
+    story += [Paragraph("Monthly Trend (6 months)", styles["Heading2"]), trend_img, Spacer(1, 24)]
+    pie_img = Image(io.BytesIO(pie_png), width=350, height=250)
+    story += [Paragraph("Category Breakdown", styles["Heading2"]), pie_img, Spacer(1, 24)]
+    rows = [["Date", "Merchant", "Category", "Description", "Amount", "Type"]]
+    for t in transactions:
+        cat_name = t.category.name if t.category else "Uncategorized"
+        typ = "income" if t.amount > 0 else "expense"
+        desc = t.description or ""
+        merch = ""
+        if desc.lower().startswith("receipt:"):
+            merch = desc.split(":", 1)[1].strip()
+        r = [t.date.strftime("%Y-%m-%d"), merch or "-", cat_name, desc, f"{abs(t.amount):.2f}", typ]
+        rows.append(r)
+    detail = Table(rows, repeatRows=1)
+    detail.setStyle(TableStyle([
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f59e0b")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+    ]))
+    story += [Paragraph("Transactions", styles["Heading2"]), detail, Spacer(1, 12)]
+    subtotal = sum(t.amount for t in transactions)
+    story += [Paragraph(f"Subtotal (net): {subtotal:.2f}", styles["Normal"])]
+    doc.build(story)
+    return buf.getvalue()
+
+def _build_csv(transactions: List[Transaction]) -> bytes:
+    import pandas as pd
+    rows = []
+    for t in transactions:
+        cat_name = t.category.name if t.category else "Uncategorized"
+        typ = "income" if t.amount > 0 else "expense"
+        desc = t.description or ""
+        merch = ""
+        if desc.lower().startswith("receipt:"):
+            merch = desc.split(":", 1)[1].strip()
+        rows.append({
+            "date": t.date.strftime("%Y-%m-%d"),
+            "merchant": merch or "",
+            "category": cat_name,
+            "description": desc,
+            "amount": t.amount,
+            "type": typ
+        })
+    df = pd.DataFrame(rows)
+    buf = io.StringIO()
+    df.to_csv(buf, index=False)
+    return buf.getvalue().encode("utf-8")
+
+@app.post("/reports/generate")
+def generate_report(data: ReportRequest, token: str, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    start, end = _default_period()
+    if data.start_date:
+        start = _parse_date(data.start_date) or start
+    if data.end_date:
+        end = _parse_date(data.end_date) or end
+    if end < start:
+        raise HTTPException(status_code=400, detail="Invalid date range")
+    tx = _fetch_transactions(db, user.id, start, end)
+    period_label = f"{start.strftime('%B %Y')}" if start.year == end.year and start.month == end.month else f"{start.isoformat()} to {end.isoformat()}"
+    if not tx:
+        if data.format == "csv":
+            empty = "date,merchant,category,description,amount,type\n"
+            return StreamingResponse(io.BytesIO(empty.encode("utf-8")), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="report_{period_label}.csv"'})
+        raise HTTPException(status_code=404, detail="No transactions for period")
+    summary = _summarize(tx)
+    cats = _category_breakdown(tx)
+    trend = _monthly_trend(db, user.id, 6)
+    trend_png = _plot_monthly_trend(trend)
+    pie_png = _plot_category_pie(cats)
+    if data.format == "csv":
+        csv_bytes = _build_csv(tx)
+        return StreamingResponse(io.BytesIO(csv_bytes), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="report_{period_label}.csv"'})
+    pdf_bytes = _build_pdf(user, period_label, summary, trend_png, pie_png, tx)
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="report_{period_label}.pdf"'})

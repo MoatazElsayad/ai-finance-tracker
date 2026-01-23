@@ -3,7 +3,7 @@
  * Professional financial dashboard with unified dark theme
  */
 import { useState, useEffect } from 'react';
-import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser, askAIQuestion, createAIChatProgressStream } from '../api';
+import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser, askAIQuestion, createAIChatProgressStream, generateReport } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
@@ -115,6 +115,28 @@ function Dashboard() {
     } else {
       // Overall: all time (very far past to future)
       return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+    }
+  };
+  
+  const handleDownloadReport = async (format = 'pdf') => {
+    try {
+      const { startDate, endDate } = getDateRange();
+      const payload = {
+        startDate: startDate.toISOString().slice(0, 10),
+        endDate: endDate.toISOString().slice(0, 10),
+        format,
+      };
+      const { blob, filename } = await generateReport(payload);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -1094,6 +1116,20 @@ function Dashboard() {
             {viewMode === 'overall' && (
               <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-lg`}>All Time Data</span>
             )}
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              onClick={() => handleDownloadReport('pdf')}
+              className={`${theme === 'dark' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'} rounded-lg px-4 py-2 font-medium transition-all`}
+            >
+              Download PDF Report
+            </button>
+            <button
+              onClick={() => handleDownloadReport('csv')}
+              className={`${theme === 'dark' ? 'bg-slate-700/60 text-slate-200 hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'} rounded-lg px-4 py-2 font-medium transition-all`}
+            >
+              Download CSV
+            </button>
           </div>
         </div>
       </div>
