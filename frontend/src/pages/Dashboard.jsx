@@ -120,6 +120,11 @@ function Dashboard() {
   
   const handleDownloadReport = async (format = 'pdf') => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in to download reports.');
+        return;
+      }
       const { startDate, endDate } = getDateRange();
       const payload = {
         startDate: startDate.toISOString().slice(0, 10),
@@ -1117,20 +1122,6 @@ function Dashboard() {
               <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-lg`}>All Time Data</span>
             )}
           </div>
-          <div className="flex items-center justify-center gap-3 mt-4">
-            <button
-              onClick={() => handleDownloadReport('pdf')}
-              className={`${theme === 'dark' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'} rounded-lg px-4 py-2 font-medium transition-all`}
-            >
-              Download PDF Report
-            </button>
-            <button
-              onClick={() => handleDownloadReport('csv')}
-              className={`${theme === 'dark' ? 'bg-slate-700/60 text-slate-200 hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'} rounded-lg px-4 py-2 font-medium transition-all`}
-            >
-              Download CSV
-            </button>
-          </div>
         </div>
       </div>
 
@@ -1190,6 +1181,32 @@ function Dashboard() {
             {savingsRate}%
           </p>
               <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Of income saved</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Reports Section */}
+      <section className={`px-6 py-10 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
+        <div className="max-w-7xl mx-auto w-full">
+          <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'} border`}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Reports</h2>
+              <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Download for selected period</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => handleDownloadReport('pdf')}
+                className={`${theme === 'dark' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'} rounded-lg px-4 py-2 font-medium transition-all`}
+              >
+                Download PDF Report
+              </button>
+              <button
+                onClick={() => handleDownloadReport('csv')}
+                className={`${theme === 'dark' ? 'bg-slate-700/60 text-slate-200 hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'} rounded-lg px-4 py-2 font-medium transition-all`}
+              >
+                Download CSV
+              </button>
             </div>
           </div>
         </div>

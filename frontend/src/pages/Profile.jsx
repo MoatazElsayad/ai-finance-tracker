@@ -3,7 +3,7 @@
  * Dark Mode Finance Tracker - Professional user profile with user information & avatar
  */
 import { useState, useEffect } from 'react';
-import { getCurrentUser, updateUserProfile } from '../api'; // Adjust import path as needed
+import { getCurrentUser, updateUserProfile, generateReport } from '../api'; // Adjust import path as needed
 import { useTheme } from '../context/ThemeContext';
 import { User, Mail, Calendar, Shield, Edit, Save, X, Upload } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
@@ -23,6 +23,7 @@ function Profile() {
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' }); // success / error
+  const [reportViewMode, setReportViewMode] = useState('monthly');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -72,6 +73,47 @@ function Profile() {
       setMessage({ text: err.message || 'Failed to update profile', type: 'error' });
     } finally {
       setSaving(false);
+    }
+  };
+  
+  const getReportDateRange = () => {
+    const now = new Date();
+    if (reportViewMode === 'monthly') {
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { startDate, endDate };
+    } else if (reportViewMode === 'yearly') {
+      const startDate = new Date(now.getFullYear(), 0, 1);
+      const endDate = new Date(now.getFullYear(), 11, 31);
+      return { startDate, endDate };
+    }
+    return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+  };
+  
+  const handleDownloadProfileReport = async (format = 'pdf') => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in to download reports.');
+        return;
+      }
+      const { startDate, endDate } = getReportDateRange();
+      const payload = {
+        startDate: startDate.toISOString().slice(0, 10),
+        endDate: endDate.toISOString().slice(0, 10),
+        format,
+      };
+      const { blob, filename } = await generateReport(payload);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -330,6 +372,64 @@ function Profile() {
                 </div>
               </div>
             </form>
+            
+            <div className={`mt-10 ${theme === 'dark' ? 'border-t border-slate-700 pt-8' : 'border-t border-slate-300 pt-8'}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Reports</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setReportViewMode('monthly')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                      reportViewMode === 'monthly'
+                        ? 'bg-blue-500/80 text-white'
+                        : theme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    onClick={() => setReportViewMode('yearly')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                      reportViewMode === 'yearly'
+                        ? 'bg-blue-500/80 text-white'
+                        : theme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Yearly
+                  </button>
+                  <button
+                    onClick={() => setReportViewMode('overall')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                      reportViewMode === 'overall'
+                        ? 'bg-blue-500/80 text-white'
+                        : theme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Overall
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => handleDownloadProfileReport('pdf')}
+                  className={`${theme === 'dark' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'} rounded-lg px-4 py-2 font-medium transition-all`}
+                >
+                  Download PDF Report
+                </button>
+                <button
+                  onClick={() => handleDownloadProfileReport('csv')}
+                  className={`${theme === 'dark' ? 'bg-slate-700/60 text-slate-200 hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'} rounded-lg px-4 py-2 font-medium transition-all`}
+                >
+                  Download CSV
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
