@@ -269,9 +269,14 @@ export const generateAISummary = async (year, month) => {
 
 // Simple chat-style question using the summary endpoint as a fallback
 export const askAIQuestion = async (year, month, question) => {
-  const data = await generateAISummary(year, month);
+  const token = getToken();
+  const response = await authFetch(`/ai/chat?year=${year}&month=${month}&token=${token}`, {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  });
+  const data = await handleResponse(response);
   return {
-    answer: data?.summary || 'No answer available.',
+    answer: data?.answer || 'No answer available.',
     model_used: data?.model_used || null,
   };
 };
@@ -301,8 +306,19 @@ export const createAIProgressStream = (year, month, onMessage, onError) => {
 };
 
 // Backwards-compatible wrapper name used in Dashboard.jsx
-export const createAIChatProgressStream = (year, month, onMessage, onError) => {
-  return createAIProgressStream(year, month, onMessage, onError);
+export const createAIChatProgressStream = (year, month, question, onMessage, onError) => {
+  const token = getToken();
+  const url = `${API_URL}/ai/chat_progress?year=${year}&month=${month}&question=${encodeURIComponent(question)}&token=${token}`;
+  const es = new EventSource(url);
+  es.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    onMessage(data);
+  };
+  es.onerror = (error) => {
+    if (onError) onError(error);
+    es.close();
+  };
+  return es;
 };
 
 // Update profile

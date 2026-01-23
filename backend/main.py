@@ -34,6 +34,7 @@ import io
 from typing import Optional, List, Dict
 from datetime import date
 import re
+from typing import Any
 
 load_dotenv()
 
@@ -937,6 +938,154 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
         detail="All AI models are currently busy. Please try again in a minute."
     )
 
+def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict[str, Any]:
+    base = build_rich_financial_context(db, user_id, year, month)
+    start = date(year, month, 1)
+    end = _month_range_end(start)
+    tx = _fetch_transactions(db, user_id, start, end)
+    tx_list = [
+        {
+            "date": t.date.strftime("%Y-%m-%d"),
+            "amount": t.amount,
+            "category": t.category.name if t.category else "Uncategorized",
+            "description": t.description or ""
+        }
+        for t in tx[:50]
+    ]
+    cats = db.query(Category).filter((Category.user_id == None) | (Category.user_id == user_id)).all()
+    cat_list = [{"name": c.name, "type": c.type} for c in cats]
+    budgets = db.query(Budget).filter(Budget.user_id == user_id, Budget.year == year, Budget.month == month).all()
+    bud_list = [{"category": b.category.name, "amount": b.amount} for b in budgets]
+    trend = _monthly_trend(db, user_id, 6)
+    merchants: Dict[str, float] = {}
+    for t in tx:
+        d = t.description.lower() if t.description else ""
+        if d.startswith("receipt:"):
+            m = d.split(":", 1)[1].strip()
+            if m:
+                merchants[m] = merchants.get(m, 0) + abs(t.amount)
+    top_merchants = sorted([{"merchant": m, "spent": v} for m, v in merchants.items()], key=lambda x: x["spent"], reverse=True)[:5]
+    return {
+        "summary": base,
+        "transactions": tx_list,
+        "categories": cat_list,
+        "budgets": bud_list,
+        "trend": trend,
+        "top_merchants": top_merchants,
+    }
+
+async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int, month: int, question: str):
+    ctx = build_chat_context(db, user_id, year, month)
+    if ctx["summary"]["current_month"]["transaction_count"] == 0:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
+        return
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
+        await asyncio.sleep(1)
+        mock_answer = "Answer: " + (question or "No question provided") + "\n\nContext accessed: budgets, categories, transactions, trend, merchants."
+        yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model-for-testing', 'answer': mock_answer})}\n\n"
+        return
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Finance Tracker AI",
+    }
+    MODELS = FREE_MODELS.copy()
+    random.shuffle(MODELS)
+    prompt = {
+        "role": "system",
+        "content": "You are a financial assistant. Answer the user's question using provided data. Be specific, concise, and numeric where possible."
+    }
+    user_msg = {
+        "role": "user",
+        "content": json.dumps({"question": question, "data": ctx})
+    }
+    for model_id in MODELS:
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
+        payload = {"model": model_id, "messages": [prompt, user_msg], "max_tokens": 500, "temperature": 0.4}
+        async with httpx.AsyncClient(verify=False) as client:
+            try:
+                response = await client.post(url, headers=headers, json=payload, timeout=20.0)
+                if response.status_code == 200:
+                    result = response.json()
+                    answer = result["choices"][0]["message"]["content"]
+                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'answer': answer})}\n\n"
+                    return
+                elif response.status_code == 429:
+                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                    await asyncio.sleep(0.5)
+                    continue
+            except httpx.TimeoutException:
+                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'timeout'})}\n\n"
+                continue
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
+                continue
+    yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
+
+@app.get("/ai/chat_progress")
+async def ai_chat_progress_stream(year: int, month: int, question: str, token: str, db: Session = Depends(get_db)):
+    try:
+        user = get_current_user(token, db)
+    except Exception:
+        return {"error": "Authentication failed"}
+    async def safe_generator():
+        try:
+            async for event in create_ai_chat_progress_generator(db, user.id, year, month, question):
+                yield event
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Server error: {str(e)}'})}\n\n"
+    return StreamingResponse(
+        safe_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+            "Access-Control-Allow-Methods": "GET",
+        }
+    )
+
+class ChatRequest(BaseModel):
+    question: str
+
+@app.post("/ai/chat")
+async def ai_chat(year: int, month: int, token: str, data: ChatRequest, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    ctx = build_chat_context(db, user.id, year, month)
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        answer = "Answer: " + (data.question or "No question") + "\n\nContext accessed: budgets, categories, transactions, trend, merchants."
+        return {"answer": answer, "model_used": "mock-model-for-testing"}
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Finance Tracker AI",
+    }
+    MODELS = FREE_MODELS.copy()
+    random.shuffle(MODELS)
+    prompt = {"role": "system", "content": "You are a financial assistant. Answer precisely using provided data."}
+    user_msg = {"role": "user", "content": json.dumps({"question": data.question, "data": ctx})}
+    for model_id in MODELS:
+        payload = {"model": model_id, "messages": [prompt, user_msg], "max_tokens": 600, "temperature": 0.4}
+        async with httpx.AsyncClient(verify=False) as client:
+            try:
+                resp = await client.post(url, headers=headers, json=payload, timeout=25.0)
+                if resp.status_code == 200:
+                    res = resp.json()
+                    ans = res["choices"][0]["message"]["content"]
+                    return {"answer": ans, "model_used": model_id}
+                elif resp.status_code == 429:
+                    continue
+            except Exception:
+                continue
+    raise HTTPException(status_code=503, detail="All AI models are currently busy. Please try again in a minute.")
 
 # ============================================
 # BUDGET ROUTES (Add these to main.py)
