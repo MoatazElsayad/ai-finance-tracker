@@ -242,6 +242,15 @@ export const generateAISummary = async (year, month) => {
   return handleResponse(response);
 };
 
+// Simple chat-style question using the summary endpoint as a fallback
+export const askAIQuestion = async (year, month, question) => {
+  const data = await generateAISummary(year, month);
+  return {
+    answer: data?.summary || 'No answer available.',
+    model_used: data?.model_used || null,
+  };
+};
+
 // ============================================
 // User Profile
 // ============================================
@@ -264,6 +273,11 @@ export const createAIProgressStream = (year, month, onMessage, onError) => {
   };
 
   return eventSource; // Return EventSource so it can be closed
+};
+
+// Backwards-compatible wrapper name used in Dashboard.jsx
+export const createAIChatProgressStream = (year, month, onMessage, onError) => {
+  return createAIProgressStream(year, month, onMessage, onError);
 };
 
 // Update profile

@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlyAnalytics, generateAISummary, getCurrentUser, askAIQuestion, createAIChatProgressStream } from '../api';
 import { useTheme } from '../context/ThemeContext';
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
@@ -952,6 +952,19 @@ function Dashboard() {
   };
 
   const dailySpendingData = getDailySpendingData();
+  const avgDailySpending = dailySpendingData.length
+    ? dailySpendingData.reduce((sum, d) => sum + (d.amount || 0), 0) / dailySpendingData.length
+    : 0;
+  const dailySpendingChartData = dailySpendingData.map((d, i) => {
+    let sum = 0;
+    let count = 0;
+    for (let j = i; j >= 0 && j >= i - 2; j--) {
+      sum += dailySpendingData[j].amount || 0;
+      count += 1;
+    }
+    const ma3 = count ? sum / count : 0;
+    return { ...d, ma3 };
+  });
   const weeklyPatternData = getWeeklyPatternData();
   const cumulativeSavingsData = getCumulativeSavingsData();
   const monthlyComparisonData = getMonthlyComparisonData();
@@ -1286,11 +1299,15 @@ function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dailySpendingData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <LineChart data={dailySpendingChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} syncId="dashboardSync">
                     <defs>
                       <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.3}/>
                         <stop offset="95%" stopColor="#ff6b6b" stopOpacity={0.05}/>
+                      </linearGradient>
+                      <linearGradient id="maGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.05}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} opacity={0.3} />
@@ -1321,6 +1338,19 @@ function Dashboard() {
                       activeDot={{ r: 7, fill: '#ff6b6b', strokeWidth: 2, stroke: '#ffffff' }}
                       fill="url(#spendingGradient)"
                     />
+                    <Line
+                      type="monotone"
+                      dataKey="ma3"
+                      name="3-day MA"
+                      stroke="#f59e0b"
+                      strokeDasharray="6 4"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6, fill: '#f59e0b' }}
+                      fill="url(#maGradient)"
+                    />
+                    <ReferenceLine y={avgDailySpending} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: 'Avg', position: 'right', fill: theme === 'dark' ? '#94a3b8' : '#475569' }} />
+                    <Brush dataKey="date" travellerWidth={10} height={24} stroke={theme === 'dark' ? '#94a3b8' : '#475569'} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -1333,7 +1363,7 @@ function Dashboard() {
                 Weekly Spending Pattern
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weeklyPatternData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={weeklyPatternData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} syncId="dashboardSync">
                   <defs>
                     <linearGradient id="weeklyGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#4ecdc4" stopOpacity={0.8}/>
@@ -1368,6 +1398,7 @@ function Dashboard() {
                       />
                     ))}
                   </Bar>
+                  <Brush dataKey="day" travellerWidth={10} height={24} stroke={theme === 'dark' ? '#94a3b8' : '#475569'} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1394,7 +1425,7 @@ function Dashboard() {
                 Monthly Comparison
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={monthlyComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} syncId="dashboardSync">
                   <defs>
                     <linearGradient id="incomeCompareGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.8}/>
@@ -1442,6 +1473,7 @@ function Dashboard() {
                     name="Expenses"
                     maxBarSize={50}
                   />
+                  <Brush dataKey="month" travellerWidth={10} height={24} stroke={theme === 'dark' ? '#94a3b8' : '#475569'} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1464,7 +1496,7 @@ function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={cumulativeSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <AreaChart data={cumulativeSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} syncId="dashboardSync">
                     <defs>
                       <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ffd93d" stopOpacity={0.3}/>
@@ -1505,6 +1537,7 @@ function Dashboard() {
                       dot={{ fill: '#ffd93d', r: 4, strokeWidth: 2, stroke: theme === 'dark' ? '#ffffff' : '#000000' }}
                       activeDot={{ r: 6, fill: '#ffd93d', strokeWidth: 2, stroke: theme === 'dark' ? '#ffffff' : '#000000' }}
                     />
+                    <Brush dataKey="date" travellerWidth={10} height={24} stroke={theme === 'dark' ? '#94a3b8' : '#475569'} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
