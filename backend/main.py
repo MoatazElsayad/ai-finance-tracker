@@ -90,7 +90,6 @@ class UserRegister(BaseModel):
     first_name: str
     last_name: str
     phone: str | None = None
-    gender: str | None = None
     password: str
 
 class UserLogin(BaseModel):
@@ -119,8 +118,6 @@ class ProfileUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
-    gender: str | None = None
-    avatar: str | None = None
 
 class CategoryCreate(BaseModel):
     name: str
@@ -213,7 +210,6 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             first_name=data.first_name,
             last_name=data.last_name,
             phone=data.phone,
-            gender=data.gender,
             hashed_password=hash_password(plain_password)
         )
         db.add(user)
@@ -261,52 +257,7 @@ def get_me(token: str, db: Session = Depends(get_db)):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,
-        "gender": user.gender,
-        "avatar": user.avatar,
         "createdAt": user.created_at.isoformat() if user.created_at else None
-    }
-
-
-@app.put("/auth/profile")
-def update_profile(data: ProfileUpdate, token: str, db: Session = Depends(get_db)):
-    """
-    Update user profile
-    """
-    user = get_current_user(token, db)
-    
-    if data.username:
-        # Check uniqueness if changing
-        if data.username != user.username:
-            existing = db.query(User).filter(User.username == data.username).first()
-            if existing:
-                raise HTTPException(status_code=400, detail="Username already taken")
-        user.username = data.username
-        
-    if data.first_name is not None:
-        user.first_name = data.first_name
-    if data.last_name is not None:
-        user.last_name = data.last_name
-    if data.phone is not None:
-        user.phone = data.phone
-    if data.gender is not None:
-        user.gender = data.gender
-    if data.avatar is not None:
-        user.avatar = data.avatar
-        
-    db.commit()
-    db.refresh(user)
-    
-    return {
-        "message": "Profile updated successfully",
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "phone": user.phone,
-            "gender": user.gender,
-            "avatar": user.avatar
-        }
     }
 
 
@@ -352,7 +303,6 @@ def create_transaction(
     user = get_current_user(token, db)
     
     # Create transaction
-    print(f"DEBUG: Manually creating transaction for User {user.id}: Amount={data.amount}, Cat={data.category_id}")
     transaction = Transaction(
         user_id=user.id,
         category_id=data.category_id,
@@ -974,196 +924,6 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
         detail="All AI models are currently busy. Please try again in a minute."
     )
 
-# ============================================
-# AI CHAT (Q&A about user's data)
-# ============================================
-
-async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int, month: int, question: str):
-    """Async generator that yields SSE events for AI chat (Q&A) progress"""
-    context = build_rich_financial_context(db, user_id, year, month)
-
-    if context["current_month"]["transaction_count"] == 0:
-        yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
-        return
-
-    prompt_text = f"""You are a precise financial analyst answering a question using ONLY the provided user's financial data for {month}/{year}.
-
-USER QUESTION:
-{question}
-
-AVAILABLE DATA SNAPSHOT:
-- Income: ${context['current_month']['income']:,.2f}
-- Expenses: ${context['current_month']['expenses']:,.2f}
-- Net Savings: ${context['current_month']['savings']:,.2f}
-- Savings Rate: {context['current_month']['savings_rate']}%
-- Top Categories: {", ".join([c['name'] for c in context['category_breakdown'][:5]])}
-
-CATEGORY DETAILS:
-{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown']])}
-
-IMPORTANT:
-- Answer STRICTLY based on this data; if unknown, say 'I cannot answer with the available data'.
-- Be concise and numeric when possible.
-- If the question refers to a time range different from {month}/{year}, note that you are answering for {month}/{year}.
-"""
-
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
-        yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
-        await asyncio.sleep(1)
-        mock_answer = "You spent $0.00 on the requested category this month based on available data."
-        yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model-for-testing', 'answer': mock_answer})}\n\n"
-        return
-
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000",
-        "X-Title": "Finance Tracker AI",
-    }
-
-    MODELS = FREE_MODELS.copy()
-    random.shuffle(MODELS)
-
-    for model_id in MODELS:
-        yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
-        payload = {
-            "model": model_id,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a financial data assistant. Answer ONLY using provided context. Be concise, numeric, and accurate."
-                },
-                {
-                    "role": "user",
-                    "content": prompt_text
-                }
-            ],
-            "max_tokens": 300,
-            "temperature": 0.3
-        }
-
-        async with httpx.AsyncClient(verify=False) as client:
-            try:
-                response = await client.post(url, headers=headers, json=payload, timeout=15.0)
-                if response.status_code == 200:
-                    result = response.json()
-                    answer = result['choices'][0]['message']['content']
-                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'answer': answer})}\n\n"
-                    return
-                elif response.status_code == 429:
-                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
-                    await asyncio.sleep(0.5)
-                    continue
-            except httpx.TimeoutException:
-                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'timeout'})}\n\n"
-                continue
-            except Exception as e:
-                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
-                continue
-
-    yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
-
-@app.get("/ai/chat_progress")
-async def ai_chat_progress_stream(year: int, month: int, question: str, token: str, db: Session = Depends(get_db)):
-    """SSE endpoint for real-time AI chat progress"""
-    if not token:
-        return {"error": "No token provided"}
-    try:
-        user = get_current_user(token, db)
-    except Exception as e:
-        return {"error": "Authentication failed"}
-
-    async def safe_generator():
-        try:
-            async for event in create_ai_chat_progress_generator(db, user.id, year, month, question):
-                yield event
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': f'Server error: {str(e)}'})}\n\n"
-
-    return StreamingResponse(
-        safe_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Cache-Control",
-            "Access-Control-Allow-Methods": "GET",
-        }
-    )
-
-@app.post("/ai/chat")
-async def ai_chat(year: int, month: int, question: str, token: str, db: Session = Depends(get_db)):
-    """Direct chat endpoint (non-SSE) that follows the same model-fallback algorithm"""
-    user = get_current_user(token, db)
-    context = build_rich_financial_context(db, user.id, year, month)
-
-    if context["current_month"]["transaction_count"] == 0:
-        return {"answer": "No transactions found for this month"}
-
-    prompt_text = f"""Answer the user's financial question using ONLY the provided data for {month}/{year}.
-
-QUESTION:
-{question}
-
-DATA SUMMARY:
-- Income: ${context['current_month']['income']:,.2f}
-- Expenses: ${context['current_month']['expenses']:,.2f}
-- Net Savings: ${context['current_month']['savings']:,.2f}
-- Savings Rate: {context['current_month']['savings_rate']}%
-
-CATEGORIES:
-{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown']])}
-
-If the answer cannot be derived, say 'I cannot answer with the available data'. Be concise and numeric."""
-
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
-        return {"answer": "Based on this month's data, your spending in asked category is available in category breakdown.", "model_used": "mock-model-for-testing"}
-
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000",
-        "X-Title": "Finance Tracker AI",
-    }
-
-    MODELS = FREE_MODELS.copy()
-    random.shuffle(MODELS)
-
-    for model_id in MODELS:
-        payload = {
-            "model": model_id,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a financial data assistant. Answer ONLY using provided context. Be concise, numeric, and accurate."
-                },
-                {
-                    "role": "user",
-                    "content": prompt_text
-                }
-            ],
-            "max_tokens": 300,
-            "temperature": 0.3
-        }
-
-        async with httpx.AsyncClient(verify=False) as client:
-            try:
-                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
-                if response.status_code == 200:
-                    result = response.json()
-                    answer = result['choices'][0]['message']['content']
-                    return {"answer": answer, "model_used": model_id}
-                elif response.status_code == 429:
-                    continue
-            except Exception:
-                continue
-
-    raise HTTPException(status_code=503, detail="All AI models are currently busy. Please try again in a minute.")
 
 # ============================================
 # BUDGET ROUTES (Add these to main.py)
@@ -1400,7 +1160,7 @@ async def upload_receipt(
             ]
             
             # Parse receipt
-            result = await parse_receipt(temp_file_path, categories_list)
+            result = parse_receipt(temp_file_path, categories_list)
             
             if result["success"]:
                 return {
@@ -1450,21 +1210,13 @@ def confirm_receipt(
         ).first()
         
         if not category:
-            print(f"DEBUG: Category {data.category_id} not found")
             raise HTTPException(status_code=404, detail="Category not found")
         
-        # Determine correct sign for amount
-        final_amount = abs(data.amount)
-        if category.type == "expense":
-            final_amount = -final_amount
-        
-        print(f"DEBUG: Creating transaction for User {user.id}: Amount={final_amount}, Merch={data.merchant}, Cat={data.category_id}")
-
         # Create transaction
         transaction = Transaction(
             user_id=user.id,
             category_id=data.category_id,
-            amount=final_amount,
+            amount=data.amount,  # Could be negative for expenses
             description=f"Receipt: {data.merchant}" if not data.description else data.description,
             date=datetime.fromisoformat(data.date)
         )

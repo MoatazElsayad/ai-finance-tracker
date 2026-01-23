@@ -58,11 +58,11 @@ const authFetch = async (url, options = {}) => {
 // AUTHENTICATION
 // ============================================
 
-export const register = async (email, username, firstName, lastName, phone, gender, password) => {
+export const register = async (email, username, firstName, lastName, phone, password) => {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, username, first_name: firstName, last_name: lastName, phone, gender, password }),
+    body: JSON.stringify({ email, username, first_name: firstName, last_name: lastName, phone, password }),
   });
 
   const data = await handleResponse(response);
@@ -94,15 +94,6 @@ export const logout = () => {
 export const getCurrentUser = async () => {
   const token = getToken();
   const response = await authFetch(`/auth/me?token=${token}`);
-  return handleResponse(response);
-};
-
-export const updateProfile = async (data) => {
-  const token = getToken();
-  const response = await authFetch(`/auth/profile?token=${token}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
   return handleResponse(response);
 };
 
@@ -251,14 +242,6 @@ export const generateAISummary = async (year, month) => {
   return handleResponse(response);
 };
 
-export const askAIQuestion = async (year, month, question) => {
-  const token = getToken();
-  const response = await authFetch(`/ai/chat?year=${year}&month=${month}&question=${encodeURIComponent(question)}&token=${token}`, {
-    method: 'POST',
-  });
-  return handleResponse(response);
-};
-
 // ============================================
 // User Profile
 // ============================================
@@ -281,26 +264,6 @@ export const createAIProgressStream = (year, month, onMessage, onError) => {
   };
 
   return eventSource; // Return EventSource so it can be closed
-};
-
-// Server-Sent Events for AI chat progress
-export const createAIChatProgressStream = (year, month, question, onMessage, onError) => {
-  const token = getToken();
-  const eventSource = new EventSource(
-    `${API_URL}/ai/chat_progress?year=${year}&month=${month}&question=${encodeURIComponent(question)}&token=${token}`
-  );
-
-  eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    onMessage(data);
-  };
-
-  eventSource.onerror = (error) => {
-    if (onError) onError(error);
-    eventSource.close();
-  };
-
-  return eventSource;
 };
 
 // Update profile

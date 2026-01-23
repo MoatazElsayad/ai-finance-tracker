@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info } from 'lucide-react';
+import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useSidebarCollapsed } from '../context/SidebarContext';
 import { logout } from '../api';
@@ -22,7 +22,6 @@ function Sidebar({ user }) {
     { path: '/budget', label: 'Budget', icon: Wallet },
     { path: '/receipt-upload', label: 'Receipt Upload', icon: ImagePlus },
     { path: '/profile', label: 'Profile', icon: User },
-    { path: '/about', label: 'About', icon: Info },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -74,26 +73,15 @@ function Sidebar({ user }) {
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
+        {/* Header with Collapse Button */}
         <div
           className={`p-4 border-b ${
             isDark ? 'border-slate-700' : 'border-slate-200'
           } flex items-center justify-between`}
         >
-          <div className="flex items-center gap-3">
-            {!isCollapsed && (
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                isDark ? 'bg-gradient-to-br from-amber-400/30 to-amber-500/30 border border-amber-400/40' : 'bg-gradient-to-br from-amber-100 to-amber-200 border border-amber-300'
-              }`}>
-                <span className={`${isDark ? 'text-slate-900' : 'text-amber-700'} font-bold`}>FT</span>
-              </div>
-            )}
-            {!isCollapsed && (
-              <span className={`${isDark ? 'text-white' : 'text-slate-900'} font-semibold`}>Finance Tracker</span>
-            )}
-          </div>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-2 rounded-lg transition-all hidden md:block ${
+            className={`p-1 rounded-lg transition-all hidden md:block ${
               isDark
                 ? 'hover:bg-slate-800 text-slate-400 hover:text-amber-400'
                 : 'hover:bg-slate-100 text-slate-600 hover:text-amber-600'
@@ -134,6 +122,7 @@ function Sidebar({ user }) {
           </div>
         )}
 
+        {/* Navigation Links */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -143,24 +132,24 @@ function Sidebar({ user }) {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 title={isCollapsed ? item.label : ''}
-                className={`group flex items-center ${isCollapsed ? 'justify-center gap-0 px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all border ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive(item.path)
                     ? isDark
-                      ? 'bg-gradient-to-r from-amber-400/15 to-amber-500/10 text-amber-400 border-amber-400/40 shadow-lg'
-                      : 'bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 border-amber-300 shadow'
+                      ? 'bg-amber-400/20 text-amber-400 border border-amber-400/30'
+                      : 'bg-amber-100 text-amber-700 border border-amber-300'
                     : isDark
-                    ? 'text-slate-300 hover:bg-slate-800 hover:text-amber-400 border-slate-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-amber-600 border-slate-200'
+                    ? 'text-slate-300 hover:bg-slate-800 hover:text-amber-400'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-amber-600'
                 }`}
               >
-                {!isCollapsed && isActive(item.path) && <span className="w-1.5 h-6 rounded-full bg-amber-400" />}
-                <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? '' : ''}`} />
+                <Icon className="w-5 h-5 flex-shrink-0" />
                 {!isCollapsed && <span className="font-medium">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
+        {/* Theme Toggle & Logout Section */}
         <div
           className={`p-4 border-t space-y-2 ${
             isDark ? 'border-slate-700' : 'border-slate-200'
@@ -170,7 +159,7 @@ function Sidebar({ user }) {
           <button
             onClick={toggleTheme}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
               isDark
                 ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-amber-600'
@@ -188,7 +177,7 @@ function Sidebar({ user }) {
           <button
             onClick={handleLogout}
             title="Logout"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
               isDark
                 ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
                 : 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-300'

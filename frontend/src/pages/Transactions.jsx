@@ -3,7 +3,6 @@
  * Professional transaction management with advanced filtering and insights
  */
 import { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
@@ -11,7 +10,6 @@ import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, T
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
-  const location = useLocation();
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,12 +66,6 @@ function Transactions() {
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    if (location.state && location.state.openForm) {
-      setShowForm(true);
-    }
-  }, [location.state]);
 
   const loadData = async () => {
     try {

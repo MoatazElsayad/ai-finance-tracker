@@ -19,7 +19,6 @@ function Login() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [gender, setGender] = useState('male');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +34,7 @@ function Login() {
         await login(email, password);
       } else {
         // Register - include all new fields
-        await register(email, username, firstName, lastName, phone, gender, password);
+        await register(email, username, firstName, lastName, phone, password);
       }
       
       navigate('/dashboard');
@@ -52,8 +51,8 @@ function Login() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400/30 to-purple-500/30 backdrop-blur-sm rounded-2xl mb-6 border border-amber-400/30 shadow-lg">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500"></div>
+          <div className="inline-block p-4 bg-amber-400/20 backdrop-blur-sm rounded-2xl mb-6 border border-amber-400/30 shadow-lg">
+            <span className="text-5xl">💼</span>
           </div>
           <h1 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>AI Finance Tracker</h1>
           <p className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} style={{ fontSize: '1.125rem' }}>
@@ -67,7 +66,7 @@ function Login() {
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-sm border border-red-500/30 rounded-xl text-red-300 text-sm">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
+                <span className="text-lg">⚠️</span>
                 <span>{error}</span>
               </div>
             </div>
@@ -151,23 +150,6 @@ function Login() {
                   className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' : 'bg-slate-100/50 border-slate-300 text-slate-900 placeholder-slate-500'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
                   placeholder="+201234567890"
                 />
-              </div>
-            )}
-
-            {/* Gender (only for registration) */}
-            {!isLogin && (
-              <div>
-                <label className={`block text-sm font-semibold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
-                  Gender
-                </label>
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
               </div>
             )}
 
