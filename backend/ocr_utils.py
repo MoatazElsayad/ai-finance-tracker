@@ -27,13 +27,6 @@ FREE_MODELS = [
     "mistralai/mistral-7b-instruct:free",
 ]
 
-# Try to use Google Generative AI (vision)
-try:
-    import google.generativeai as genai
-    HAS_GOOGLE_AI = True
-except ImportError:
-    HAS_GOOGLE_AI = False
-
 # Try to use EasyOCR, fallback to pytesseract or online API
 try:
     import easyocr  # type: ignore
