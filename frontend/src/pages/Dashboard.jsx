@@ -1859,6 +1859,17 @@ function Dashboard() {
                   );
                 })}
               </div>
+              {chatLoading && (
+                <div className={`flex justify-start mb-3`}>
+                  <div className={`max-w-[75%] ${theme === 'dark' ? 'bg-slate-800/60 text-slate-100' : 'bg-slate-100 text-slate-800'} rounded-xl px-4 py-3`}>
+                    <div className="typing">
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="h-6 flex items-center">
                   {chatLoading && (
@@ -2081,6 +2092,17 @@ function Dashboard() {
               </div>
             );
           })}
+          {chatWidgetLoading && (
+            <div className="flex justify-start mb-3">
+              <div className={`max-w-[80%] ${theme === 'dark' ? 'bg-slate-800/60 text-slate-100' : 'bg-slate-100 text-slate-800'} rounded-xl px-4 py-3`}>
+                <div className="typing">
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div className={`flex items-center gap-2 px-4 py-3 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} rounded-b-2xl`}>
           <input
