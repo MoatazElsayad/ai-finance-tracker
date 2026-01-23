@@ -18,9 +18,15 @@ function CategoryBadge({ icon, name, size = 'md', type = 'expense' }) {
 
   const color = bgColors[type] || bgColors.default;
 
+  const isImage = typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('data:'));
+
   return (
     <div className={`inline-flex items-center gap-2 rounded-lg border ${sizeClasses[size]} ${color} transition-all`}>
-      <span className="text-lg leading-none">{icon}</span>
+      {isImage ? (
+        <img src={icon} alt={name || 'icon'} className="w-5 h-5 rounded-sm object-cover" />
+      ) : (
+        <span className="text-lg leading-none">{icon}</span>
+      )}
       <span className="font-medium whitespace-nowrap">{name}</span>
     </div>
   );

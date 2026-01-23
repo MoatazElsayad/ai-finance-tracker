@@ -23,11 +23,13 @@ function Transactions() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const { theme } = useTheme();
+  const [expanded, setExpanded] = useState(new Set());
 
   // Form state
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isExpense, setIsExpense] = useState(true);
 
@@ -88,8 +90,11 @@ function Transactions() {
 
     try {
       const finalAmount = isExpense ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount));
+      const combinedDescription = notes && notes.trim()
+        ? `${description.trim()} ||notes|| ${notes.trim()}`
+        : description.trim();
 
-      await createTransaction(parseInt(categoryId), finalAmount, description, date);
+      await createTransaction(parseInt(categoryId), finalAmount, combinedDescription, date);
       
       const txns = await getTransactions();
       setTransactions(txns);
@@ -98,6 +103,7 @@ function Transactions() {
       setCategoryId('');
       setAmount('');
       setDescription('');
+      setNotes('');
       setDate(new Date().toISOString().split('T')[0]);
       setShowForm(false);
 
@@ -592,6 +598,20 @@ function Transactions() {
               </div>
             </div>
 
+            {/* Notes */}
+            <div>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} mb-2`}>
+                Notes (optional)
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Add details you want to remember..."
+                className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-100/50 border-slate-300 text-slate-900 placeholder-slate-500'} border-2 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all`}
+              />
+            </div>
+
             <div className="flex gap-3">
               <button
                 type="submit"
@@ -790,18 +810,36 @@ function Transactions() {
                     key={txn.id}
                     className={`px-6 py-4 transition-all ${theme === 'dark' ? 'hover:bg-slate-700/20 border-b border-slate-700/50 last:border-b-0' : 'hover:bg-slate-100/20 border-b border-slate-200/50 last:border-b-0'}`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => {
+                        setExpanded(prev => {
+                          const next = new Set(prev);
+                          if (next.has(txn.id)) next.delete(txn.id); else next.add(txn.id);
+                          return next;
+                        });
+                      }}
+                    >
                       <div className="flex items-center gap-4 flex-1">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
                           txn.amount > 0 
                             ? 'bg-green-500/20 border border-green-500/30' 
                             : 'bg-red-500/20 border border-red-500/30'
                         }`}>
-                          {txn.category_icon}
+                          {typeof txn.category_icon === 'string' && (txn.category_icon.startsWith('http') || txn.category_icon.startsWith('data:')) ? (
+                            <img src={txn.category_icon} alt={txn.category_name} className="w-8 h-8 rounded-md object-cover" />
+                          ) : (
+                            txn.category_icon
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txn.description}</p>
+                            <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                              {(() => {
+                                const parts = (txn.description || '').split('||notes||');
+                                return parts[0]?.trim() || '';
+                              })()}
+                            </p>
                             <span className={`px-2 py-1 ${theme === 'dark' ? 'bg-slate-700/50 text-slate-300' : 'bg-slate-200/50 text-slate-700'} rounded text-xs`}>
                               {txn.category_name}
                             </span>
@@ -821,13 +859,32 @@ function Transactions() {
                           {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toFixed(2)}
                         </span>
                         <button
-                          onClick={() => handleDelete(txn.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(txn.id);
+                          }}
                           className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-medium text-sm transition-all border border-red-500/30"
                         >
                           <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300 transition-colors" strokeWidth={2} />
                         </button>
                       </div>
                     </div>
+                    {expanded.has(txn.id) && (
+                      <div className={`mt-3 ml-16 mr-6 p-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/30 border-slate-600 text-slate-300' : 'bg-slate-100/50 border-slate-300 text-slate-700'}`}>
+                        {(() => {
+                          const parts = (txn.description || '').split('||notes||');
+                          const notesText = parts[1]?.trim();
+                          return notesText ? (
+                            <div>
+                              <div className="text-xs font-semibold mb-1">Notes</div>
+                              <div className="text-sm whitespace-pre-wrap leading-relaxed">{notesText}</div>
+                            </div>
+                          ) : (
+                            <div className="text-sm italic opacity-70">No notes</div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
