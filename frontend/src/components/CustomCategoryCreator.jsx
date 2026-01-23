@@ -12,6 +12,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [suggesting, setSuggesting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,6 +113,38 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
               >
                 {icon || '👆 Click to pick icon'}
               </button>
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  disabled={!name.trim() || suggesting}
+                  onClick={async () => {
+                    if (!name.trim()) return;
+                    setSuggesting(true);
+                    try {
+                      const { askAIQuestion } = await import('../api');
+                      const now = new Date();
+                      const { answer } = await askAIQuestion(
+                        now.getFullYear(),
+                        now.getMonth() + 1,
+                        `Return a single emoji that best represents the category "${name}". Only respond with the emoji, nothing else.`
+                      );
+                      const emoji = (answer || '').trim();
+                      if (emoji) setIcon(emoji);
+                    } catch (e) {
+                      // silent
+                    } finally {
+                      setSuggesting(false);
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    suggesting
+                      ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40'
+                      : 'bg-slate-700/50 text-slate-300 border border-slate-600 hover:bg-slate-700'
+                  }`}
+                >
+                  {suggesting ? 'Suggesting…' : 'Suggest Emoji'}
+                </button>
+              </div>
               <CategoryIconPicker
                 isOpen={showIconPicker}
                 onClose={() => setShowIconPicker(false)}

@@ -132,32 +132,23 @@ function Transactions() {
     }
   };
 
-  // Calculate totals
+  // Calculate totals based on current filters
   const totals = useMemo(() => {
-    const { startDate, endDate } = getDateRange();
-    
-    const periodTransactions = transactions.filter(t => {
-      const txnDate = new Date(t.date);
-      return txnDate >= startDate && txnDate <= endDate;
-    });
-    
-    const income = periodTransactions
+    const income = filteredTransactions
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
-    
     const expenses = Math.abs(
-      periodTransactions
+      filteredTransactions
         .filter(t => t.amount < 0)
         .reduce((sum, t) => sum + t.amount, 0)
     );
-
     return {
       income,
       expenses,
       net: income - expenses,
-      count: periodTransactions.length
+      count: filteredTransactions.length
     };
-  }, [transactions, viewMode, selectedMonth]);
+  }, [filteredTransactions]);
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
