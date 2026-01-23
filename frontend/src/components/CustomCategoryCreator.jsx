@@ -97,13 +97,13 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
             </div>
 
             {/* Icon Selection */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Choose Icon
               </label>
               <button
                 type="button"
-                onClick={() => setShowIconPicker(true)}
+                onClick={() => setShowIconPicker(prev => !prev)}
                 className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-4xl flex items-center justify-center ${
                   icon
                     ? 'bg-amber-500/20 border-amber-400/50 hover:bg-amber-500/30'
@@ -112,6 +112,16 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
               >
                 {icon || '👆 Click to pick icon'}
               </button>
+              <CategoryIconPicker
+                isOpen={showIconPicker}
+                onClose={() => setShowIconPicker(false)}
+                onSelect={(selectedIcon) => {
+                  setIcon(selectedIcon);
+                  setShowIconPicker(false);
+                }}
+                type={type}
+                variant="inline"
+              />
             </div>
 
             {/* Buttons */}
@@ -136,13 +146,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
         </div>
       </div>
 
-      {/* Icon Picker Modal */}
-      <CategoryIconPicker
-        isOpen={showIconPicker}
-        onClose={() => setShowIconPicker(false)}
-        onSelect={(selectedIcon) => setIcon(selectedIcon)}
-        type={type}
-      />
+      {/* Inline picker rendered above within the button's container */}
     </>
   );
 }

@@ -57,7 +57,7 @@ function isImageIcon(str) {
   return typeof str === 'string' && (str.startsWith('http') || str.startsWith('data:'));
 }
 
-function CategoryIconPicker({ isOpen, onClose, onSelect, type = 'expense' }) {
+function CategoryIconPicker({ isOpen, onClose, onSelect, type = 'expense', variant = 'modal' }) {
   const [query, setQuery] = useState('');
   const fileInputRef = useRef(null);
   if (!isOpen) return null;
@@ -91,18 +91,10 @@ function CategoryIconPicker({ isOpen, onClose, onSelect, type = 'expense' }) {
     }
   };
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md max-h-[70vh] overflow-hidden ring-1 ring-amber-400/30">
-          {/* Header */}
+  if (variant === 'inline') {
+    return (
+      <div className="absolute left-0 right-0 mt-2 z-50">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md overflow-hidden ring-1 ring-amber-400/30">
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 border-b border-slate-700 flex items-center gap-2">
             <span className="text-2xl">{type === 'expense' ? '💸' : '💰'}</span>
             <div className="relative flex-1">
@@ -136,8 +128,70 @@ function CategoryIconPicker({ isOpen, onClose, onSelect, type = 'expense' }) {
               <X className="w-6 h-6" />
             </button>
           </div>
+          <div className="p-4">
+            <div className="grid grid-cols-6 gap-2">
+              {filteredIcons.map((item, idx) => (
+                <button
+                  key={`${item.emoji}-${idx}`}
+                  type="button"
+                  onClick={() => {
+                    onSelect(item.emoji);
+                    onClose();
+                  }}
+                  title={item.label}
+                  className="aspect-square flex items-center justify-center text-2xl bg-slate-700/50 hover:bg-slate-600 rounded-lg transition-all hover:scale-105 border border-slate-600 hover:border-amber-400/50 cursor-pointer"
+                >
+                  {item.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Icon Grid */}
+  return (
+    <>
+      <div 
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md max-h-[70vh] overflow-hidden ring-1 ring-amber-400/30">
+          <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 border-b border-slate-700 flex items-center gap-2">
+            <span className="text-2xl">{type === 'expense' ? '💸' : '💰'}</span>
+            <div className="relative flex-1">
+              <SearchIcon className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search icons..."
+                className="w-full pl-9 pr-10 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+              />
+              <button
+                type="button"
+                title="Add photo"
+                onClick={handleUploadClick}
+                className="absolute right-2 top-1.5 p-1.5 rounded-md bg-slate-700/60 border border-slate-600 hover:bg-slate-700 text-slate-200"
+              >
+                <ImagePlus className="w-4 h-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
+            <button
+              onClick={onClose}
+              className="ml-2 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
           <div className="p-4 overflow-y-auto max-h-[55vh]">
             <div className="grid grid-cols-6 gap-2">
               {filteredIcons.map((item, idx) => (
@@ -156,8 +210,6 @@ function CategoryIconPicker({ isOpen, onClose, onSelect, type = 'expense' }) {
               ))}
             </div>
           </div>
-
-          {/* Footer */}
           <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3 border-t border-slate-700">
             <p className="text-xs text-slate-400 text-center">
               Pick an emoji or tap the small photo icon to upload
