@@ -504,7 +504,7 @@ function Transactions() {
                   }}
                   className={`p-4 rounded-xl font-semibold transition-all border-2 ${
                     isExpense
-                      ? 'bg-gradient-to-r from-red-500/20 to-rose-500/20 text-red-400 border-red-500/50 shadow-lg scale-105'
+                      ? 'bg-gradient-to-r from-red-500/20 to-rose-500/20 text-red-400 border-red-500/50 shadow-lg'
                       : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-600 border-slate-300 hover:bg-slate-300'}`
                   }`}
                 >
@@ -519,7 +519,7 @@ function Transactions() {
                   }}
                   className={`p-4 rounded-xl font-semibold transition-all border-2 ${
                     !isExpense
-                      ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border-green-500/50 shadow-lg scale-105'
+                      ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border-green-500/50 shadow-lg'
                       : `${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700' : 'bg-slate-200/50 text-slate-600 border-slate-300 hover:bg-slate-300'}`
                   }`}
                 >
@@ -606,6 +606,13 @@ function Transactions() {
                     placeholder="0.00"
                     required
                   />
+                  <span className={`absolute right-4 top-3 text-xs px-2 py-1 rounded ${
+                    isExpense
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  }`}>
+                    {isExpense ? 'Expense' : 'Income'}
+                  </span>
                 </div>
               </div>
             </div>

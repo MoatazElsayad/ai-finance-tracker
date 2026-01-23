@@ -95,13 +95,13 @@ function CategoryIconPicker({ isOpen, onClose, onSelect, type = 'expense' }) {
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
         onClick={onClose}
       />
       
       {/* Modal */}
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md max-h-[70vh] overflow-hidden">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md max-h-[70vh] overflow-hidden ring-1 ring-amber-400/30">
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 border-b border-slate-700 flex items-center gap-2">
             <span className="text-2xl">{type === 'expense' ? '💸' : '💰'}</span>
