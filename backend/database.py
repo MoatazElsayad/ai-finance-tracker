@@ -21,6 +21,16 @@ def init_database():
     # Create all tables
     Base.metadata.create_all(bind=engine)
     
+    # Ensure 'gender' column exists in users table
+    with engine.connect() as conn:
+        try:
+            cols = conn.execute("PRAGMA table_info(users)").fetchall()
+            col_names = [c[1] for c in cols]
+            if "gender" not in col_names:
+                conn.execute("ALTER TABLE users ADD COLUMN gender TEXT")
+        except Exception:
+            pass
+    
     # Add default categories if they don't exist
     db = SessionLocal()
     try:

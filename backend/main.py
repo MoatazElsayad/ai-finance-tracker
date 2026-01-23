@@ -90,6 +90,7 @@ class UserRegister(BaseModel):
     first_name: str
     last_name: str
     phone: str | None = None
+    gender: str | None = None
     password: str
 
 class UserLogin(BaseModel):
@@ -118,6 +119,7 @@ class ProfileUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
+    gender: str | None = None
 
 class CategoryCreate(BaseModel):
     name: str
@@ -210,6 +212,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             first_name=data.first_name,
             last_name=data.last_name,
             phone=data.phone,
+            gender=data.gender,
             hashed_password=hash_password(plain_password)
         )
         db.add(user)
@@ -257,6 +260,7 @@ def get_me(token: str, db: Session = Depends(get_db)):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,
+        "gender": user.gender,
         "createdAt": user.created_at.isoformat() if user.created_at else None
     }
 
@@ -1088,6 +1092,9 @@ def update_profile(
     if data.phone is not None:
         current_user.phone = data.phone
     
+    if data.gender is not None:
+        current_user.gender = data.gender
+    
     db.commit()
     db.refresh(current_user)
     return {
@@ -1097,6 +1104,7 @@ def update_profile(
         "first_name": current_user.first_name,
         "last_name": current_user.last_name,
         "phone": current_user.phone,
+        "gender": current_user.gender,
         "createdAt": current_user.created_at.isoformat() if current_user.created_at else None
     }
 

@@ -140,12 +140,7 @@ function Layout() {
               >
                 Budget
               </Link>
-              <Link 
-                to="/about"
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                About
-              </Link>
+              
             </div>
 
             {/* User Info - Show on Desktop */}

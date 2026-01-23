@@ -19,6 +19,7 @@ function Profile() {
     first_name: '',
     last_name: '',
     phone: '',
+    gender: '',
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' }); // success / error
@@ -34,6 +35,7 @@ function Profile() {
           first_name: userData.first_name || '',
           last_name: userData.last_name || '',
           phone: userData.phone || '',
+          gender: userData.gender || '',
         });
       } catch (err) {
         console.error('Failed to load user profile:', err);
@@ -282,6 +284,30 @@ function Profile() {
                 ) : (
                   <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
                     {user?.phone || '—'}
+                  </div>
+                )}
+              </div>
+              
+              {/* Gender */}
+              <div>
+                <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
+                  <User className="w-4 h-4" />
+                  Gender
+                </label>
+                {isEditing ? (
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                ) : (
+                  <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
+                    {user?.gender || '—'}
                   </div>
                 )}
               </div>
