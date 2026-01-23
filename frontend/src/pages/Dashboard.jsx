@@ -70,6 +70,9 @@ function Dashboard() {
   });
   const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
   const { theme } = useTheme();
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportProgress, setReportProgress] = useState(0);
+  const [reportStatus, setReportStatus] = useState('Idle');
 
   useEffect(() => {
     loadDashboard();
@@ -120,9 +123,31 @@ function Dashboard() {
   
   const handleDownloadReport = async (format = 'pdf') => {
     try {
+      setReportLoading(true);
+      setReportProgress(0);
+      setReportStatus('Starting');
+      const startTime = Date.now();
+      let phase = 0;
+      const phases = [
+        { name: 'Preparing data', max: 25 },
+        { name: 'Rendering charts', max: 50 },
+        { name: 'Building report', max: 75 },
+        { name: 'Downloading', max: 90 },
+      ];
+      const timer = setInterval(() => {
+        phase = Math.min(phase, phases.length - 1);
+        const target = phases[phase].max;
+        setReportStatus(phases[phase].name);
+        setReportProgress((p) => {
+          const next = Math.min(target, p + Math.random() * 7);
+          if (next >= target && phase < phases.length - 1) phase += 1;
+          return Math.min(95, next);
+        });
+      }, 250);
       const token = localStorage.getItem('token');
       if (!token) {
         alert('Please log in to download reports.');
+        clearInterval(timer);
         return;
       }
       const { startDate, endDate } = getDateRange();
@@ -131,7 +156,10 @@ function Dashboard() {
         endDate: endDate.toISOString().slice(0, 10),
         format,
       };
+      setReportStatus('Generating');
       const { blob, filename } = await generateReport(payload);
+      setReportStatus('Finalizing');
+      setReportProgress(98);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -140,8 +168,18 @@ function Dashboard() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      setReportStatus(`Done in ${elapsed}s`);
+      setReportProgress(100);
+      setTimeout(() => {
+        setReportStatus('Idle');
+        setReportProgress(0);
+      }, 2000);
+      clearInterval(timer);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setReportLoading(false);
     }
   };
 
@@ -1186,31 +1224,130 @@ function Dashboard() {
         </div>
       </section>
       
-      {/* Reports Section */}
-      <section className={`px-6 py-10 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
+      {/* Section 7: Reports */}
+      <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto w-full">
-          <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'} border`}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Reports</h2>
-              <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Download for selected period</p>
+          <div className="text-center mb-12">
+            <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3 flex items-center justify-center gap-3`}>
+              <Scale className={`w-10 h-10 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
+              Reports
+            </h2>
+            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+              Download a professional report with summary, charts, budgets, and AI recommendations.
+            </p>
+          </div>
+          
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8`}>
+            {/* Controls Card */}
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : 'bg-gradient-to-br from-white to-slate-50'} backdrop-blur-sm rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700/50 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/50'} border transition-all`}>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Period</h3>
+              <div className="flex flex-col gap-4">
+                <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-lg p-1 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} border`}>
+                  <button
+                    onClick={() => setViewMode('monthly')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      viewMode === 'monthly'
+                        ? 'bg-blue-500/80 text-white shadow-lg'
+                        : theme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    onClick={() => setViewMode('yearly')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      viewMode === 'yearly'
+                        ? 'bg-blue-500/80 text-white shadow-lg'
+                        : theme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Yearly
+                  </button>
+                  <button
+                    onClick={() => setViewMode('overall')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      viewMode === 'overall'
+                        ? 'bg-blue-500/80 text-white shadow-lg'
+                        : theme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    Overall
+                  </button>
+                </div>
+                {viewMode !== 'overall' && (
+                  <div className={`flex items-center justify-center gap-3 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-sm rounded-xl shadow px-4 py-3 ${theme === 'dark' ? 'border-slate-700' : 'border-slate-300'} border`}>
+                    <button
+                      onClick={() => viewMode === 'monthly' ? changeMonth(-1) : changeYear(-1)}
+                      className={`p-2 hover:${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-lg transition-colors text-xl ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      ◀
+                    </button>
+                    <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} min-w-[160px] text-center text-lg`}>
+                      {viewMode === 'monthly'
+                        ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : `Year ${selectedMonth.year}`
+                      }
+                    </span>
+                    <button
+                      onClick={() => viewMode === 'monthly' ? changeMonth(1) : changeYear(1)}
+                      className={`p-2 hover:${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-lg transition-colors text-xl ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      ▶
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => handleDownloadReport('pdf')}
-                className={`${theme === 'dark' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'} rounded-lg px-4 py-2 font-medium transition-all`}
-              >
-                Download PDF Report
-              </button>
-              <button
-                onClick={() => handleDownloadReport('csv')}
-                className={`${theme === 'dark' ? 'bg-slate-700/60 text-slate-200 hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'} rounded-lg px-4 py-2 font-medium transition-all`}
-              >
-                Download CSV
-              </button>
+            
+            {/* Download Card */}
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-white to-slate-50'} rounded-xl shadow-xl p-6 ${theme === 'dark' ? 'border-slate-700 hover:border-amber-500/50' : 'border-slate-200 hover:border-amber-400/50'} border transition-all`}>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Download</h3>
+              <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-4`}>
+                PDF includes AI recommendations with model credit, budgets status, charts and transactions.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleDownloadReport('pdf')}
+                  disabled={reportLoading}
+                  className={`px-5 py-3 rounded-lg font-semibold shadow transition-all ${theme === 'dark' ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 hover:from-amber-500 hover:to-amber-600' : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'} disabled:opacity-50`}
+                >
+                  {reportLoading ? 'Generating...' : 'Download PDF'}
+                </button>
+                <button
+                  onClick={() => handleDownloadReport('csv')}
+                  disabled={reportLoading}
+                  className={`px-5 py-3 rounded-lg font-semibold shadow transition-all ${theme === 'dark' ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-100'} disabled:opacity-50`}
+                >
+                  {reportLoading ? 'Preparing...' : 'Download CSV'}
+                </button>
+              </div>
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>{reportStatus}</span>
+                  <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>{Math.round(reportProgress)}%</span>
+                </div>
+                <div className={`w-full h-2 rounded-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                  <div
+                    className={`h-2 rounded-full ${theme === 'dark' ? 'bg-amber-400' : 'bg-amber-600'} transition-all`}
+                    style={{ width: `${reportProgress}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
+      
+      
 
       {/* Section 2: Main Charts - Income vs Expenses & Category Breakdown */}
       <section className={`min-h-screen flex flex-col justify-center px-6 py-12 ${theme === 'dark' ? 'bg-[#0f172a]' : 'bg-white'}`}>
