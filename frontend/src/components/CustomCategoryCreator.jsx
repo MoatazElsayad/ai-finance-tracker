@@ -8,6 +8,8 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
   const [error, setError] = useState('');
   const [suggesting, setSuggesting] = useState(false);
   const suggestTimer = useRef(null);
+  const lastNameRef = useRef('');
+  const lastEmojiRef = useRef('');
 
   const localSuggestEmoji = (text) => {
     const t = (text || '').toLowerCase();
@@ -77,6 +79,16 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       setSuggesting(true);
       try {
         const token = localStorage.getItem('token');
+        const normalized = text.toLowerCase();
+        if (normalized.length < 3) {
+          setIcon(localSuggestEmoji(text));
+          return;
+        }
+        if (lastNameRef.current === normalized) {
+          if (lastEmojiRef.current) setIcon(lastEmojiRef.current);
+          else setIcon(localSuggestEmoji(text));
+          return;
+        }
         if (token) {
           const { askAIQuestion } = await import('../api');
           const now = new Date();
@@ -88,18 +100,27 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
           const emoji = (answer || '').trim();
           if (emoji) {
             setIcon(emoji);
+            lastNameRef.current = normalized;
+            lastEmojiRef.current = emoji;
           } else {
             setIcon(localSuggestEmoji(text));
+            lastNameRef.current = normalized;
+            lastEmojiRef.current = localSuggestEmoji(text);
           }
         } else {
           setIcon(localSuggestEmoji(text));
+          lastNameRef.current = normalized;
+          lastEmojiRef.current = localSuggestEmoji(text);
         }
       } catch {
-        setIcon(localSuggestEmoji(text));
+        const fallback = localSuggestEmoji(text);
+        setIcon(fallback);
+        lastNameRef.current = text.toLowerCase();
+        lastEmojiRef.current = fallback;
       } finally {
         setSuggesting(false);
       }
-    }, 300);
+    }, 1000);
     return () => {
       if (suggestTimer.current) clearTimeout(suggestTimer.current);
     };
