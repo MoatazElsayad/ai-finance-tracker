@@ -2,7 +2,7 @@
  * Main App Component - Fixed routing
  */
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { isAuthenticated, logout, getCurrentUser } from './api';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { SidebarProvider, useSidebarCollapsed } from './context/SidebarContext';
@@ -78,6 +78,7 @@ function Layout() {
   const [user, setUser] = useState(null);
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebarCollapsed();
+  const location = useLocation();
 
   useEffect(() => {
     // Get current user info
@@ -117,24 +118,56 @@ function Layout() {
 
             {/* Navigation Links - Hidden on Mobile */}
             <div className="hidden md:flex gap-6">
-              <Link 
-                to="/dashboard" 
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/transactions" 
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                Transactions
-              </Link>
-              <Link 
-                to="/budget"
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                Budget
-              </Link>
+            <Link 
+              to="/dashboard" 
+              className={`font-medium transition-colors ${
+                location.pathname === '/dashboard'
+                  ? isDark ? 'text-amber-400 border-b-2 border-amber-400' : 'text-amber-600 border-b-2 border-amber-600'
+                  : isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link 
+              to="/transactions" 
+              className={`font-medium transition-colors ${
+                location.pathname === '/transactions'
+                  ? isDark ? 'text-amber-400 border-b-2 border-amber-400' : 'text-amber-600 border-b-2 border-amber-600'
+                  : isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'
+              }`}
+            >
+              Transactions
+            </Link>
+            <Link 
+              to="/budget"
+              className={`font-medium transition-colors ${
+                location.pathname === '/budget'
+                  ? isDark ? 'text-amber-400 border-b-2 border-amber-400' : 'text-amber-600 border-b-2 border-amber-600'
+                  : isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'
+              }`}
+            >
+              Budget
+            </Link>
+            <Link 
+              to="/receipt-upload"
+              className={`font-medium transition-colors ${
+                location.pathname === '/receipt-upload'
+                  ? isDark ? 'text-amber-400 border-b-2 border-amber-400' : 'text-amber-600 border-b-2 border-amber-600'
+                  : isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'
+              }`}
+            >
+              Receipt Upload
+            </Link>
+            <Link 
+              to="/profile"
+              className={`font-medium transition-colors ${
+                location.pathname === '/profile'
+                  ? isDark ? 'text-amber-400 border-b-2 border-amber-400' : 'text-amber-600 border-b-2 border-amber-600'
+                  : isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'
+              }`}
+            >
+              Profile
+            </Link>
             </div>
 
             {/* User Info - Show on Desktop */}

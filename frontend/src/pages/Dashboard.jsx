@@ -1318,6 +1318,7 @@ function Dashboard() {
                       height={80}
                       stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                       fontSize={11}
+                      tick={{ fill: theme === 'dark' ? '#f59e0b' : '#334155' }}
                       tickLine={false}
                       axisLine={false}
                     />
@@ -1375,6 +1376,7 @@ function Dashboard() {
                     dataKey="day"
                     stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
+                    tick={{ fill: theme === 'dark' ? '#f59e0b' : '#334155' }}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -1441,6 +1443,7 @@ function Dashboard() {
                     dataKey="month"
                     stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                     fontSize={12}
+                    tick={{ fill: theme === 'dark' ? '#f59e0b' : '#334155' }}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -1516,6 +1519,7 @@ function Dashboard() {
                       height={80}
                       stroke={theme === 'dark' ? '#94a3b8' : '#475569'}
                       fontSize={11}
+                      tick={{ fill: theme === 'dark' ? '#f59e0b' : '#334155' }}
                       tickLine={false}
                       axisLine={false}
                     />
