@@ -14,6 +14,33 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
   const [error, setError] = useState('');
   const [suggesting, setSuggesting] = useState(false);
 
+  const localSuggestEmoji = (text) => {
+    const t = (text || '').toLowerCase();
+    const map = [
+      [/food|restaurant|coffee|cafe|meal|grocery|pizza|burger/, '🍔'],
+      [/transport|car|uber|taxi|bus|train|fuel|gas|parking/, '🚗'],
+      [/shop|shopping|mall|clothes|fashion|store|retail/, '🛍️'],
+      [/bill|utility|electric|water|internet|phone|wifi/, '💡'],
+      [/health|doctor|hospital|medicine|pharmacy|fitness|gym/, '🏥'],
+      [/entertain|movie|cinema|netflix|game|games|fun/, '🎮'],
+      [/travel|flight|hotel|trip|vacation|holiday/, '✈️'],
+      [/education|school|course|book|books|study|tuition/, '🎓'],
+      [/rent|house|home|mortgage|apartment/, '🏠'],
+      [/salary|pay|income|bonus|freelance|cash/, '💰'],
+      [/gift|present/, '🎁'],
+      [/interest|investment|stock|crypto|bitcoin/, '📈'],
+      [/refund|return/, '🏷️'],
+      [/pet|dog|cat/, '🐶'],
+      [/kids|baby|child|children/, '🍼'],
+      [/beauty|salon|makeup|hair|spa/, '💄'],
+      [/clean|laundry|wash|soap/, '🧽'],
+    ];
+    for (const [regex, emoji] of map) {
+      if (regex.test(t)) return emoji;
+    }
+    return '📦';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -121,17 +148,26 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
                     if (!name.trim()) return;
                     setSuggesting(true);
                     try {
-                      const { askAIQuestion } = await import('../api');
-                      const now = new Date();
-                      const { answer } = await askAIQuestion(
-                        now.getFullYear(),
-                        now.getMonth() + 1,
-                        `Return a single emoji that best represents the category "${name}". Only respond with the emoji, nothing else.`
-                      );
-                      const emoji = (answer || '').trim();
-                      if (emoji) setIcon(emoji);
+                      const token = localStorage.getItem('token');
+                      if (token) {
+                        const { askAIQuestion } = await import('../api');
+                        const now = new Date();
+                        const { answer } = await askAIQuestion(
+                          now.getFullYear(),
+                          now.getMonth() + 1,
+                          `Return a single emoji that best represents the category "${name}". Only respond with the emoji, nothing else.`
+                        );
+                        const emoji = (answer || '').trim();
+                        if (emoji) {
+                          setIcon(emoji);
+                        } else {
+                          setIcon(localSuggestEmoji(name));
+                        }
+                      } else {
+                        setIcon(localSuggestEmoji(name));
+                      }
                     } catch (e) {
-                      // silent
+                      setIcon(localSuggestEmoji(name));
                     } finally {
                       setSuggesting(false);
                     }
