@@ -132,6 +132,57 @@ function Transactions() {
     }
   };
 
+  // Filter and sort transactions
+  const filteredTransactions = useMemo(() => {
+    let filtered = [...transactions];
+
+    if (searchQuery) {
+      filtered = filtered.filter(txn =>
+        txn.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        txn.category_name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (filterType === 'income') {
+      filtered = filtered.filter(t => t.amount > 0);
+    } else if (filterType === 'expense') {
+      filtered = filtered.filter(t => t.amount < 0);
+    }
+
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(t => t.category_id === parseInt(filterCategory));
+    }
+
+    const now = new Date();
+    if (dateRange === 'today') {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      filtered = filtered.filter(t => new Date(t.date) >= today);
+    } else if (dateRange === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(t => new Date(t.date) >= weekAgo);
+    } else if (dateRange === 'month') {
+      const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
+      filtered = filtered.filter(t => new Date(t.date) >= monthAgo);
+    } else if (dateRange === 'year') {
+      const yearAgo = new Date(now.getFullYear(), 0, 1);
+      filtered = filtered.filter(t => new Date(t.date) >= yearAgo);
+    }
+
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'date') {
+        comparison = new Date(a.date) - new Date(b.date);
+      } else if (sortBy === 'amount') {
+        comparison = Math.abs(a.amount) - Math.abs(b.amount);
+      } else if (sortBy === 'category') {
+        comparison = a.category_name.localeCompare(b.category_name);
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [transactions, searchQuery, filterType, filterCategory, dateRange, sortBy, sortOrder]);
+
   // Calculate totals based on current filters
   const totals = useMemo(() => {
     const income = filteredTransactions
@@ -150,63 +201,6 @@ function Transactions() {
     };
   }, [filteredTransactions]);
 
-  // Filter and sort transactions
-  const filteredTransactions = useMemo(() => {
-    let filtered = [...transactions];
-
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(txn =>
-        txn.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        txn.category_name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Type filter
-    if (filterType === 'income') {
-      filtered = filtered.filter(t => t.amount > 0);
-    } else if (filterType === 'expense') {
-      filtered = filtered.filter(t => t.amount < 0);
-    }
-
-    // Category filter
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(t => t.category_id === parseInt(filterCategory));
-    }
-
-    // Date range filter
-    const now = new Date();
-    if (dateRange === 'today') {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      filtered = filtered.filter(t => new Date(t.date) >= today);
-    } else if (dateRange === 'week') {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filtered = filtered.filter(t => new Date(t.date) >= weekAgo);
-    } else if (dateRange === 'month') {
-      const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
-      filtered = filtered.filter(t => new Date(t.date) >= monthAgo);
-    } else if (dateRange === 'year') {
-      const yearAgo = new Date(now.getFullYear(), 0, 1);
-      filtered = filtered.filter(t => new Date(t.date) >= yearAgo);
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      let comparison = 0;
-      
-      if (sortBy === 'date') {
-        comparison = new Date(a.date) - new Date(b.date);
-      } else if (sortBy === 'amount') {
-        comparison = Math.abs(a.amount) - Math.abs(b.amount);
-      } else if (sortBy === 'category') {
-        comparison = a.category_name.localeCompare(b.category_name);
-      }
-
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    return filtered;
-  }, [transactions, searchQuery, filterType, filterCategory, dateRange, sortBy, sortOrder]);
 
   // Filter to last 3 days if not showing all
   const displayTransactions = useMemo(() => {
