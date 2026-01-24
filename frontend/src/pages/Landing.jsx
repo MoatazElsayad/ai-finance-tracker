@@ -36,7 +36,7 @@ export default function Landing() {
                 <Rocket className="w-7 h-7 text-white" />
               </div>
               <div>
-                <span className={`font-black text-2xl tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <span className={`text-header-unified !text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Finance<span className="text-amber-500">AI</span>
                 </span>
                 <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} -mt-1`}>Powered by Intelligence</p>
@@ -72,7 +72,7 @@ export default function Landing() {
                 <span className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Next-Gen AI Finance</span>
               </div>
 
-              <h1 className={`text-6xl md:text-7xl lg:text-8xl font-black ${isDark ? 'text-white' : 'text-slate-900'} leading-[0.9] tracking-tighter`}>
+              <h1 className={`text-6xl md:text-7xl lg:text-8xl font-black ${isDark ? 'text-white' : 'text-slate-900'} leading-[0.9] tracking-[-0.04em]`}>
                 Master Your <br />
                 <span className="text-amber-500 relative">
                   Money
@@ -85,7 +85,7 @@ export default function Landing() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-                <Link to="/register" className="group px-12 py-6 bg-amber-500 text-white rounded-[2rem] hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/40 transition-all shadow-2xl shadow-amber-500/20 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4 hover:-translate-y-1">
+                <Link to="/register" className="btn-primary-unified group !px-12 !py-6 !rounded-[2rem] !text-xs uppercase tracking-[0.2em] hover:-translate-y-1">
                   Start Journey
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -102,7 +102,7 @@ export default function Landing() {
 
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h3 className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'} text-2xl`}>Monthly Overview</h3>
+                    <h3 className={`text-header-unified !text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Monthly Overview</h3>
                     <p className={`text-xs uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1`}>January {year}</p>
                   </div>
                   <div className="px-4 py-2 bg-emerald-500/10 border-2 border-emerald-500/20 text-emerald-500 rounded-2xl text-xs font-black uppercase tracking-[0.2em]">
@@ -183,7 +183,7 @@ export default function Landing() {
       <section id="features" className={`py-32 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} relative overflow-hidden`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h2 className={`text-5xl md:text-6xl font-black ${isDark ? 'text-white' : 'text-slate-900'} tracking-tighter mb-6`}>
+            <h2 className={`text-header-unified ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>
               Everything You <span className="text-amber-500">Need</span>
             </h2>
             <p className={`text-xl ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium max-w-2xl mx-auto`}>
@@ -200,13 +200,13 @@ export default function Landing() {
               { icon: <Target />, title: "Goal Tracking", desc: "Set and achieve financial milestones with precision tracking.", color: "blue" },
               { icon: <Shield />, title: "Bank-Grade Security", desc: "Your data is protected with industry-leading encryption.", color: "slate" },
             ].map((f, i) => (
-              <div key={i} className={`group p-12 rounded-[2.5rem] border-2 ${isDark ? 'bg-slate-800/30 border-slate-700/50 hover:border-amber-500/50' : 'bg-white border-slate-100 hover:border-amber-500/30'} transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(251,191,36,0.15)] hover:-translate-y-2`}>
+              <div key={i} className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} !p-12 hover:-translate-y-2`}>
                 <div className={`w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mb-10 shadow-xl shadow-amber-500/20 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500`}>
                   <div className="text-white">
                     {f.icon}
                   </div>
                 </div>
-                <h3 className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>{f.title}</h3>
+                <h3 className={`text-header-unified !text-3xl ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>{f.title}</h3>
                 <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-medium text-lg`}>{f.desc}</p>
               </div>
             ))}
@@ -222,7 +222,7 @@ export default function Landing() {
             <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">Multimodal Engine</span>
           </div>
           
-          <h2 className={`text-5xl md:text-6xl font-black ${isDark ? 'text-white' : 'text-slate-900'} tracking-tighter mb-8`}>
+          <h2 className={`text-header-unified ${isDark ? 'text-white' : 'text-slate-900'} mb-8`}>
             Unified <span className="text-amber-500">AI Intelligence</span>
           </h2>
           <p className={`text-xl ${isDark ? 'text-slate-400' : 'text-slate-600'} max-w-3xl mx-auto mb-20 font-medium leading-relaxed`}>
@@ -251,7 +251,7 @@ export default function Landing() {
             ))}
           </div>
 
-          <Link to="/register" className="group px-16 py-8 bg-amber-500 text-white rounded-[2.5rem] hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/40 transition-all shadow-2xl shadow-amber-500/20 font-black uppercase tracking-[0.2em] text-xs inline-flex items-center justify-center gap-6 hover:-translate-y-1">
+          <Link to="/register" className="btn-primary-unified group !px-16 !py-8 !rounded-[2.5rem] !text-xs uppercase tracking-[0.2em] hover:-translate-y-1">
             Try AI Insights
             <Zap className="w-6 h-6 fill-current" />
           </Link>

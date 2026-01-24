@@ -64,7 +64,7 @@ function Login() {
           <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl mb-6 shadow-xl shadow-amber-500/20 rotate-3">
             <Rocket className="w-10 h-10 text-white" strokeWidth={2.5} />
           </div>
-          <h1 className={`text-5xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'} mb-3`}>
+          <h1 className={`text-header-unified ${isDark ? 'text-white' : 'text-slate-900'} mb-3`}>
             Finance<span className="text-amber-500">AI</span>
           </h1>
           <p className={`text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -73,9 +73,7 @@ function Login() {
         </div>
 
         {/* Form Card */}
-        <div className={`p-8 md:p-12 rounded-[3rem] transition-all border-2 duration-500 relative overflow-hidden group shadow-2xl ${
-          isDark ? 'bg-slate-800/40 border-slate-700 shadow-black/20' : 'bg-white border-slate-100 shadow-slate-200/50'
-        }`}>
+        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} !p-8 md:!p-12 shadow-2xl relative overflow-hidden group`}>
           {/* Decorative element */}
           <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl group-hover:bg-amber-500/10 transition-colors duration-700" />
           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
@@ -101,7 +99,7 @@ function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-unified w-full pl-14"
+                  className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full pl-14`}
                   placeholder="you@example.com"
                   required
                 />
@@ -120,7 +118,7 @@ function Login() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="input-unified w-full pl-14"
+                  className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full pl-14`}
                   placeholder="johndoe"
                   required
                 />
@@ -139,7 +137,7 @@ function Login() {
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="input-unified w-full"
+                  className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full`}
                   placeholder="John"
                   required
                 />
@@ -152,7 +150,7 @@ function Login() {
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="input-unified w-full"
+                  className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full`}
                   placeholder="Doe"
                   required
                 />
@@ -173,7 +171,7 @@ function Login() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="input-unified w-full pl-14"
+                    className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full pl-14`}
                     placeholder="+20..."
                   />
                 </div>
@@ -187,7 +185,7 @@ function Login() {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="input-unified w-full pl-14 appearance-none cursor-pointer relative z-0 pr-12"
+                    className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full pl-14 appearance-none cursor-pointer relative z-0 pr-12`}
                   >
                     <option value="male" className={isDark ? 'bg-slate-900' : 'bg-white'}>Male</option>
                     <option value="female" className={isDark ? 'bg-slate-900' : 'bg-white'}>Female</option>
@@ -209,7 +207,7 @@ function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-unified w-full pl-14"
+                className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} w-full pl-14`}
                 placeholder="••••••••"
                 required
               />
@@ -220,7 +218,7 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-6 bg-amber-500 text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 shadow-2xl shadow-amber-500/20 group/btn active:scale-95"
+              className="btn-primary-unified w-full !py-6 !rounded-[2.5rem] !text-xs uppercase tracking-[0.2em] group/btn"
             >
               {loading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
