@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Budget from './pages/Budget';
+import Goals from './pages/Goals';
 import Landing from "./pages/Landing";
 import Profile from './pages/Profile';
 import ReceiptUpload from './pages/ReceiptUpload';
@@ -53,6 +54,7 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/budget" element={<Budget />} />
+          <Route path="/goals" element={<Goals />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/receipt-upload" element={<ReceiptUpload />} />
           <Route path="/about" element={<About />} />

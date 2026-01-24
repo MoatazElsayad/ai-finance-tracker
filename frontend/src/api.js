@@ -175,6 +175,42 @@ export const getMonthlyAnalytics = async (year, month) => {
 };
 
 // ============================================
+// GOALS
+// ============================================
+
+export const getGoals = async () => {
+  const token = getToken();
+  const response = await authFetch(`/goals?token=${token}`);
+  return handleResponse(response);
+};
+
+export const createGoal = async (goalData) => {
+  const token = getToken();
+  const response = await authFetch(`/goals?token=${token}`, {
+    method: 'POST',
+    body: JSON.stringify(goalData),
+  });
+  return handleResponse(response);
+};
+
+export const updateGoal = async (goalId, goalData) => {
+  const token = getToken();
+  const response = await authFetch(`/goals/${goalId}?token=${token}`, {
+    method: 'PUT',
+    body: JSON.stringify(goalData),
+  });
+  return handleResponse(response);
+};
+
+export const deleteGoal = async (goalId) => {
+  const token = getToken();
+  const response = await authFetch(`/goals/${goalId}?token=${token}`, {
+    method: 'DELETE',
+  });
+  return handleResponse(response);
+};
+
+// ============================================
 // BUDGETS
 // ============================================
 
