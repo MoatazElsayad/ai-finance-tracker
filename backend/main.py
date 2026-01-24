@@ -702,13 +702,13 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 📊 SPENDING FREQUENCY:
 {chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
 
-PROVIDE A CONCISE ANALYSIS (150-200 words max):
+PROVIDE A CONCISE ANALYSIS (150-250 words max):
 1. **Financial Health** (1-2 sentences) - Savings rate assessment
 2. **Key Win** (1 sentence) - One main achievement
-3. **Budget Performance** (1-2 sentences) - Mention specific categories over/under budget and provide actionable advice.
+3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget and which are UNDER/ON TRACK with specific numbers (e.g., "Food: $500 budget, $600 spent - OVER by $100").
 4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending.
 
-Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
+Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
     # TEMPORARY: Mock response for testing
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -862,13 +862,13 @@ async def generate_ai_summary(year: int, month: int, token: str, db: Session = D
 📊 SPENDING FREQUENCY:
 {chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
 
-PROVIDE A CONCISE ANALYSIS (150-200 words max):
+PROVIDE A CONCISE ANALYSIS (150-250 words max):
 1. **Financial Health** (1-2 sentences) - Savings rate assessment
 2. **Key Win** (1 sentence) - One main achievement
-3. **Main Concern** (1-2 sentences) - Biggest issue with specific numbers
-4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps
+3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget and which are UNDER/ON TRACK with specific numbers (e.g., "Food: $500 budget, $600 spent - OVER by $100").
+4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending.
 
-Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
+Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
     # TEMPORARY: Mock response for testing
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -1757,6 +1757,7 @@ def generate_report(data: ReportRequest, token: str, db: Session = Depends(get_d
     bs = None
     if start.year == end.year and start.month == end.month:
         bs = get_budget_comparison(db, user.id, start.year, start.month)
+    
     rec_text = None
     rec_model = None
     try:
@@ -1774,12 +1775,39 @@ def generate_report(data: ReportRequest, token: str, db: Session = Depends(get_d
             }
             MODELS = FREE_MODELS.copy()
             random.shuffle(MODELS)
-            prompt_text = f"Given monthly data for {start.month}/{start.year}, provide 4-6 concise recommendations to improve savings and reduce overspending. Use short bullets, include specific amounts or percentages where possible, and keep under 160 words."
+            
+            # Build context for report AI
+            spending_text = "\n".join([f"- {c['name']}: ${c['amount']:.2f} ({c['percent']:.1f}%)" for c in cats[:5]])
+            budget_text = ""
+            if bs:
+                budget_text = "\n".join([f"- {b['category']}: ${b['actual']:.2f} / ${b['budget']:.2f} ({'⚠️ OVER' if b['status'] == 'Over' else '✅ OK'})" for b in bs])
+            
+            prompt_text = f"""You are a professional financial advisor. Analyze this data for {start.strftime('%B %Y')}:
+
+📊 SUMMARY:
+- Income: ${summary['income']:.2f}
+- Expenses: ${summary['expenses']:.2f}
+- Savings: ${summary['net']:.2f}
+- Savings Rate: {summary['savings_rate']:.1f}%
+
+💰 TOP SPENDING:
+{spending_text}
+
+🎯 BUDGET PERFORMANCE:
+{budget_text if budget_text else "No budgets set for this period."}
+
+PROVIDE A CONCISE ANALYSIS (150-250 words max):
+1. **Financial Health** (1-2 sentences)
+2. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget and which are UNDER/ON TRACK with specific numbers.
+3. **Top 2 Actions** (2 bullet points) - Specific, actionable steps.
+
+Be direct, encouraging, and specific with numbers. Keep it SHORT but DETAILED regarding budgets."""
+
             for model_id in MODELS:
                 payload = {
                     "model": model_id,
                     "messages": [
-                        {"role": "system", "content": "You are a concise financial coach. Output short, actionable bullets."},
+                        {"role": "system", "content": "You are a concise financial coach. Output short, actionable sections."},
                         {"role": "user", "content": prompt_text}
                     ],
                     "max_tokens": 500,
