@@ -1698,7 +1698,7 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     subtotal = sum(t.amount for t in transactions)
     story += [Paragraph(f"Subtotal (net): {subtotal:.2f}", styles["NormalFancy"])]
     if rec_text:
-        rec_html = re.sub(r"\*\*(.+?)\*\*", r"<b>\\1</b>", rec_text)
+        rec_html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", rec_text)
         lines = [l.strip() for l in rec_html.split("\n") if l.strip()]
         items = [ListItem(Paragraph(l, styles["NormalFancy"])) for l in lines]
         story += [Spacer(1, 18), HRFlowable(width="100%", color=accent, thickness=1.2), Spacer(1, 6)]
