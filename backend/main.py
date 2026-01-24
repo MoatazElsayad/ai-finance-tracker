@@ -24,7 +24,7 @@ import asyncio
 
 # Import local modules
 from database import get_db, init_database
-from models import User, Transaction, Category, Budget
+from models import User, Transaction, Category, Budget, Goal
 from dotenv import load_dotenv
 from ocr_utils import parse_receipt
 from fastapi import File, UploadFile
