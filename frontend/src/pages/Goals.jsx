@@ -38,7 +38,7 @@ const goalSchema = z.object({
     message: 'Target date must be in the future',
   }),
   current_amount: z.number().min(0, 'Current amount cannot be negative').default(0),
-  category_id: z.string().optional().nullable(),
+  category_id: z.any().optional().nullable().transform(val => (val === "" || val === null || val === undefined) ? null : val),
 });
 
 const Goals = () => {
@@ -261,12 +261,12 @@ const GoalCard = ({ goal, isDark, onEdit, onDelete, onComplete }) => {
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider opacity-60">Saved</p>
             <p className="text-2xl font-bold text-amber-500">
-              {goal.current_amount.toLocaleString()} <span className="text-sm font-normal text-slate-500">EGP</span>
+              ${goal.current_amount.toLocaleString()} <span className="text-sm font-normal text-slate-500">USD</span>
             </p>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-700/10">
             <p className="text-sm opacity-70">
-              Goal: <span className="font-semibold">{goal.target_amount.toLocaleString()} EGP</span>
+              Goal: <span className="font-semibold">${goal.target_amount.toLocaleString()} USD</span>
             </p>
           </div>
         </div>
@@ -322,27 +322,35 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
     resolver: zodResolver(goalSchema),
     defaultValues: goal ? {
       ...goal,
-      target_date: new Date(goal.target_date).toISOString().split('T')[0]
+      target_date: new Date(goal.target_date).toISOString().split('T')[0],
+      category_id: goal.category_id ? String(goal.category_id) : ""
     } : {
       name: '',
       target_amount: 0,
       current_amount: 0,
       target_date: '',
-      category_id: null
+      category_id: ''
     }
   });
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
+    // Convert category_id to number if it exists
+    const formattedData = {
+      ...data,
+      category_id: data.category_id ? parseInt(data.category_id) : null
+    };
+    
     try {
       if (goal) {
-        await updateGoal(goal.id, data);
+        await updateGoal(goal.id, formattedData);
       } else {
-        await createGoal(data);
+        await createGoal(formattedData);
       }
       onSuccess();
     } catch (err) {
-      alert(err.message || 'Something went wrong');
+      console.error('Error saving goal:', err);
+      alert(err.message || 'Failed to save goal');
     } finally {
       setIsSubmitting(false);
     }
@@ -379,7 +387,7 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
           <div className="grid grid-cols-2 gap-4">
             {/* Target Amount */}
             <div>
-              <label className="block text-sm font-semibold mb-2 opacity-70">Target (EGP)</label>
+              <label className="block text-sm font-semibold mb-2 opacity-70">Target (USD)</label>
               <input
                 type="number"
                 {...register('target_amount', { valueAsNumber: true })}
