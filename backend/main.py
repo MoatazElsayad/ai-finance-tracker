@@ -327,13 +327,15 @@ def create_transaction(
     db.add(transaction)
     
     # Update linked savings goals
-    if transaction.amount > 0: # Only income or savings transfers count towards goals
-        linked_goals = db.query(Goal).filter(
-            Goal.user_id == user.id,
-            Goal.category_id == transaction.category_id
-        ).all()
-        for goal in linked_goals:
-            goal.current_amount += transaction.amount
+    linked_goals = db.query(Goal).filter(
+        Goal.user_id == user.id,
+        Goal.categories.any(id=transaction.category_id)
+    ).all()
+    
+    for goal in linked_goals:
+        # amount is positive for income, negative for expense
+        # so adding it correctly handles both (adds income, subtracts expense)
+        goal.current_amount += transaction.amount
             
     db.commit()
     
@@ -360,14 +362,15 @@ def delete_transaction(
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
-    # If it was an income/saving transaction linked to a goal, subtract it
-    if transaction.amount > 0:
-        linked_goals = db.query(Goal).filter(
-            Goal.user_id == user.id,
-            Goal.category_id == transaction.category_id
-        ).all()
-        for goal in linked_goals:
-            goal.current_amount -= transaction.amount
+    # Update linked savings goals (reverse the transaction effect)
+    linked_goals = db.query(Goal).filter(
+        Goal.user_id == user.id,
+        Goal.categories.any(id=transaction.category_id)
+    ).all()
+    
+    for goal in linked_goals:
+        # Subtract the amount we previously added (this correctly handles both income and expense)
+        goal.current_amount -= transaction.amount
 
     db.delete(transaction)
     db.commit()
@@ -1121,14 +1124,14 @@ class GoalCreate(BaseModel):
     target_amount: float
     current_amount: float = 0.0
     target_date: str
-    category_id: Optional[int] = None
+    category_ids: List[int] = []
 
 class GoalUpdate(BaseModel):
     name: Optional[str] = None
     target_amount: Optional[float] = None
     current_amount: Optional[float] = None
     target_date: Optional[str] = None
-    category_id: Optional[int] = None
+    category_ids: Optional[List[int]] = None
 
 @app.get("/budgets")
 def get_budgets(token: str, year: int = None, month: int = None, db: Session = Depends(get_db)):
@@ -1325,8 +1328,8 @@ def get_goals_endpoint(token: str, db: Session = Depends(get_db)):
             "target_amount": g.target_amount,
             "current_amount": g.current_amount,
             "target_date": g.target_date.isoformat(),
-            "category_id": g.category_id,
-            "category_name": g.category.name if g.category else None,
+            "category_ids": [cat.id for cat in g.categories],
+            "category_names": [cat.name for cat in g.categories],
             "created_at": g.created_at.isoformat()
         }
         for g in goals
@@ -1337,13 +1340,18 @@ def create_goal_endpoint(data: GoalCreate, token: str, db: Session = Depends(get
     """Create a new savings goal"""
     user = get_current_user(token, db)
     
+    # Get categories by IDs
+    categories = []
+    if data.category_ids:
+        categories = db.query(Category).filter(Category.id.in_(data.category_ids)).all()
+
     goal = Goal(
         user_id=user.id,
         name=data.name,
         target_amount=data.target_amount,
         current_amount=data.current_amount,
         target_date=datetime.fromisoformat(data.target_date),
-        category_id=data.category_id
+        categories=categories
     )
     db.add(goal)
     db.commit()
@@ -1367,8 +1375,11 @@ def update_goal_endpoint(goal_id: int, data: GoalUpdate, token: str, db: Session
         goal.current_amount = data.current_amount
     if data.target_date is not None:
         goal.target_date = datetime.fromisoformat(data.target_date)
-    if data.category_id is not None:
-        goal.category_id = data.category_id
+    
+    if data.category_ids is not None:
+        # Update categories relationship
+        categories = db.query(Category).filter(Category.id.in_(data.category_ids)).all()
+        goal.categories = categories
         
     db.commit()
     db.refresh(goal)

@@ -88,6 +88,23 @@ html.light {
   background: var(--border-color);
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.2); /* amber-400/20 */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 191, 36, 0.4); /* amber-400/40 */
+}
+
 /* Toast animation */
 @keyframes slide-in {
   from {

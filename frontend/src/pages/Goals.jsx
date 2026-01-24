@@ -1,10 +1,10 @@
 /**
- * GoalsPage Component - Savings Goal Tracker
+ * GoalsPage Component - Savings Goal Tracker (v2)
  * Custom-built for a university student in Egypt.
- * Tracks long-term financial targets with smart progress logic and category linking.
+ * Features: Multi-category linking, hybrid income/expense tracking, and achievement celebrations.
  */
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useController } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
@@ -21,7 +21,12 @@ import {
   Loader2,
   ArrowRight,
   Info,
-  Wallet
+  Wallet,
+  Check,
+  Search,
+  ChevronDown,
+  Trophy,
+  PartyPopper
 } from 'lucide-react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
@@ -48,9 +53,7 @@ const goalSchema = z.object({
     message: 'Target date must be in the future',
   }),
   current_amount: z.number().min(0, 'Starting amount cannot be negative').default(0),
-  category_id: z.any().optional().nullable().transform(val => 
-    (val === "" || val === null || val === undefined) ? null : Number(val)
-  ),
+  category_ids: z.array(z.number()).default([]),
 });
 
 const Goals = () => {
@@ -108,9 +111,9 @@ const Goals = () => {
   };
 
   const triggerConfetti = () => {
-    const duration = 3 * 1000;
+    const duration = 4 * 1000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+    const defaults = { startVelocity: 40, spread: 360, ticks: 100, zIndex: 1000 };
 
     const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
@@ -121,7 +124,7 @@ const Goals = () => {
         return clearInterval(interval);
       }
 
-      const particleCount = 50 * (timeLeft / duration);
+      const particleCount = 70 * (timeLeft / duration);
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
@@ -142,7 +145,7 @@ const Goals = () => {
               Savings Goals
             </h1>
             <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium`}>
-              Invest in your future. Track your long-term dreams and milestones.
+              Track long-term savings targets. Income increases progress, expenses decrease it.
             </p>
           </div>
           
@@ -185,14 +188,14 @@ const Goals = () => {
             </div>
             <h2 className="text-4xl font-black mb-6">No savings goals yet</h2>
             <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mb-12 max-w-xl mx-auto text-xl leading-relaxed`}>
-              Whether it's for a new laptop, travel, or an emergency fund, starting early is key. 
-              Let's set your first financial target!
+              Connect multiple categories to track your net savings. 
+              Salary adds to your goal, while coffee runs take away!
             </p>
             <button
               onClick={() => handleOpenModal()}
               className="bg-amber-500 hover:bg-amber-600 text-white px-12 py-5 rounded-[2rem] font-black text-lg transition-all shadow-2xl shadow-amber-500/40 flex items-center gap-3 mx-auto active:scale-95"
             >
-              Start My First Goal
+              Launch My First Goal
               <ArrowRight className="w-6 h-6" />
             </button>
           </div>
@@ -236,11 +239,11 @@ const Goals = () => {
  * GoalCard - Displays individual goal progress and details
  */
 const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) => {
-  const progress = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100));
-  const isCompleted = progress >= 100;
+  const actualProgress = Math.round((goal.current_amount / goal.target_amount) * 100);
+  const displayProgress = Math.min(100, actualProgress);
+  const isCompleted = actualProgress >= 100;
   
   // Logic for "On Track" calculation
-  // Expected progress = (days passed / total days) × 100
   const targetDate = new Date(goal.target_date);
   const createdDate = new Date(goal.created_at || Date.now() - 30*24*60*60*1000); 
   const now = new Date();
@@ -251,7 +254,7 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
     ? Math.max(0, Math.min(100, (timePassed / totalTime) * 100))
     : 100;
 
-  const isOnTrack = progress >= expectedProgress;
+  const isOnTrack = actualProgress >= expectedProgress;
 
   // Currency Formatter for Egypt
   const formatCurrency = (amount) => {
@@ -262,11 +265,12 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
     });
   };
 
-  const linkedCategory = categories.find(c => c.id === goal.category_id);
-  const isExpenseCategory = linkedCategory?.type === 'expense';
+  // Get linked categories for display
+  const linkedCategories = categories.filter(c => goal.category_ids?.includes(c.id));
+  const hasExpenses = linkedCategories.some(c => c.type === 'expense');
 
   useEffect(() => {
-    if (isCompleted) {
+    if (isCompleted && now <= targetDate) {
       onComplete();
     }
   }, [isCompleted]);
@@ -278,6 +282,15 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
         : 'bg-white border-slate-100 shadow-xl hover:shadow-2xl hover:border-amber-500/30'
     }`}>
       
+      {/* Achievement Overlay */}
+      {isCompleted && (
+        <div className="absolute top-0 right-0 p-4">
+          <div className="bg-green-500 text-white p-2 rounded-xl shadow-lg animate-bounce">
+            <Trophy className="w-5 h-5" />
+          </div>
+        </div>
+      )}
+
       {/* Background Glow */}
       <div className={`absolute -right-20 -top-20 w-64 h-64 rounded-full blur-[80px] opacity-10 transition-colors duration-500 ${
         isCompleted ? 'bg-green-500' : isOnTrack ? 'bg-amber-500' : 'bg-red-500'
@@ -320,12 +333,12 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
         <div className="flex items-center gap-10 mb-8">
           <div className="w-32 h-32 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
             <CircularProgressbar
-              value={progress}
-              text={`${progress}%`}
+              value={displayProgress}
+              text={`${actualProgress}%`}
               strokeWidth={12}
               styles={buildStyles({
                 textSize: '22px',
-                pathColor: isCompleted ? '#22c55e' : progress > 50 ? '#f59e0b' : '#f59e0b',
+                pathColor: isCompleted ? '#22c55e' : actualProgress > 75 ? '#fbbf24' : '#f59e0b',
                 textColor: isDark ? '#fff' : '#0f172a',
                 trailColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9',
                 strokeLinecap: 'round',
@@ -336,7 +349,7 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
           
           <div className="flex-1 space-y-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Current Progress</p>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Current Balance</p>
               <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {formatCurrency(goal.current_amount)}
               </p>
@@ -350,17 +363,21 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase ${
-              isCompleted 
-                ? 'bg-green-500/15 text-green-500'
-                : isOnTrack 
-                  ? 'bg-amber-500/15 text-amber-500'
-                  : 'bg-red-500/15 text-red-500'
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm ${
+              actualProgress >= 120 
+                ? 'bg-purple-500/15 text-purple-500'
+                : isCompleted 
+                  ? 'bg-green-500/15 text-green-500'
+                  : isOnTrack 
+                    ? 'bg-amber-500/15 text-amber-500'
+                    : 'bg-red-500/15 text-red-500'
             }`}>
-              {isCompleted ? (
-                <><CheckCircle2 className="w-3.5 h-3.5" /> Completed!</>
+              {actualProgress >= 120 ? (
+                <><PartyPopper className="w-3.5 h-3.5" /> Overachieved!</>
+              ) : isCompleted ? (
+                <><CheckCircle2 className="w-3.5 h-3.5" /> Goal Achieved!</>
               ) : isOnTrack ? (
                 <><TrendingUp className="w-3.5 h-3.5" /> On Track</>
               ) : (
@@ -368,22 +385,35 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
               )}
             </div>
 
-            {goal.category_name && (
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-[10px] font-black uppercase tracking-widest ${
-                isDark ? 'border-slate-700 text-slate-400' : 'border-slate-100 text-slate-500 bg-slate-50'
-              }`}>
-                <Wallet className="w-3 h-3" />
-                {goal.category_name}
-              </div>
-            )}
+            <div className="flex -space-x-2">
+              {linkedCategories.slice(0, 3).map((cat, idx) => (
+                <div 
+                  key={cat.id} 
+                  title={cat.name}
+                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs bg-white dark:bg-slate-700 shadow-sm ${
+                    isDark ? 'border-slate-800' : 'border-white'
+                  }`}
+                  style={{ zIndex: 10 - idx }}
+                >
+                  {cat.icon || '📁'}
+                </div>
+              ))}
+              {linkedCategories.length > 3 && (
+                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold bg-slate-100 dark:bg-slate-600 ${
+                  isDark ? 'border-slate-800 text-slate-400' : 'border-white text-slate-500'
+                }`} style={{ zIndex: 0 }}>
+                  +{linkedCategories.length - 3}
+                </div>
+              )}
+            </div>
           </div>
 
-          {isExpenseCategory && (
-            <div className={`p-4 rounded-2xl flex items-start gap-3 text-[11px] font-medium leading-relaxed ${
-              isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
+          {hasExpenses && (
+            <div className={`p-4 rounded-2xl flex items-start gap-3 text-[11px] font-medium leading-relaxed border ${
+              isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'
             }`}>
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>Linking to an expense category tracks how much you save by spending less than usual.</p>
+              <p>Hybrid Goal: Income adds progress, while expenses in linked categories subtract from it.</p>
             </div>
           )}
         </div>
@@ -397,10 +427,12 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
  */
 const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const { 
     register, 
     handleSubmit, 
+    control,
     watch,
     formState: { errors },
   } = useForm({
@@ -408,19 +440,37 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
     defaultValues: goal ? {
       ...goal,
       target_date: new Date(goal.target_date).toISOString().split('T')[0],
-      category_id: goal.category_id ? String(goal.category_id) : ""
+      category_ids: goal.category_ids || []
     } : {
       name: '',
       target_amount: 0,
       current_amount: 0,
       target_date: '',
-      category_id: ''
+      category_ids: []
     }
   });
 
-  const selectedCategoryId = watch('category_id');
-  const selectedCategory = categories.find(c => c.id === Number(selectedCategoryId));
-  const isExpenseCategory = selectedCategory?.type === 'expense';
+  const { field: categoryField } = useController({
+    name: 'category_ids',
+    control,
+  });
+
+  const selectedCategoryIds = watch('category_ids');
+  
+  const filteredCategories = useMemo(() => {
+    return categories.filter(c => 
+      c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [categories, searchQuery]);
+
+  const toggleCategory = (id) => {
+    const current = [...selectedCategoryIds];
+    if (current.includes(id)) {
+      categoryField.onChange(current.filter(item => item !== id));
+    } else {
+      categoryField.onChange([...current, id]);
+    }
+  };
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -443,13 +493,13 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
       
-      <div className={`relative w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-10 duration-500 ${
+      <div className={`relative w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-10 duration-500 max-h-[90vh] flex flex-col ${
         isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'
       }`}>
-        <div className="flex items-center justify-between p-10 border-b border-slate-500/10">
+        <div className="flex items-center justify-between p-8 md:p-10 border-b border-slate-500/10 shrink-0">
           <div>
-            <h2 className="text-3xl font-black tracking-tight">{goal ? 'Edit Goal' : 'New Savings Goal'}</h2>
-            <p className="text-slate-500 font-bold mt-1 uppercase text-xs tracking-widest">Set your destination</p>
+            <h2 className="text-3xl font-black tracking-tight">{goal ? 'Edit Savings Goal' : 'New Savings Goal'}</h2>
+            <p className="text-slate-500 font-bold mt-1 uppercase text-xs tracking-widest">Connect multiple categories to track progress</p>
           </div>
           <button onClick={onClose} className={`p-4 rounded-2xl transition-all ${
             isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100'
@@ -458,12 +508,12 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-10 space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-8 md:p-10 space-y-8 overflow-y-auto custom-scrollbar">
           <div className="space-y-3">
             <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Goal Name</label>
             <input
               {...register('name')}
-              placeholder="e.g. Master's in Europe, New Car, Laptop"
+              placeholder="e.g. Master's in Cairo, New Laptop, Travel Fund"
               className={`w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold text-lg focus:ring-8 focus:ring-amber-500/10 ${
                 isDark 
                   ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
@@ -492,7 +542,7 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Current Balance</label>
+              <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Starting Balance</label>
               <div className="relative">
                 <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-400">£</span>
                 <input
@@ -508,69 +558,100 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Deadline Date</label>
-              <input
-                type="date"
-                {...register('target_date')}
-                className={`w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold ${
-                  isDark 
-                    ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
-                    : 'bg-slate-50 border-slate-200 focus:border-amber-500'
-                } ${errors.target_date ? 'border-red-500' : ''}`}
-              />
-              {errors.target_date && <p className="text-red-500 text-xs ml-2 font-bold">{errors.target_date.message}</p>}
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Link to Category</label>
-              <div className="relative">
-                <select
-                  {...register('category_id')}
-                  className={`w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold appearance-none cursor-pointer ${
-                    isDark 
-                      ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
-                      : 'bg-slate-50 border-slate-200 focus:border-amber-500'
-                  }`}
-                >
-                  <option value="">Independent Goal</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-                  ))}
-                </select>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-                  <ArrowRight className="w-5 h-5 rotate-90" />
-                </div>
-              </div>
-            </div>
+          <div className="space-y-3">
+            <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Date</label>
+            <input
+              type="date"
+              {...register('target_date')}
+              className={`w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold ${
+                isDark 
+                  ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
+                  : 'bg-slate-50 border-slate-200 focus:border-amber-500'
+              } ${errors.target_date ? 'border-red-500' : ''}`}
+            />
+            {errors.target_date && <p className="text-red-500 text-xs ml-2 font-bold">{errors.target_date.message}</p>}
           </div>
 
-          {isExpenseCategory && (
-            <div className={`p-6 rounded-3xl border-2 flex items-start gap-4 animate-in slide-in-from-top-4 duration-300 ${
-              isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' : 'bg-amber-50 border-amber-100 text-amber-800'
+          <div className="space-y-4">
+            <div className="flex items-center justify-between ml-2">
+              <label className="text-xs font-black uppercase tracking-[0.2em] opacity-50">Link Categories</label>
+              <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500/10 text-amber-500 uppercase tracking-tighter">
+                {selectedCategoryIds.length} Selected
+              </span>
+            </div>
+            
+            <div className={`p-6 rounded-[2rem] border-2 space-y-4 ${
+              isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'
             }`}>
-              <Info className="w-6 h-6 flex-shrink-0 mt-0.5 text-amber-500" />
-              <div className="space-y-1">
-                <p className="font-black text-sm uppercase tracking-widest">Savings through Frugality</p>
-                <p className="text-xs font-bold opacity-80 leading-relaxed">
-                  Linking to an expense category tracks how much you save by spending less than usual. 
-                  Progress will increase based on your budget discipline!
-                </p>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
+                <input 
+                  type="text"
+                  placeholder="Search categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full p-4 pl-12 rounded-xl border outline-none text-sm transition-all ${
+                    isDark ? 'bg-slate-900 border-slate-700 focus:border-amber-500' : 'bg-white border-slate-200 focus:border-amber-500'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredCategories.map(cat => {
+                  const isSelected = selectedCategoryIds.includes(cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => toggleCategory(cat.id)}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                        isSelected 
+                          ? 'border-amber-500 bg-amber-500/10 shadow-sm' 
+                          : isDark ? 'border-slate-700 hover:border-slate-600' : 'border-white hover:border-slate-100'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
+                        isSelected ? 'bg-amber-500 text-white' : isDark ? 'bg-slate-800' : 'bg-white shadow-sm'
+                      }`}>
+                        {isSelected ? <Check className="w-5 h-5" /> : cat.icon || '📁'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate">{cat.name}</p>
+                        <p className={`text-[9px] font-bold uppercase tracking-tighter opacity-40 ${
+                          cat.type === 'income' ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {cat.type}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
+            
+            {selectedCategoryIds.length > 0 && (
+              <div className={`p-4 rounded-2xl border flex items-start gap-3 text-[11px] font-medium leading-relaxed animate-in fade-in duration-300 ${
+                isDark ? 'bg-amber-500/5 border-amber-500/10 text-amber-500/80' : 'bg-amber-50 border-amber-100 text-amber-700'
+              }`}>
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  Income categories linked will INCREASE your goal progress. 
+                  Expense categories will DECREASE it. Your goal tracks net savings.
+                </p>
+              </div>
+            )}
+          </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 text-white font-black py-6 rounded-[2rem] transition-all shadow-2xl shadow-amber-500/40 flex items-center justify-center gap-4 mt-4 active:scale-95 text-lg uppercase tracking-widest"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 text-white font-black py-6 rounded-[2rem] transition-all shadow-2xl shadow-amber-500/40 flex items-center justify-center gap-4 mt-4 active:scale-95 text-lg uppercase tracking-widest shrink-0"
           >
             {isSubmitting ? (
               <Loader2 className="w-7 h-7 animate-spin" />
             ) : (
               <>
-                {goal ? 'Update My Goal' : 'Start Saving Now'}
+                {goal ? 'Update My Goal' : 'Start My Journey'}
                 <Target className="w-6 h-6" />
               </>
             )}

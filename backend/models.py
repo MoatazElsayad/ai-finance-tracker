@@ -2,13 +2,21 @@
 Database Models - All in ONE file for simplicity
 This defines what data we store in the database
 """
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
 # Keep Base here
 Base = declarative_base()
+
+# Association table for Goals and Categories (Many-to-Many)
+goal_categories = Table(
+    "goal_categories",
+    Base.metadata,
+    Column("goal_id", Integer, ForeignKey("goals.id"), primary_key=True),
+    Column("category_id", Integer, ForeignKey("categories.id"), primary_key=True),
+)
 
 
 class User(Base):
@@ -98,7 +106,6 @@ class Goal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     name = Column(String, nullable=False)
     target_amount = Column(Float, nullable=False)
     current_amount = Column(Float, default=0.0)
@@ -107,7 +114,7 @@ class Goal(Base):
 
     # Relationships
     user = relationship("User", back_populates="goals")
-    category = relationship("Category")
+    categories = relationship("Category", secondary=goal_categories)
 
 
 # Pre-defined categories to insert when app starts
