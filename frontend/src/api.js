@@ -184,6 +184,14 @@ export const getBudgets = async (year, month) => {
   return handleResponse(response);
 };
 
+export const copyLastMonthBudgets = async (year, month) => {
+  const token = getToken();
+  const response = await authFetch(`/budgets/copy-last-month?year=${year}&month=${month}&token=${token}`, {
+    method: 'POST',
+  });
+  return handleResponse(response);
+};
+
 export const createBudget = async (categoryId, amount, month, year) => {
   const token = getToken();
   const response = await authFetch(`/budgets?token=${token}`, {

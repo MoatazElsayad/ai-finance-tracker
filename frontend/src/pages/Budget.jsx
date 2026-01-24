@@ -3,11 +3,11 @@
  * Dark Mode Finance Tracker - Professional budget management with AI insights
  */
 import { useState, useEffect } from 'react';
-import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories } from '../api';
+import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
-import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil } from 'lucide-react';
+import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -495,7 +495,7 @@ function BudgetPlanning() {
 
         // Reset form
         setNewBudget({ category_id: '', amount: '' });
-      setShowBudgetForm(false);
+        setShowBudgetForm(false);
 
         // Clear AI insights cache since budget data changed
         clearInsightsCache();
@@ -512,6 +512,31 @@ function BudgetPlanning() {
       } finally {
         setBudgetLoading(false);
       }
+    }
+  };
+
+  const handleCopyLastMonth = async () => {
+    setBudgetLoading(true);
+    try {
+      const result = await copyLastMonthBudgets(selectedMonth.year, selectedMonth.month);
+      
+      // Reload budgets
+      const budgetsData = await getBudgets(selectedMonth.year, selectedMonth.month);
+      setBudgets(budgetsData);
+      
+      // Clear AI insights cache
+      clearInsightsCache();
+      setAiBudgetInsights('');
+
+      // Show success message
+      setToastMessage(result.message);
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } catch (error) {
+      console.error('Failed to copy budgets:', error);
+      alert(error.detail || 'Failed to copy budgets from last month');
+    } finally {
+      setBudgetLoading(false);
     }
   };
 
@@ -1079,82 +1104,121 @@ function BudgetPlanning() {
             <div className={`p-6 ${theme === 'dark' ? 'border-b border-slate-700' : 'border-b border-slate-300'}`}>
               <div className="flex items-center justify-between">
                 <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Budget Categories</h3>
-                <button
-                  onClick={() => setShowBudgetForm(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2"
-                >
-                  <span>+</span>
-                  Add Category
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleCopyLastMonth}
+                    disabled={budgetLoading}
+                    className={`px-4 py-2 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'} rounded-lg font-semibold transition-all flex items-center gap-2 disabled:opacity-50`}
+                    title="Copy budgets from previous month"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span className="hidden sm:inline">Copy Last Month</span>
+                  </button>
+                  <button
+                    onClick={() => setShowBudgetForm(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-lg font-semibold hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2"
+                  >
+                    <span>+</span>
+                    Add Category
+                  </button>
+                </div>
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className={theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'}>
-                  <tr>
-                    <th className={`px-6 py-4 text-left text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Category</th>
-                    <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Budgeted</th>
-                    <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Spent</th>
-                    <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Remaining</th>
-                    <th className={`px-6 py-4 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Progress</th>
-                    <th className={`px-6 py-4 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${theme === 'dark' ? 'divide-slate-700' : 'divide-slate-300'}`}>
-                  {budgetData.map((budget) => (
-                    <tr key={budget.category} className={`${theme === 'dark' ? 'hover:bg-slate-700/30' : 'hover:bg-slate-200/30'} transition-colors`}>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">{budget.icon}</span>
-                          <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{budget.category}</span>
-                        </div>
-                      </td>
-                      <td className={`px-6 py-4 text-right font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                        ${budget.budgeted.toFixed(2)}
-                      </td>
-                      <td className={`px-6 py-4 text-right font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                        ${budget.actual.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-green-400">
-                        ${budget.remaining.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className={`flex-1 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-full h-2`}>
-                            <div
-                              className={`h-2 rounded-full transition-all ${
-                                budget.overBudget ? 'bg-red-500' : 'bg-green-500'
-                              }`}
-                              style={{ width: `${Math.min(100, (budget.actual / budget.budgeted) * 100)}%` }}
-                            />
-                          </div>
-                          <span className={`text-xs font-medium ${
-                            budget.overBudget ? 'text-red-400' : 'text-green-400'
-                          }`}>
-                            {budget.percentage}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleEditBudget(budget)}
-                            className="p-1 text-slate-400 hover:text-amber-400 transition-colors"
-                          >
-                            <Pencil className="w-5 h-5" strokeWidth={2.2} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBudget(budget.id)}
-                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300 transition-colors" strokeWidth={2} />
-                          </button>
-                        </div>
-                      </td>
+              {budgetData.length > 0 ? (
+                <table className="w-full">
+                  <thead className={theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'}>
+                    <tr>
+                      <th className={`px-6 py-4 text-left text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Category</th>
+                      <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Budgeted</th>
+                      <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Spent</th>
+                      <th className={`px-6 py-4 text-right text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Remaining</th>
+                      <th className={`px-6 py-4 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Progress</th>
+                      <th className={`px-6 py-4 text-center text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} uppercase`}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className={`divide-y ${theme === 'dark' ? 'divide-slate-700' : 'divide-slate-300'}`}>
+                    {budgetData.map((budget) => (
+                      <tr key={budget.category} className={`${theme === 'dark' ? 'hover:bg-slate-700/30' : 'hover:bg-slate-200/30'} transition-colors`}>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{budget.icon}</span>
+                            <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{budget.category}</span>
+                          </div>
+                        </td>
+                        <td className={`px-6 py-4 text-right font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          ${budget.budgeted.toFixed(2)}
+                        </td>
+                        <td className={`px-6 py-4 text-right font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          ${budget.actual.toFixed(2)}
+                        </td>
+                        <td className={`px-6 py-4 text-right font-medium ${budget.remaining > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          ${budget.remaining.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`flex-1 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'} rounded-full h-2`}>
+                              <div
+                                className={`h-2 rounded-full transition-all ${
+                                  budget.overBudget ? 'bg-red-500' : 'bg-green-500'
+                                }`}
+                                style={{ width: `${Math.min(100, (budget.actual / budget.budgeted) * 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs font-medium min-w-[35px] ${
+                              budget.overBudget ? 'text-red-400' : 'text-green-400'
+                            }`}>
+                              {budget.percentage}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleEditBudget(budget)}
+                              className="p-1 text-slate-400 hover:text-amber-400 transition-colors"
+                            >
+                              <Pencil className="w-5 h-5" strokeWidth={2.2} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBudget(budget.id)}
+                              className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300 transition-colors" strokeWidth={2} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-20 text-center">
+                  <div className="w-20 h-20 bg-slate-700/30 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-600/50">
+                    <Target className="w-10 h-10 text-slate-500" />
+                  </div>
+                  <h4 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>No budgets set for this period</h4>
+                  <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-8 max-w-md mx-auto`}>
+                    Take control of your spending by setting monthly limits for your expense categories.
+                  </p>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={handleCopyLastMonth}
+                      className={`px-6 py-3 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'} rounded-xl font-bold transition-all flex items-center gap-2`}
+                    >
+                      <Copy className="w-5 h-5" />
+                      Copy from Last Month
+                    </button>
+                    <button
+                      onClick={() => setShowBudgetForm(true)}
+                      className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-bold hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2"
+                    >
+                      <span>+</span>
+                      Create First Budget
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

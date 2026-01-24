@@ -705,8 +705,8 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 PROVIDE A CONCISE ANALYSIS (150-200 words max):
 1. **Financial Health** (1-2 sentences) - Savings rate assessment
 2. **Key Win** (1 sentence) - One main achievement
-3. **Main Concern** (1-2 sentences) - Biggest issue with specific numbers
-4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps
+3. **Budget Performance** (1-2 sentences) - Mention specific categories over/under budget and provide actionable advice.
+4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending.
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT."""
 
@@ -1209,6 +1209,58 @@ def delete_budget(
     db.commit()
     
     return {"message": "Budget deleted"}
+
+@app.post("/budgets/copy-last-month")
+def copy_last_month_budgets(
+    year: int,
+    month: int,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Copy budgets from previous month to current month"""
+    user = get_current_user(token, db)
+    
+    # Calculate previous month
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    
+    # Get previous month's budgets
+    prev_budgets = db.query(Budget).filter(
+        Budget.user_id == user.id,
+        Budget.year == prev_year,
+        Budget.month == prev_month
+    ).all()
+    
+    if not prev_budgets:
+        raise HTTPException(status_code=404, detail="No budgets found for last month")
+    
+    # Get current month's budgets to avoid duplicates
+    current_budgets = db.query(Budget).filter(
+        Budget.user_id == user.id,
+        Budget.year == year,
+        Budget.month == month
+    ).all()
+    
+    current_category_ids = {b.category_id for b in current_budgets}
+    
+    copied_count = 0
+    for pb in prev_budgets:
+        if pb.category_id not in current_category_ids:
+            new_budget = Budget(
+                user_id=user.id,
+                category_id=pb.category_id,
+                amount=pb.amount,
+                month=month,
+                year=year
+            )
+            db.add(new_budget)
+            copied_count += 1
+    
+    if copied_count > 0:
+        db.commit()
+        return {"message": f"Successfully copied {copied_count} budgets from last month", "count": copied_count}
+    else:
+        return {"message": "All budgets from last month already exist for this month", "count": 0}
 
 @app.get("/budgets/comparison")
 def get_budget_comparison_endpoint(
