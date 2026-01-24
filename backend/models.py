@@ -31,6 +31,7 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="user")
 
     budgets = relationship("Budget", back_populates="user")
+    goals = relationship("Goal", back_populates="user")
 
 
 class Category(Base):
@@ -86,6 +87,26 @@ class Budget(Base):
 
     # Relationships
     user = relationship("User", back_populates="budgets")
+    category = relationship("Category")
+
+
+class Goal(Base):
+    """
+    Savings Goals - Track long-term financial targets
+    """
+    __tablename__ = "goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    name = Column(String, nullable=False)
+    target_amount = Column(Float, nullable=False)
+    current_amount = Column(Float, default=0.0)
+    target_date = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="goals")
     category = relationship("Category")
 
 

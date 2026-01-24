@@ -325,6 +325,16 @@ def create_transaction(
         date=datetime.fromisoformat(data.date)
     )
     db.add(transaction)
+    
+    # Update linked savings goals
+    if transaction.amount > 0: # Only income or savings transfers count towards goals
+        linked_goals = db.query(Goal).filter(
+            Goal.user_id == user.id,
+            Goal.category_id == transaction.category_id
+        ).all()
+        for goal in linked_goals:
+            goal.current_amount += transaction.amount
+            
     db.commit()
     
     return {"message": "Transaction created", "id": transaction.id}
@@ -350,6 +360,15 @@ def delete_transaction(
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
+    # If it was an income/saving transaction linked to a goal, subtract it
+    if transaction.amount > 0:
+        linked_goals = db.query(Goal).filter(
+            Goal.user_id == user.id,
+            Goal.category_id == transaction.category_id
+        ).all()
+        for goal in linked_goals:
+            goal.current_amount -= transaction.amount
+
     db.delete(transaction)
     db.commit()
     
@@ -1094,8 +1113,22 @@ async def ai_chat(year: int, month: int, token: str, data: ChatRequest, db: Sess
 class BudgetCreate(BaseModel):
     category_id: int
     amount: float
-    month: int  # 1-12
+    month: int
     year: int
+
+class GoalCreate(BaseModel):
+    name: str
+    target_amount: float
+    current_amount: float = 0.0
+    target_date: str
+    category_id: Optional[int] = None
+
+class GoalUpdate(BaseModel):
+    name: Optional[str] = None
+    target_amount: Optional[float] = None
+    current_amount: Optional[float] = None
+    target_date: Optional[str] = None
+    category_id: Optional[int] = None
 
 @app.get("/budgets")
 def get_budgets(token: str, year: int = None, month: int = None, db: Session = Depends(get_db)):
@@ -1273,6 +1306,86 @@ def get_budget_comparison_endpoint(
     user = get_current_user(token, db)
     comparison = get_budget_comparison(db, user.id, year, month)
     return {"comparison": comparison}
+
+
+# ============================================
+# GOAL ROUTES
+# ============================================
+
+@app.get("/goals")
+def get_goals_endpoint(token: str, db: Session = Depends(get_db)):
+    """Get all goals for current user"""
+    user = get_current_user(token, db)
+    goals = db.query(Goal).filter(Goal.user_id == user.id).all()
+    
+    return [
+        {
+            "id": g.id,
+            "name": g.name,
+            "target_amount": g.target_amount,
+            "current_amount": g.current_amount,
+            "target_date": g.target_date.isoformat(),
+            "category_id": g.category_id,
+            "category_name": g.category.name if g.category else None,
+            "created_at": g.created_at.isoformat()
+        }
+        for g in goals
+    ]
+
+@app.post("/goals")
+def create_goal_endpoint(data: GoalCreate, token: str, db: Session = Depends(get_db)):
+    """Create a new savings goal"""
+    user = get_current_user(token, db)
+    
+    goal = Goal(
+        user_id=user.id,
+        name=data.name,
+        target_amount=data.target_amount,
+        current_amount=data.current_amount,
+        target_date=datetime.fromisoformat(data.target_date),
+        category_id=data.category_id
+    )
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+@app.put("/goals/{goal_id}")
+def update_goal_endpoint(goal_id: int, data: GoalUpdate, token: str, db: Session = Depends(get_db)):
+    """Update a savings goal"""
+    user = get_current_user(token, db)
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user.id).first()
+    
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    
+    if data.name is not None:
+        goal.name = data.name
+    if data.target_amount is not None:
+        goal.target_amount = data.target_amount
+    if data.current_amount is not None:
+        goal.current_amount = data.current_amount
+    if data.target_date is not None:
+        goal.target_date = datetime.fromisoformat(data.target_date)
+    if data.category_id is not None:
+        goal.category_id = data.category_id
+        
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+@app.delete("/goals/{goal_id}")
+def delete_goal_endpoint(goal_id: int, token: str, db: Session = Depends(get_db)):
+    """Delete a savings goal"""
+    user = get_current_user(token, db)
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user.id).first()
+    
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+        
+    db.delete(goal)
+    db.commit()
+    return {"message": "Goal deleted"}
 
 
 # ============================================
