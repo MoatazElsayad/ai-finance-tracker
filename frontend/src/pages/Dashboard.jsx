@@ -574,78 +574,90 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400 border-t-transparent mx-auto mb-4"></div>
-          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg`}>Loading financial data...</p>
+      <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'} transition-colors duration-500`}>
+        <div className="text-center animate-in fade-in duration-700">
+          <div className="relative mb-6">
+            <div className="w-20 h-20 rounded-[2rem] border-4 border-slate-200/10 dark:border-slate-700/30 mx-auto"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-20 rounded-[2rem] border-4 border-amber-500 border-t-transparent animate-spin duration-[1.5s]"></div>
+          </div>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg font-bold tracking-tight`}>
+            Loading financial <span className="text-amber-500">intelligence...</span>
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27] text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-300`}>
-      <SectionHeaderAndSummary 
-        theme={theme}
-        user={user}
-        viewMode={viewMode}
-        selectedMonth={selectedMonth}
-        setViewMode={setViewMode}
-        changeMonth={changeMonth}
-        changeYear={changeYear}
-        analytics={analytics}
-      />
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27] text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-500 overflow-x-hidden`}>
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className={`absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 ${theme === 'dark' ? 'bg-amber-500/30' : 'bg-amber-200/40'}`} />
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 ${theme === 'dark' ? 'bg-amber-600/20' : 'bg-amber-100/30'}`} />
+      </div>
 
-      <ReportsSection 
-        theme={theme}
-        reportLoading={reportLoading}
-        reportProgress={reportProgress}
-        reportStatus={reportStatus}
-        handleDownloadReport={handleDownloadReport}
-      />
+      <div className="relative z-10 space-y-0">
+        <SectionHeaderAndSummary 
+          theme={theme}
+          user={user}
+          viewMode={viewMode}
+          selectedMonth={selectedMonth}
+          setViewMode={setViewMode}
+          changeMonth={changeMonth}
+          changeYear={changeYear}
+          analytics={analytics}
+        />
 
-      <MainChartsSection 
-        theme={theme}
-        barData={barData}
-        pieData={pieData}
-      />
+        <ReportsSection 
+          theme={theme}
+          reportLoading={reportLoading}
+          reportProgress={reportProgress}
+          reportStatus={reportStatus}
+          handleDownloadReport={handleDownloadReport}
+        />
 
-      <SpendingTrendsSection 
-        theme={theme}
-        dailySpendingData={dailySpendingData}
-        avgDailySpending={avgDailySpending}
-        dailySpendingChartData={dailySpendingChartData}
-        weeklyPatternData={weeklyPatternData}
-      />
+        <MainChartsSection 
+          theme={theme}
+          barData={barData}
+          pieData={pieData}
+        />
 
-      <ProgressComparisonSection 
-        theme={theme}
-        cumulativeSavingsData={cumulativeSavingsData}
-        monthlyComparisonData={monthlyComparisonData}
-      />
+        <SpendingTrendsSection 
+          theme={theme}
+          dailySpendingData={dailySpendingData}
+          avgDailySpending={avgDailySpending}
+          dailySpendingChartData={dailySpendingChartData}
+          weeklyPatternData={weeklyPatternData}
+        />
 
-      <AIInsightsSection 
-        theme={theme}
-        aiMode={aiMode}
-        setAiMode={setAiMode}
-        aiSummary={aiSummary}
-        aiLoading={aiLoading}
-        aiModelUsed={aiModelUsed}
-        currentTryingModel={currentTryingModel}
-        handleGenerateAI={handleGenerateAI}
-        chatMessages={chatMessages}
-        chatQuestion={chatQuestion}
-        chatModelUsed={chatModelUsed}
-        chatTryingModel={chatTryingModel}
-        chatLoading={chatLoading}
-        setChatQuestion={setChatQuestion}
-        handleAskAI={handleAskAI}
-      />
+        <ProgressComparisonSection 
+          theme={theme}
+          cumulativeSavingsData={cumulativeSavingsData}
+          monthlyComparisonData={monthlyComparisonData}
+        />
 
-      <RecentActivitySection 
-        theme={theme}
-        recentTransactions={recentTransactions}
-      />
+        <AIInsightsSection 
+          theme={theme}
+          aiMode={aiMode}
+          setAiMode={setAiMode}
+          aiSummary={aiSummary}
+          aiLoading={aiLoading}
+          aiModelUsed={aiModelUsed}
+          currentTryingModel={currentTryingModel}
+          handleGenerateAI={handleGenerateAI}
+          chatMessages={chatMessages}
+          chatQuestion={chatQuestion}
+          chatModelUsed={chatModelUsed}
+          chatTryingModel={chatTryingModel}
+          chatLoading={chatLoading}
+          setChatQuestion={setChatQuestion}
+          handleAskAI={handleAskAI}
+        />
+
+        <RecentActivitySection 
+          theme={theme}
+          recentTransactions={recentTransactions}
+        />
+      </div>
 
       <ChatWidgetButton 
         theme={theme}

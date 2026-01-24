@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X, Sparkles, RefreshCw } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('');
   const [loading, setLoading] = useState(false);
@@ -98,19 +101,13 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
             `Return a single emoji that best represents the category "${text}". Only respond with the emoji, nothing else.`
           );
           const emoji = (answer || '').trim();
-          if (emoji) {
+          if (emoji && emoji.length <= 2) {
             setIcon(emoji);
             lastNameRef.current = normalized;
             lastEmojiRef.current = emoji;
           } else {
             setIcon(localSuggestEmoji(text));
-            lastNameRef.current = normalized;
-            lastEmojiRef.current = localSuggestEmoji(text);
           }
-        } else {
-          setIcon(localSuggestEmoji(text));
-          lastNameRef.current = normalized;
-          lastEmojiRef.current = localSuggestEmoji(text);
         }
       } catch {
         const fallback = localSuggestEmoji(text);
@@ -132,39 +129,50 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-all duration-500 animate-in fade-in"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in zoom-in duration-300">
+        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-md shadow-2xl`}>
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span className="text-2xl">✨</span>
-              New {type === 'expense' ? 'Expense' : 'Income'} Category
-            </h2>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                <Sparkles className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  New {type === 'expense' ? 'Expense' : 'Income'} Category
+                </h2>
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  AI-Powered Suggestions
+                </p>
+              </div>
+            </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors"
+              className={`p-2 rounded-xl transition-all ${
+                isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'
+              }`}
             >
               <X className="w-6 h-6" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-black uppercase tracking-[0.2em] animate-in shake">
                 {error}
               </div>
             )}
 
             {/* Category Name */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-4`}>
                 Category Name
               </label>
               <input
@@ -172,42 +180,59 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Coffee, Freelance Project"
-                className="w-full px-4 py-3 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all placeholder-slate-500"
+                className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'}`}
                 disabled={loading}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Icon
-              </label>
-              <div
-                className={`w-full px-4 py-3 rounded-xl border-2 text-4xl flex items-center justify-center ${
-                  icon
-                    ? 'bg-amber-500/20 border-amber-400/50'
-                    : 'bg-slate-700/50 border-slate-600'
-                }`}
-              >
-                {suggesting ? '⏳' : (icon || '🔖')}
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Smart Icon
+                </label>
+                <div
+                  className={`w-24 h-24 rounded-3xl border-2 flex items-center justify-center text-4xl shadow-sm transition-all duration-500 ${
+                    icon
+                      ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/5'
+                      : isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  {suggesting ? (
+                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
+                  ) : (
+                    <span className="animate-in zoom-in duration-300">{icon || '🔖'}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className={`text-[10px] font-bold leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  AI will automatically suggest an icon based on your category name.
+                </p>
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-4 pt-4">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors disabled:opacity-50"
+                className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all ${
+                  isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !name.trim() || !icon}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-900 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary-unified flex-1 text-xs uppercase tracking-[0.2em] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Creating...' : 'Create Category'}
+                {loading ? (
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                ) : (
+                  'Create'
+                )}
               </button>
             </div>
           </form>

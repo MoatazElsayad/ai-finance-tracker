@@ -1,28 +1,26 @@
 export const CHART_COLORS = {
-  income: '#00d4aa',
-  expense: '#ff6b6b',
-  savings: '#ffd93d',
-  accent: '#4ecdc4',
+  income: '#10b981', // emerald-500
+  expense: '#ef4444', // red-500
+  savings: '#f59e0b', // amber-500
+  accent: '#f59e0b',  // amber-500
   categories: [
-    '#4ecdc4',
-    '#45b7d1',
-    '#96ceb4',
-    '#ffeaa7',
-    '#dda0dd',
-    '#98d8c8',
-    '#f7dc6f',
-    '#bb8fce',
-    '#85c1e9',
-    '#f8c471',
-    '#82e0aa',
-    '#f1948a',
-    '#85c1e9',
-    '#d7bde2',
-    '#a9dfbf',
+    '#f59e0b', // amber-500
+    '#fbbf24', // amber-400
+    '#fcd34d', // amber-300
+    '#fb923c', // orange-400
+    '#f97316', // orange-500
+    '#10b981', // emerald-500
+    '#34d399', // emerald-400
+    '#0ea5e9', // sky-500
+    '#38bdf8', // sky-400
+    '#8b5cf6', // violet-500
+    '#a78bfa', // violet-400
+    '#ec4899', // pink-500
+    '#f472b6', // pink-400
   ],
-  primary: '#00d4aa',
-  secondary: '#ff6b6b',
-  tertiary: '#ffd93d',
+  primary: '#f59e0b',
+  secondary: '#ef4444',
+  tertiary: '#10b981',
   neutral: '#64748b',
 };
 

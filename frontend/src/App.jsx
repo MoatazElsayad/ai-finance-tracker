@@ -83,6 +83,7 @@ function Layout() {
   const [user, setUser] = useState(null);
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebarCollapsed();
+  const location = useLocation();
 
   useEffect(() => {
     // Get current user info
@@ -94,105 +95,133 @@ function Layout() {
   const isDark = theme === 'dark';
 
   return (
-    <div className={isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}>
+    <div className={`${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} transition-colors duration-500 min-h-screen`}>
       {/* Sidebar */}
       <Sidebar user={user} />
 
       {/* Overlay Backdrop - Dims content when sidebar is open on mobile */}
       {!isCollapsed && (
         <div
-          className="fixed inset-0 bg-black/50 md:hidden z-30 transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden z-30 transition-all duration-500"
           onClick={() => setIsCollapsed(true)}
         />
       )}
 
       {/* Navigation Bar */}
-      <nav className={`${isDark ? 'bg-slate-900/80' : 'bg-white/80'} backdrop-blur-md shadow-lg ${isDark ? 'border-slate-700' : 'border-slate-200'} border-b sticky top-0 z-40 transition-all duration-300 ${
+      <nav className={`${isDark ? 'bg-[#0a0e27]/80' : 'bg-white/80'} backdrop-blur-md shadow-2xl shadow-black/5 ${isDark ? 'border-slate-800' : 'border-slate-200'} border-b sticky top-0 z-40 transition-all duration-500 ${
         isCollapsed ? 'md:ml-20' : 'md:ml-64'
       }`}>
-        <div className="px-4 md:px-6">
-          <div className="flex justify-between items-center h-16">
+        <div className="px-4 md:px-8">
+          <div className="flex justify-between items-center h-20">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                isDark ? 'bg-gradient-to-br from-amber-400/30 to-amber-500/30 border border-amber-400/40' : 'bg-gradient-to-br from-amber-100 to-amber-200 border border-amber-300'
+            <div className="flex items-center gap-4 group cursor-pointer">
+              <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 ${
+                isDark 
+                  ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40' 
+                  : 'bg-gradient-to-br from-amber-400 to-amber-500 shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40'
               }`}>
-                <span className={`${isDark ? 'text-slate-900' : 'text-amber-700'} font-bold`}>FT</span>
+                <span className="text-white font-black text-xl tracking-tighter">FT</span>
               </div>
-              <span className={`font-bold text-lg md:text-xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Finance Tracker</span>
+              <div className="flex flex-col">
+                <span className={`font-black text-xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Finance <span className="text-amber-500">Tracker</span>
+                </span>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Intelligence
+                </span>
+              </div>
             </div>
 
             {/* Navigation Links - Hidden on Mobile */}
-            <div className="hidden md:flex gap-6">
-              <Link 
-                to="/dashboard" 
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/transactions" 
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                Transactions
-              </Link>
-              <Link 
-                to="/budget"
-                className={`${isDark ? 'text-slate-300 hover:text-amber-400' : 'text-slate-600 hover:text-amber-600'} font-medium transition-colors`}
-              >
-                Budget
-              </Link>
-              
+            <div className="hidden lg:flex gap-8">
+              {[
+                { to: '/dashboard', label: 'Dashboard' },
+                { to: '/transactions', label: 'Transactions' },
+                { to: '/budget', label: 'Budget' }
+              ].map((item) => (
+                <Link 
+                  key={item.to}
+                  to={item.to} 
+                  className={`text-sm font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                    location.pathname === item.to
+                      ? 'text-amber-500'
+                      : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
 
-            {/* User Info - Show on Desktop */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Actions - Show on Desktop */}
+            <div className="hidden md:flex items-center gap-4">
               <Link
                 to="/receipt-upload"
                 state={{ fromNavbarScan: true }}
-                className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
-                  isDark ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                } transition-colors border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}
+                className={`p-3 rounded-2xl flex items-center gap-2 transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-700' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border-slate-200'
+                } border shadow-sm group`}
+                title="Scan Receipt"
               >
-                <ScanLine className="w-5 h-5" />
-                <span className="text-sm font-semibold">Scan</span>
+                <ScanLine className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </Link>
+              
               <Link
                 to="/transactions"
                 state={{ openForm: true }}
-                className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
-                  isDark ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                } transition-colors border ${isDark ? 'border-amber-400/40' : 'border-amber-300'}`}
+                className={`p-3 rounded-2xl flex items-center gap-2 transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/30' 
+                    : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                } border shadow-sm group`}
+                title="Add Transaction"
               >
-                <CirclePlus className="w-5 h-5" />
-                <span className="text-sm font-semibold">Add</span>
+                <CirclePlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </Link>
+
+              <div className={`w-px h-8 mx-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+
               <button
                 onClick={toggleTheme}
-                className={`p-2 rounded-lg ${
-                  isDark ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                } transition-colors border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}
+                className={`p-3 rounded-2xl transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-800/50 text-amber-400 hover:bg-slate-700 border-slate-700' 
+                    : 'bg-slate-100 text-amber-600 hover:bg-slate-200 border-slate-200'
+                } border shadow-sm group`}
                 title={isDark ? 'Light Mode' : 'Dark Mode'}
               >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {isDark ? (
+                  <Sun className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                ) : (
+                  <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform duration-500" />
+                )}
               </button>
-              {user && <UserAvatar user={user} size="w-10 h-10" />}
-              <div className="flex flex-col">
-                <span className={`text-sm font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                  {user?.first_name || user?.username || 'User'}
-                </span>
-                <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {user?.email}
-                </span>
-              </div>
+
+              {user && (
+                <div className="flex items-center gap-3 pl-2">
+                  <UserAvatar user={user} size="w-10 h-10 ring-2 ring-amber-500/20" />
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {user?.first_name || user?.username || 'User'}
+                    </span>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {user?.email?.split('@')[0]}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className={`transition-all duration-300 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'} min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-        <Outlet />
+      <main className={`transition-all duration-500 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'} min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+        <div className="animate-in fade-in duration-700">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

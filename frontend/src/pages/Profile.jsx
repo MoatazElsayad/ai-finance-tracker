@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { getCurrentUser, updateUserProfile, generateReport } from '../api'; // Adjust import path as needed
 import { useTheme } from '../context/ThemeContext';
-import { User, Mail, Calendar, Shield, Edit, Save, X, Upload } from 'lucide-react';
+import { User, Mail, Calendar, Shield, Edit, Save, X, Upload, FileText, ArrowLeftRight } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 
 function Profile() {
@@ -119,7 +119,7 @@ function Profile() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
+      <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400 border-t-transparent mx-auto mb-4"></div>
           <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg`}>Loading profile...</p>
@@ -129,85 +129,116 @@ function Profile() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'} pb-20`}>
-      {/* Header / Hero Section */}
-      <section className={`relative pt-16 pb-24 px-6 ${theme === 'dark' ? 'bg-gradient-to-br from-[#1a1f3a] via-[#0f172a] to-[#0a0e27]' : 'bg-gradient-to-br from-slate-100 via-white to-slate-50'}`}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center">
-            {/* Avatar Section */}
-            <div className="mb-6 relative inline-block">
-              <div className="inline-block p-1.5 bg-gradient-to-br from-amber-400/30 to-purple-500/20 rounded-full">
-                <div className={`w-32 h-32 rounded-full ${theme === 'dark' ? 'bg-gradient-to-br from-slate-700 to-slate-800' : 'bg-gradient-to-br from-slate-200 to-slate-300'} flex items-center justify-center border-4 border-amber-400/40 shadow-2xl overflow-hidden`}>
-                  {user && <UserAvatar user={user} size="w-32 h-32" />}
+    <div className={`min-h-screen px-6 py-8 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-10 duration-700">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-black flex items-center gap-4 tracking-tight">
+            <div className="p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-xl shadow-amber-500/20">
+              <User className="w-8 h-8 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="uppercase tracking-[0.2em]">Profile</span>
+          </h1>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium max-w-2xl`}>
+            Manage your account information and preferences with professional precision.
+          </p>
+        </div>
+      </div>
+
+      <main className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-700 delay-200">
+        {/* Main Profile Card */}
+        <div className={`p-8 md:p-12 rounded-[2.5rem] transition-all border-2 duration-500 relative overflow-hidden ${
+          theme === 'dark' 
+            ? 'bg-slate-800/40 border-slate-700 shadow-2xl shadow-black/20' 
+            : 'bg-white border-slate-100 shadow-xl'
+        }`}>
+          {/* Decorative Background Element */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10">
+            {/* Avatar & Hero Section */}
+            <div className="flex flex-col md:flex-row items-center gap-10 mb-16 pb-16 border-b-2 border-slate-500/10">
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition duration-700"></div>
+                <div className={`relative w-48 h-48 rounded-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'} flex items-center justify-center border-4 border-amber-500 shadow-2xl overflow-hidden transform group-hover:scale-105 transition-transform duration-500`}>
+                  {user && <UserAvatar user={user} size="w-48 h-48" />}
+                </div>
+              </div>
+              
+              <div className="text-center md:text-left">
+                <h2 className={`text-5xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>
+                  {user ? `${user.first_name} ${user.last_name}` : 'Your Name'}
+                </h2>
+                <p className={`text-2xl font-black ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'} mb-6 uppercase tracking-[0.2em]`}>
+                  @{user?.username || 'username'}
+                </p>
+                <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] ${
+                  theme === 'dark' ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-500'
+                } border-2 border-slate-700/5 shadow-sm`}>
+                  <Shield className="w-5 h-5 text-amber-500" strokeWidth={2.5} />
+                  Verified Account
                 </div>
               </div>
             </div>
 
-            <h1 className={`text-4xl md:text-5xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>
-              {user ? `${user.last_name}, ${user.first_name}` : 'Your Profile'}
-            </h1>
-            <p className={`text-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-8`}>
-              Manage your account information
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <main className="max-w-4xl mx-auto px-6 -mt-16 relative z-10">
-        {/* Main Profile Card */}
-        <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 border-slate-700' : 'bg-gradient-to-br from-white via-slate-50 to-white border-slate-200'} rounded-3xl shadow-2xl border overflow-hidden`}>
-          <div className="p-8 md:p-10">
             {/* Message banner */}
             {message.text && (
-              <div className={`mb-8 p-4 rounded-xl text-center font-medium ${
+              <div className={`mb-12 p-8 rounded-[2rem] text-center font-black uppercase tracking-[0.2em] animate-in slide-in-from-top-4 duration-500 shadow-xl ${
                 message.type === 'success' 
-                  ? 'bg-green-500/20 border border-green-500/30 text-green-300'
-                  : 'bg-red-500/20 border border-red-500/30 text-red-300'
+                  ? 'bg-emerald-500/10 border-2 border-emerald-500/20 text-emerald-500'
+                  : 'bg-rose-500/10 border-2 border-rose-500/20 text-rose-500'
               }`}>
                 {message.text}
               </div>
             )}
 
-            <div className="flex justify-between items-center mb-10">
-              <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-3`}>
-                <Shield className={`w-7 h-7 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} strokeWidth={1.8} />
-                Account Information
-              </h2>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-8 mb-16">
+              <h3 className={`text-3xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-6`}>
+                <div className="p-4 bg-amber-500/10 rounded-2xl border-2 border-amber-500/20 shadow-lg shadow-amber-500/5">
+                  <User className="w-8 h-8 text-amber-500" strokeWidth={3} />
+                </div>
+                Account Details
+              </h3>
 
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className={`flex items-center gap-2 px-5 py-2.5 ${theme === 'dark' ? 'bg-slate-700/70 hover:bg-slate-600 border-slate-600 hover:border-amber-500/40' : 'bg-slate-200/70 hover:bg-slate-300 border-slate-300 hover:border-amber-400/40'} rounded-lg text-amber-400 hover:text-amber-300 transition-colors border`}
+                  className={`flex items-center gap-4 px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 group active:scale-95 ${
+                    theme === 'dark' 
+                      ? 'bg-slate-800 text-amber-400 hover:bg-amber-500 hover:text-white border-2 border-slate-700/50 shadow-xl shadow-black/20 hover:shadow-amber-500/20' 
+                      : 'bg-white text-amber-600 hover:bg-amber-500 hover:text-white border-2 border-slate-200 shadow-lg hover:shadow-amber-500/10'
+                  }`}
                 >
-                  <Edit className="w-5 h-5" strokeWidth={2.2} />
+                  <Edit className="w-6 h-6 group-hover:rotate-12 transition-transform" strokeWidth={2.5} />
                   Edit Profile
                 </button>
               ) : (
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                   <button
                     onClick={() => {
                       setIsEditing(false);
                       setMessage({ text: '', type: '' });
                     }}
-                    className={`px-5 py-2.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 border-slate-600 text-slate-300 hover:text-white' : 'bg-slate-300 hover:bg-slate-400 border-slate-400 text-slate-700 hover:text-slate-900'} rounded-lg transition-colors border`}
+                    className={`px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-800 text-slate-400 hover:text-white border-2 border-slate-700/50 shadow-xl shadow-black/20' 
+                        : 'bg-white text-slate-500 hover:text-slate-900 border-2 border-slate-200 shadow-lg'
+                    }`}
                   >
-                    <X className="w-5 h-5 inline mr-1.5" />
+                    <X className="w-6 h-6 inline mr-2" strokeWidth={2.5} />
                     Cancel
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 rounded-lg font-medium shadow-lg disabled:opacity-50 transition-all"
+                    className="btn-primary-unified !rounded-[1.5rem] !py-5 !px-10 shadow-2xl shadow-amber-500/20 disabled:opacity-50 group active:scale-95"
                   >
                     {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-900 border-t-transparent"></div>
-                        <span>Saving...</span>
-                      </>
+                      <div className="animate-spin rounded-full h-6 w-6 border-3 border-white border-t-transparent"></div>
                     ) : (
                       <>
-                        <Save className="w-5 h-5" strokeWidth={2.2} />
-                        Save Changes
+                        <Save className="w-6 h-6 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+                        <span className="tracking-[0.2em]">SAVE CHANGES</span>
                       </>
                     )}
                   </button>
@@ -215,152 +246,123 @@ function Profile() {
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* First Name & Last Name */}
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
-                    <User className="w-4 h-4" />
-                    First Name
-                  </label>
+            <form onSubmit={handleSubmit} className="space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-4">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>First Name</label>
                   {isEditing ? (
                     <input
                       type="text"
                       name="first_name"
                       value={formData.first_name}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
+                      className="input-unified w-full !text-xl"
                       placeholder="John"
                     />
                   ) : (
-                    <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
-                      {user?.first_name || '—'}
+                    <div className={`px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/30 border-slate-700/50 text-white hover:bg-slate-800/50' : 'bg-slate-50/50 border-slate-200 text-slate-900 hover:bg-slate-100/50'} border-2 shadow-inner group`}>
+                      <span className="group-hover:text-amber-500 transition-colors">{user?.first_name || '—'}</span>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
-                    <User className="w-4 h-4" />
-                    Last Name
-                  </label>
+                <div className="space-y-4">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Last Name</label>
                   {isEditing ? (
                     <input
                       type="text"
                       name="last_name"
                       value={formData.last_name}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
+                      className="input-unified w-full !text-xl"
                       placeholder="Doe"
                     />
                   ) : (
-                    <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
-                      {user?.last_name || '—'}
+                    <div className={`px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/30 border-slate-700/50 text-white hover:bg-slate-800/50' : 'bg-slate-50/50 border-slate-200 text-slate-900 hover:bg-slate-100/50'} border-2 shadow-inner group`}>
+                      <span className="group-hover:text-amber-500 transition-colors">{user?.last_name || '—'}</span>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Username */}
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
-                    <User className="w-4 h-4" />
-                    Username
-                  </label>
+                <div className="space-y-4">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Username</label>
                   {isEditing ? (
                     <input
                       type="text"
                       name="username"
                       value={formData.username}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
+                      className="input-unified w-full !text-xl"
                       placeholder="Your username"
                     />
                   ) : (
-                    <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
-                      {user?.username || '—'}
+                    <div className={`px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/30 border-slate-700/50 text-white hover:bg-slate-800/50' : 'bg-slate-50/50 border-slate-200 text-slate-900 hover:bg-slate-100/50'} border-2 shadow-inner group`}>
+                      <span className="group-hover:text-amber-500 transition-colors">{user?.username || '—'}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Email */}
-                <div>
-                  <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
-                    <Mail className="w-4 h-4" />
-                    Email Address
-                  </label>
+                <div className="space-y-4">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Email Address</label>
+                  <div className={`px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/20 border-slate-700/30 text-slate-500 hover:bg-slate-800/30' : 'bg-slate-50/20 border-slate-200 text-slate-400 hover:bg-slate-100/20'} border-2 flex items-center gap-4 shadow-inner group`}>
+                    <Mail className="w-6 h-6 opacity-50 group-hover:text-amber-500 group-hover:opacity-100 transition-all" />
+                    <span className="group-hover:text-amber-500 transition-colors">{user?.email || '—'}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Phone Number</label>
                   {isEditing ? (
                     <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
-                      placeholder="your@email.com"
-                      disabled // usually email shouldn't be editable without verification
+                      className="input-unified w-full !text-xl"
+                      placeholder="+1 (555) 123-4567"
                     />
                   ) : (
-                    <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
-                      {user?.email || '—'}
+                    <div className={`px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/30 border-slate-700/50 text-white hover:bg-slate-800/50' : 'bg-slate-50/50 border-slate-200 text-slate-900 hover:bg-slate-100/50'} border-2 shadow-inner group`}>
+                      <span className="group-hover:text-amber-500 transition-colors">{user?.phone || '—'}</span>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Phone */}
-              <div>
-                <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
-                  <Mail className="w-4 h-4" />
-                  Phone Number
-                </label>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                ) : (
-                  <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
-                    {user?.phone || '—'}
-                  </div>
-                )}
-              </div>
-              
-              {/* Gender */}
-              <div>
-                <label className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-2 flex items-center gap-2`}>
-                  <User className="w-4 h-4" />
-                  Gender
-                </label>
-                {isEditing ? (
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'} border rounded-lg focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all`}
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                ) : (
-                  <div className={`px-4 py-3 ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600 text-white' : 'bg-slate-100/50 border-slate-300 text-slate-900'} rounded-lg border`}>
-                    {user?.gender || '—'}
-                  </div>
-                )}
+                <div className="space-y-4">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Gender</label>
+                  {isEditing ? (
+                    <div className="relative group">
+                      <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        className="input-unified w-full !text-xl appearance-none pr-12"
+                      >
+                        <option value="">Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </select>
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500 transition-transform group-hover:scale-110">
+                        <ArrowLeftRight className="w-6 h-6 rotate-90" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`px-8 py-6 rounded-[1.5rem] font-black text-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/30 border-slate-700/50 text-white hover:bg-slate-800/50' : 'bg-slate-50/50 border-slate-200 text-slate-900 hover:bg-slate-100/50'} border-2 shadow-inner group`}>
+                      <span className="group-hover:text-amber-500 transition-colors">{user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : '—'}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Join Date */}
-              <div className={`pt-6 ${theme === 'dark' ? 'border-t border-slate-700' : 'border-t border-slate-300'}`}>
-                <div className={`flex items-center gap-3 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                  <Calendar className="w-5 h-5" />
+              <div className="pt-12 border-t-2 border-slate-500/10 flex items-center justify-between">
+                <div className="flex items-center gap-6 group">
+                  <div className={`p-4 rounded-2xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800 text-slate-400 border-slate-700/50 group-hover:bg-slate-700 group-hover:text-amber-500' : 'bg-slate-50 text-slate-500 border-slate-200 group-hover:bg-white group-hover:text-amber-500'} border-2 shadow-sm`}>
+                    <Calendar className="w-8 h-8 transition-transform group-hover:scale-110" />
+                  </div>
                   <div>
-                    <p className="text-sm">Member since</p>
-                    <p className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-medium`}>
+                    <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Member Since</p>
+                    <p className={`text-2xl font-black transition-colors ${theme === 'dark' ? 'text-white group-hover:text-amber-500' : 'text-slate-900 group-hover:text-amber-500'}`}>
                       {user?.createdAt 
                         ? new Date(user.createdAt).toLocaleDateString('en-US', {
                             month: 'long',
@@ -373,60 +375,76 @@ function Profile() {
               </div>
             </form>
             
-            <div className={`mt-10 ${theme === 'dark' ? 'border-t border-slate-700 pt-8' : 'border-t border-slate-300 pt-8'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Reports</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setReportViewMode('monthly')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                      reportViewMode === 'monthly'
-                        ? 'bg-blue-500/80 text-white'
-                        : theme === 'dark'
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setReportViewMode('yearly')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                      reportViewMode === 'yearly'
-                        ? 'bg-blue-500/80 text-white'
-                        : theme === 'dark'
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                    }`}
-                  >
-                    Yearly
-                  </button>
-                  <button
-                    onClick={() => setReportViewMode('overall')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                      reportViewMode === 'overall'
-                        ? 'bg-blue-500/80 text-white'
-                        : theme === 'dark'
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                    }`}
-                  >
-                    Overall
-                  </button>
+            {/* Reports Section */}
+            <div className="mt-20 pt-20 border-t-2 border-slate-500/10">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 mb-12">
+                <h3 className={`text-3xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-6`}>
+                  <div className="p-4 bg-amber-500/10 rounded-2xl border-2 border-amber-500/20 shadow-lg shadow-amber-500/5">
+                    <FileText className="w-8 h-8 text-amber-500" strokeWidth={3} />
+                  </div>
+                  Financial Reports
+                </h3>
+                
+                <div className={`p-2 rounded-[1.5rem] ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100'} border-2 border-slate-500/10 flex gap-2 w-fit shadow-inner`}>
+                  {['monthly', 'yearly', 'overall'].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setReportViewMode(mode)}
+                      className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 ${
+                        reportViewMode === mode
+                          ? 'bg-amber-500 text-white shadow-xl shadow-amber-500/30 scale-105'
+                          : `${theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/30' : 'text-slate-400 hover:text-slate-600 hover:bg-white'}`
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <button
                   onClick={() => handleDownloadProfileReport('pdf')}
-                  className={`${theme === 'dark' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'} rounded-lg px-4 py-2 font-medium transition-all`}
+                  className={`flex items-center justify-between p-8 rounded-[2rem] border-2 transition-all duration-500 group shadow-lg active:scale-[0.98] ${
+                    theme === 'dark' 
+                      ? 'bg-slate-800/30 border-slate-700/50 hover:border-amber-500/50 hover:bg-slate-800 shadow-black/20' 
+                      : 'bg-white border-slate-100 hover:border-amber-500/50 hover:bg-slate-50 shadow-slate-200/50'
+                  }`}
                 >
-                  Download PDF Report
+                  <div className="flex items-center gap-6">
+                    <div className={`p-4 rounded-2xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-amber-500' : 'bg-slate-50 text-slate-500 group-hover:bg-white group-hover:text-amber-500'} border-2 border-transparent group-hover:border-amber-500/20`}>
+                      <FileText className="w-8 h-8 transition-transform group-hover:scale-110" />
+                    </div>
+                    <div className="text-left">
+                      <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Download</p>
+                      <p className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors`}>PDF Report</p>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800 text-slate-500 group-hover:bg-amber-500 group-hover:text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-amber-500 group-hover:text-white'}`}>
+                    <Upload className="w-6 h-6 rotate-180 transition-transform group-hover:scale-110" />
+                  </div>
                 </button>
+
                 <button
                   onClick={() => handleDownloadProfileReport('csv')}
-                  className={`${theme === 'dark' ? 'bg-slate-700/60 text-slate-200 hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'} rounded-lg px-4 py-2 font-medium transition-all`}
+                  className={`flex items-center justify-between p-8 rounded-[2rem] border-2 transition-all duration-500 group shadow-lg active:scale-[0.98] ${
+                    theme === 'dark' 
+                      ? 'bg-slate-800/30 border-slate-700/50 hover:border-amber-500/50 hover:bg-slate-800 shadow-black/20' 
+                      : 'bg-white border-slate-100 hover:border-amber-500/50 hover:bg-slate-50 shadow-slate-200/50'
+                  }`}
                 >
-                  Download CSV
+                  <div className="flex items-center gap-6">
+                    <div className={`p-4 rounded-2xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-amber-500' : 'bg-slate-50 text-slate-500 group-hover:bg-white group-hover:text-amber-500'} border-2 border-transparent group-hover:border-amber-500/20`}>
+                      <FileText className="w-8 h-8 transition-transform group-hover:scale-110" />
+                    </div>
+                    <div className="text-left">
+                      <p className={`text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Download</p>
+                      <p className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors`}>CSV Export</p>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800 text-slate-500 group-hover:bg-amber-500 group-hover:text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-amber-500 group-hover:text-white'}`}>
+                    <Upload className="w-6 h-6 rotate-180 transition-transform group-hover:scale-110" />
+                  </div>
                 </button>
               </div>
             </div>
