@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
-import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
+import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils.jsx';
 
 export const CustomTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {

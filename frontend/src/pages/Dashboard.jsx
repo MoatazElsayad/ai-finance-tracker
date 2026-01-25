@@ -12,7 +12,7 @@ import {
   generateReport 
 } from '../api';
 import { useTheme } from '../context/ThemeContext';
-import { CHART_COLORS } from './DashboardUtils';
+import { CHART_COLORS } from './DashboardUtils.jsx';
 import {
   SectionHeaderAndSummary,
   ReportsSection,
