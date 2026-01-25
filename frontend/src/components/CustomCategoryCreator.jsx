@@ -135,44 +135,44 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       
       {/* Modal */}
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in zoom-in duration-300">
-        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-sm shadow-2xl`}>
+        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-md shadow-2xl`}>
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                <Sparkles className="w-5 h-5 text-amber-500" />
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                <Sparkles className="w-6 h-6 text-amber-500" />
               </div>
               <div>
-                <h2 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   New {type === 'expense' ? 'Expense' : 'Income'} Category
                 </h2>
-                <p className={`text-[8px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   AI-Powered Suggestions
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className={`p-1.5 rounded-xl transition-all ${
+              className={`p-2 rounded-xl transition-all ${
                 isDark ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'
               }`}
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] font-black uppercase tracking-[0.2em] animate-in shake">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-black uppercase tracking-[0.2em] animate-in shake">
                 {error}
               </div>
             )}
 
             {/* Category Name */}
             <div>
-              <label className={`block text-[10px] font-black uppercase tracking-[0.2em] ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-3`}>
+              <label className={`block text-xs font-black uppercase tracking-[0.2em] ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-4`}>
                 Category Name
               </label>
               <input
@@ -180,44 +180,44 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Coffee, Freelance Project"
-                className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} !py-3`}
+                className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'}`}
                 disabled={loading}
               />
             </div>
 
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-6">
               <div className="flex-1">
-                <label className={`block text-[9px] font-black uppercase tracking-[0.2em] mb-2.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   Smart Icon
                 </label>
                 <div
-                  className={`w-20 h-20 rounded-2xl border-2 flex items-center justify-center text-3xl shadow-sm transition-all duration-500 ${
+                  className={`w-24 h-24 rounded-3xl border-2 flex items-center justify-center text-4xl shadow-sm transition-all duration-500 ${
                     icon
                       ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/5'
                       : isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   {suggesting ? (
-                    <RefreshCw className="w-6 h-6 text-amber-500 animate-spin" />
+                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
                   ) : (
                     <span className="animate-in zoom-in duration-300">{icon || '🔖'}</span>
                   )}
                 </div>
               </div>
               <div className="flex-1">
-                <p className={`text-[9px] font-bold leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className={`text-[10px] font-bold leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   AI will automatically suggest an icon based on your category name.
                 </p>
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-3">
+            <div className="flex gap-4 pt-4">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className={`flex-1 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all ${
+                className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all ${
                   isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
@@ -226,10 +226,10 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
               <button
                 type="submit"
                 disabled={loading || !name.trim() || !icon}
-                className="btn-primary-unified flex-1 !text-[10px] uppercase tracking-[0.2em] !py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary-unified flex-1 text-xs uppercase tracking-[0.2em] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-5 h-5 animate-spin" />
                 ) : (
                   'Create'
                 )}

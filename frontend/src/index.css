@@ -42,9 +42,9 @@ body {
   --brand-amber: #f59e0b;
   --brand-amber-hover: #d97706;
   --brand-amber-glow: rgba(245, 158, 11, 0.2);
-  --radius-card: 1.5rem;
-  --radius-button: 0.75rem;
-  --radius-input: 0.75rem;
+  --radius-card: 2.5rem;
+  --radius-button: 1.5rem;
+  --radius-input: 1.25rem;
 }
 
 /* Light Mode Theme */
@@ -68,7 +68,7 @@ body {
 
 @layer utilities {
   .card-unified {
-    @apply p-5 rounded-[1.5rem] transition-all border-2 duration-500 overflow-hidden relative;
+    @apply p-8 rounded-[2.5rem] transition-all border-2 duration-500 overflow-hidden relative;
   }
   
   .card-unified-dark {
@@ -78,13 +78,23 @@ body {
   .card-unified-light {
     @apply bg-white border-slate-100 shadow-xl hover:shadow-2xl hover:border-amber-500/30;
   }
-  
+
+  /* index.css – correct @apply syntax */
   .btn-primary-unified {
-    @apply flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg font-bold transition-all shadow-xl shadow-amber-500/25 active:scale-95 hover:shadow-amber-500/40;
+    @apply 
+      group flex items-center justify-center gap-2
+      bg-amber-500 hover:bg-amber-600
+      text-white
+      px-8 py-4
+      rounded-2xl
+      font-bold
+      shadow-lg shadow-amber-500/20
+      transition-all duration-300
+      active:scale-95;
   }
   
   .input-unified {
-    @apply w-full p-3.5 rounded-lg border-2 transition-all outline-none font-bold text-sm focus:ring-8 focus:ring-amber-500/10;
+    @apply w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold text-lg focus:ring-8 focus:ring-amber-500/10;
   }
   
   .input-unified-dark {
@@ -96,7 +106,7 @@ body {
   }
 
   .text-header-unified {
-    @apply text-2xl md:text-3xl font-black tracking-tight;
+    @apply text-4xl md:text-5xl font-black tracking-tight;
   }
 }
 

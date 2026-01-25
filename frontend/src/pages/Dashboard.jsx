@@ -576,11 +576,11 @@ function Dashboard() {
     return (
       <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'} transition-colors duration-500`}>
         <div className="text-center animate-in fade-in duration-700">
-          <div className="relative mb-5">
-            <div className="w-12 h-12 rounded-[1.25rem] border-4 border-slate-200/10 dark:border-slate-700/30 mx-auto"></div>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-[1.25rem] border-4 border-amber-500 border-t-transparent animate-spin duration-[1.5s]"></div>
+          <div className="relative mb-6">
+            <div className="w-20 h-20 rounded-[2rem] border-4 border-slate-200/10 dark:border-slate-700/30 mx-auto"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-20 rounded-[2rem] border-4 border-amber-500 border-t-transparent animate-spin duration-[1.5s]"></div>
           </div>
-          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm font-bold tracking-tight`}>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg font-bold tracking-tight`}>
             Loading financial <span className="text-amber-500">intelligence...</span>
           </p>
         </div>

@@ -30,10 +30,10 @@ function UserAvatar({ user, size = "w-10 h-10", showName = false }) {
       />
       {showName && (
         <div className="flex flex-col">
-          <span className={`font-black text-[9px] uppercase tracking-[0.2em] ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <span className={`font-black text-[10px] uppercase tracking-[0.2em] ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user?.username}
           </span>
-          <span className={`text-[8px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'} tracking-tight`}>{user?.email}</span>
+          <span className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'} tracking-tight`}>{user?.email}</span>
         </div>
       )}
     </div>

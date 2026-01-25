@@ -72,23 +72,23 @@ function Sidebar({ user }) {
             ? 'bg-[#0a0e27] border-slate-800 shadow-[20px_0_40px_-15px_rgba(0,0,0,0.5)]'
             : 'bg-white border-slate-200 shadow-[20px_0_40px_-15px_rgba(0,0,0,0.05)]'
         } border-r flex flex-col ${
-          isCollapsed ? 'w-20' : 'w-64'
+          isCollapsed ? 'w-24' : 'w-72'
         }`}
       >
         {/* Header with Collapse Button */}
         <div
-          className={`h-16 flex items-center px-5 border-b ${
+          className={`h-20 flex items-center px-6 border-b ${
             isDark ? 'border-slate-800' : 'border-slate-100'
           }`}
         >
-          <div className="flex items-center gap-2.5 flex-1">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+          <div className="flex items-center gap-3 flex-1">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
               isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-100'
             }`}>
-              <Target className="w-4.5 h-4.5 text-amber-500" />
+              <Target className="w-5 h-5 text-amber-500" />
             </div>
             {!isCollapsed && (
-              <span className={`font-black text-base tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <span className={`font-black text-lg tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 FINANCE<span className="text-amber-500">FT</span>
               </span>
             )}
@@ -96,28 +96,28 @@ function Sidebar({ user }) {
           
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-1.5 rounded-xl transition-all duration-300 hidden md:block ${
+            className={`p-2 rounded-xl transition-all duration-300 hidden md:block ${
               isDark
                 ? 'hover:bg-slate-800 text-slate-500 hover:text-amber-400'
                 : 'hover:bg-slate-50 text-slate-400 hover:text-amber-600'
             }`}
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </button>
         </div>
 
         {/* User Profile Section */}
         {!isCollapsed && (
-          <div className={`p-6 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} group cursor-pointer`}>
-            <div className="relative mx-auto w-20 h-20 mb-3">
+          <div className={`p-8 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} group cursor-pointer`}>
+            <div className="relative mx-auto w-24 h-24 mb-4">
               <div className="absolute inset-0 bg-amber-500 blur-[20px] opacity-20 group-hover:opacity-40 transition-opacity" />
-              {user && <UserAvatar user={user} size="w-20 h-20 ring-4 ring-amber-500/10" />}
+              {user && <UserAvatar user={user} size="w-24 h-24 ring-4 ring-amber-500/10" />}
             </div>
             <div className="text-center">
-              <p className={`font-black text-base tracking-tight leading-none mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <p className={`font-black text-lg tracking-tight leading-none mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {getUserName()}
               </p>
-              <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 {user?.email?.split('@')[0]}
               </p>
             </div>
@@ -126,13 +126,13 @@ function Sidebar({ user }) {
 
         {/* Collapsed User Avatar */}
         {isCollapsed && user && (
-          <div className={`p-5 flex justify-center border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-            <UserAvatar user={user} size="w-10 h-10 ring-2 ring-amber-500/10" />
+          <div className={`p-6 flex justify-center border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+            <UserAvatar user={user} size="w-12 h-12 ring-2 ring-amber-500/10" />
           </div>
         )}
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -141,7 +141,7 @@ function Sidebar({ user }) {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 group ${
+                className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group ${
                   active
                     ? 'bg-amber-500 shadow-lg shadow-amber-500/20 text-white'
                     : isDark
@@ -149,18 +149,18 @@ function Sidebar({ user }) {
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-transform duration-300 ${
+                <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${
                   active ? 'scale-110' : 'group-hover:scale-110'
                 }`} />
                 {!isCollapsed && (
-                  <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${
+                  <span className={`text-sm font-black uppercase tracking-[0.2em] ${
                     active ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'
                   }`}>
                     {item.label}
                   </span>
                 )}
                 {active && !isCollapsed && (
-                  <div className="ml-auto w-1 h-1 rounded-full bg-white shadow-[0_0_10px_white]" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_white]" />
                 )}
               </Link>
             );
@@ -168,33 +168,33 @@ function Sidebar({ user }) {
         </nav>
 
         {/* Footer Actions */}
-        <div className={`p-5 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} space-y-2.5`}>
+        <div className={`p-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} space-y-3`}>
           <button
             onClick={toggleTheme}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 group ${
+            className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group ${
               isDark
                 ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-amber-400'
                 : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-amber-600'
             }`}
           >
             {isDark ? (
-              <Sun className="w-4.5 h-4.5 flex-shrink-0 group-hover:rotate-90 transition-transform duration-500" />
+              <Sun className="w-5 h-5 flex-shrink-0 group-hover:rotate-90 transition-transform duration-500" />
             ) : (
-              <Moon className="w-4.5 h-4.5 flex-shrink-0 group-hover:-rotate-12 transition-transform duration-500" />
+              <Moon className="w-5 h-5 flex-shrink-0 group-hover:-rotate-12 transition-transform duration-500" />
             )}
-            {!isCollapsed && <span className="text-[11px] font-black uppercase tracking-[0.2em]">Theme</span>}
+            {!isCollapsed && <span className="text-sm font-black uppercase tracking-[0.2em]">Theme</span>}
           </button>
 
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 group ${
+            className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group ${
               isDark
                 ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
                 : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
             }`}
           >
-            <LogOut className="w-4.5 h-4.5 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
-            {!isCollapsed && <span className="text-[11px] font-black uppercase tracking-[0.2em]">Logout</span>}
+            <LogOut className="w-5 h-5 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+            {!isCollapsed && <span className="text-sm font-black uppercase tracking-[0.2em]">Logout</span>}
           </button>
         </div>
       </aside>

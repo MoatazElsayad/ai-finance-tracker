@@ -131,76 +131,76 @@ const Goals = () => {
   };
 
   return (
-    <div className={`p-3 md:p-5 min-h-screen transition-colors duration-500 ${
+    <div className={`p-4 md:p-8 min-h-screen transition-colors duration-300 ${
       isDark ? 'text-white bg-[#0a0e27]' : 'text-slate-900 bg-slate-50'
     }`}>
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-5 gap-3 animate-in fade-in duration-700">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2">
-              <div className="p-1.5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl shadow-xl shadow-amber-500/20">
-                <Target className="w-5 h-5 text-white" />
+            <h1 className="text-4xl md:text-5xl font-black flex items-center gap-4 tracking-tight">
+              <div className="p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-xl shadow-amber-500/20">
+                <Target className="w-8 h-8 text-white" />
               </div>
               Savings Goals
             </h1>
-            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-1 text-[11px] font-medium`}>
+            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium`}>
               Track long-term savings targets. Income increases progress, expenses decrease it.
             </p>
           </div>
           
           <button
             onClick={() => handleOpenModal()}
-            className="btn-primary-unified group !px-4 !py-2 !text-xs"
+            className="group flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-amber-500/25 active:scale-95 hover:shadow-amber-500/40"
           >
-            <Plus className="w-3.5 h-3.5 transition-transform group-hover:rotate-90" />
+            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
             Add New Goal
           </button>
         </div>
 
         {/* Content Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map(i => <GoalSkeleton key={i} isDark={isDark} />)}
           </div>
         ) : error ? (
-          <div className={`p-6 rounded-[1.5rem] text-center border ${
+          <div className={`p-16 rounded-[2.5rem] text-center border ${
             isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-white border-slate-200 shadow-2xl'
           }`}>
-            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <AlertCircle className="w-6 h-6 text-red-500" />
+            <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-12 h-12 text-red-500" />
             </div>
-            <h3 className="text-lg font-bold mb-1.5">Something went wrong</h3>
-            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mb-4 text-sm`}>{error}</p>
+            <h3 className="text-3xl font-bold mb-3">Something went wrong</h3>
+            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mb-10 text-lg`}>{error}</p>
             <button 
               onClick={fetchData}
-              className="px-5 py-2.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-all font-bold shadow-lg shadow-amber-500/20 text-xs"
+              className="px-10 py-4 bg-amber-500 text-white rounded-2xl hover:bg-amber-600 transition-all font-bold shadow-lg shadow-amber-500/20"
             >
               Retry Connection
             </button>
           </div>
         ) : goals.length === 0 ? (
-          <div className={`p-6 rounded-[1.5rem] text-center border-2 border-dashed ${
+          <div className={`p-20 rounded-[3rem] text-center border-2 border-dashed ${
             isDark ? 'bg-slate-800/20 border-slate-700' : 'bg-white border-slate-200'
           }`}>
-            <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <Target className="w-6 h-6 text-amber-500" />
+            <div className="w-32 h-32 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-10 animate-pulse">
+              <Target className="w-16 h-16 text-amber-500" />
             </div>
-            <h2 className="text-lg font-black mb-2">No savings goals yet</h2>
-            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mb-4 max-w-xl mx-auto text-xs leading-relaxed`}>
+            <h2 className="text-4xl font-black mb-6">No savings goals yet</h2>
+            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mb-12 max-w-xl mx-auto text-xl leading-relaxed`}>
               Connect multiple categories to track your net savings. 
               Salary adds to your goal, while coffee runs take away!
             </p>
             <button
               onClick={() => handleOpenModal()}
-              className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-xl font-black text-[10px] transition-all shadow-2xl shadow-amber-500/40 flex items-center gap-2 mx-auto active:scale-95 uppercase tracking-wider"
+              className="bg-amber-500 hover:bg-amber-600 text-white px-12 py-5 rounded-[2rem] font-black text-lg transition-all shadow-2xl shadow-amber-500/40 flex items-center gap-3 mx-auto active:scale-95"
             >
               Launch My First Goal
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-6 h-6" />
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {goals.map(goal => (
               <GoalCard 
                 key={goal.id} 
@@ -262,7 +262,7 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
       style: 'currency',
       currency: 'EGP',
       maximumFractionDigits: 0
-    }).replace('EGP', '£');
+    });
   };
 
   // Get linked categories for display
@@ -276,7 +276,7 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
   }, [isCompleted]);
 
   return (
-    <div className={`p-4 rounded-2xl transition-all border-2 duration-500 group relative overflow-hidden ${
+    <div className={`p-8 rounded-[2.5rem] transition-all border-2 duration-500 group relative overflow-hidden ${
       isDark 
         ? 'bg-slate-800/40 border-slate-700 hover:border-amber-500/50 hover:bg-slate-800/60' 
         : 'bg-white border-slate-100 shadow-xl hover:shadow-2xl hover:border-amber-500/30'
@@ -284,60 +284,60 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
       
       {/* Achievement Overlay */}
       {isCompleted && (
-        <div className="absolute top-0 right-0 p-3">
-          <div className="bg-green-500 text-white p-1 rounded-lg shadow-lg animate-bounce">
-            <Trophy className="w-3.5 h-3.5" />
+        <div className="absolute top-0 right-0 p-4">
+          <div className="bg-green-500 text-white p-2 rounded-xl shadow-lg animate-bounce">
+            <Trophy className="w-5 h-5" />
           </div>
         </div>
       )}
 
       {/* Background Glow */}
-      <div className={`absolute -right-20 -top-20 w-48 h-48 rounded-full blur-[60px] opacity-10 transition-colors duration-500 ${
+      <div className={`absolute -right-20 -top-20 w-64 h-64 rounded-full blur-[80px] opacity-10 transition-colors duration-500 ${
         isCompleted ? 'bg-green-500' : isOnTrack ? 'bg-amber-500' : 'bg-red-500'
       }`} />
 
       {/* Hover Actions */}
-      <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10">
+      <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10">
         <button 
           onClick={onEdit} 
-          className={`p-1.5 rounded-xl backdrop-blur-md shadow-lg transition-all ${
+          className={`p-3 rounded-2xl backdrop-blur-md shadow-lg transition-all ${
             isDark ? 'bg-slate-700/80 hover:bg-amber-500 text-white' : 'bg-white/80 hover:bg-amber-500 hover:text-white border border-slate-100'
           }`}
         >
-          <Pencil className="w-3 h-3" />
+          <Pencil className="w-4 h-4" />
         </button>
         <button 
           onClick={onDelete} 
-          className={`p-1.5 rounded-xl backdrop-blur-md shadow-lg transition-all ${
+          className={`p-3 rounded-2xl backdrop-blur-md shadow-lg transition-all ${
             isDark ? 'bg-slate-700/80 hover:bg-red-500 text-white' : 'bg-white/80 hover:bg-red-500 hover:text-white border border-slate-100'
           }`}
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
       <div className="relative z-1">
-        <div className="mb-3">
-          <h3 className="text-base font-black truncate pr-14 tracking-tight group-hover:text-amber-500 transition-colors">
+        <div className="mb-8">
+          <h3 className="text-2xl font-black truncate pr-16 tracking-tight group-hover:text-amber-500 transition-colors">
             {goal.name}
           </h3>
-          <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold opacity-50">
-            <Calendar className="w-3 h-3" />
+          <div className="flex items-center gap-2 mt-2 text-sm font-bold opacity-50">
+            <Calendar className="w-4 h-4" />
             {new Date(goal.target_date).toLocaleDateString('en-EG', { 
-              month: 'short', 
+              month: 'long', 
               year: 'numeric' 
             })}
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-20 h-20 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
+        <div className="flex items-center gap-10 mb-8">
+          <div className="w-32 h-32 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
             <CircularProgressbar
               value={displayProgress}
               text={`${actualProgress}%`}
               strokeWidth={12}
               styles={buildStyles({
-                textSize: '24px',
+                textSize: '22px',
                 pathColor: isCompleted ? '#22c55e' : actualProgress > 75 ? '#fbbf24' : '#f59e0b',
                 textColor: isDark ? '#fff' : '#0f172a',
                 trailColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9',
@@ -347,25 +347,25 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
             />
           </div>
           
-          <div className="flex-1 space-y-1.5">
+          <div className="flex-1 space-y-4">
             <div>
-              <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40 mb-0.5">Current Balance</p>
-              <p className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Current Balance</p>
+              <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {formatCurrency(goal.current_amount)}
               </p>
             </div>
-            <div className="pt-1.5 border-t border-slate-500/10">
-              <p className="text-[9px] font-bold opacity-40 uppercase tracking-[0.2em] mb-0.5">Target Amount</p>
-              <p className="text-xs font-black text-amber-500">
+            <div className="pt-4 border-t border-slate-500/10">
+              <p className="text-xs font-bold opacity-40 uppercase tracking-[0.2em] mb-1">Target Amount</p>
+              <p className="text-lg font-black text-amber-500">
                 {formatCurrency(goal.target_amount)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[8px] font-black tracking-[0.2em] uppercase shadow-sm ${
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-[0.2em] uppercase shadow-sm ${
               actualProgress >= 120 
                 ? 'bg-purple-500/15 text-purple-500'
                 : isCompleted 
@@ -375,22 +375,22 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
                     : 'bg-red-500/15 text-red-500'
             }`}>
               {actualProgress >= 120 ? (
-                <><PartyPopper className="w-2.5 h-2.5" /> Overachieved!</>
+                <><PartyPopper className="w-3.5 h-3.5" /> Overachieved!</>
               ) : isCompleted ? (
-                <><CheckCircle2 className="w-2.5 h-2.5" /> Achieved!</>
+                <><CheckCircle2 className="w-3.5 h-3.5" /> Goal Achieved!</>
               ) : isOnTrack ? (
-                <><TrendingUp className="w-2.5 h-2.5" /> On Track</>
+                <><TrendingUp className="w-3.5 h-3.5" /> On Track</>
               ) : (
-                <><TrendingDown className="w-2.5 h-2.5" /> Behind</>
+                <><TrendingDown className="w-3.5 h-3.5" /> Behind Schedule</>
               )}
             </div>
 
-            <div className="flex -space-x-1.5">
+            <div className="flex -space-x-2">
               {linkedCategories.slice(0, 3).map((cat, idx) => (
                 <div 
                   key={cat.id} 
                   title={cat.name}
-                  className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] bg-white dark:bg-slate-700 shadow-sm ${
+                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs bg-white dark:bg-slate-700 shadow-sm ${
                     isDark ? 'border-slate-800' : 'border-white'
                   }`}
                   style={{ zIndex: 10 - idx }}
@@ -399,7 +399,7 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
                 </div>
               ))}
               {linkedCategories.length > 3 && (
-                <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-[8px] font-bold bg-slate-100 dark:bg-slate-600 ${
+                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold bg-slate-100 dark:bg-slate-600 ${
                   isDark ? 'border-slate-800 text-slate-400' : 'border-white text-slate-500'
                 }`} style={{ zIndex: 0 }}>
                   +{linkedCategories.length - 3}
@@ -409,11 +409,11 @@ const GoalCard = ({ goal, categories, isDark, onEdit, onDelete, onComplete }) =>
           </div>
 
           {hasExpenses && (
-            <div className={`p-2.5 rounded-xl flex items-start gap-1.5 text-[9px] font-medium leading-relaxed border ${
+            <div className={`p-4 rounded-2xl flex items-start gap-3 text-[11px] font-medium leading-relaxed border ${
               isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'
             }`}>
-              <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
-              <p>Income adds progress, expenses in linked categories subtract.</p>
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>Hybrid Goal: Income adds progress, while expenses in linked categories subtract from it.</p>
             </div>
           )}
         </div>
@@ -493,129 +493,168 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
       
-      <div className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-10 duration-500 max-h-[90vh] flex flex-col ${
+      <div className={`relative w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-10 duration-500 max-h-[90vh] flex flex-col ${
         isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'
       }`}>
-        <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-500/10 shrink-0">
+        <div className="flex items-center justify-between p-8 md:p-10 border-b border-slate-500/10 shrink-0">
           <div>
-            <h2 className="text-base font-black tracking-tight">{goal ? 'Edit Savings Goal' : 'New Savings Goal'}</h2>
-            <p className="text-slate-500 font-bold mt-0.5 uppercase text-[9px] tracking-[0.2em]">Connect multiple categories to track progress</p>
+            <h2 className="text-3xl font-black tracking-tight">{goal ? 'Edit Savings Goal' : 'New Savings Goal'}</h2>
+            <p className="text-slate-500 font-bold mt-1 uppercase text-xs tracking-[0.2em]">Connect multiple categories to track progress</p>
           </div>
-          <button onClick={onClose} className={`p-1.5 rounded-xl transition-all ${
+          <button onClick={onClose} className={`p-4 rounded-2xl transition-all ${
             isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100'
           }`}>
-            <X className="w-3.5 h-3.5" />
+            <X className="w-7 h-7" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-3 md:p-4 space-y-2.5 overflow-y-auto custom-scrollbar">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Goal Name</label>
+        <form onSubmit={handleSubmit(onSubmit)} className="p-8 md:p-10 space-y-8 overflow-y-auto custom-scrollbar">
+          <div className="space-y-3">
+            <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Goal Name</label>
             <input
               {...register('name')}
               placeholder="e.g. Master's in Cairo, New Laptop, Travel Fund"
-              className={`w-full p-2.5 rounded-xl border-2 transition-all outline-none font-bold text-[11px] focus:ring-8 focus:ring-amber-500/10 ${
+              className={`w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold text-lg focus:ring-8 focus:ring-amber-500/10 ${
                 isDark 
                   ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                   : 'bg-slate-50 border-slate-200 focus:border-amber-500'
               } ${errors.name ? 'border-red-500' : ''}`}
             />
-            {errors.name && <p className="text-red-500 text-[9px] ml-2 font-bold">{errors.name.message}</p>}
+            {errors.name && <p className="text-red-500 text-xs ml-2 font-bold">{errors.name.message}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Amount (EGP)</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Amount (EGP)</label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-amber-500 text-xs">£</span>
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-amber-500">£</span>
                 <input
                   type="number"
                   {...register('target_amount', { valueAsNumber: true })}
-                  className={`w-full p-2.5 pl-6.5 rounded-xl border-2 transition-all outline-none font-black text-xs ${
+                  className={`w-full p-6 pl-12 rounded-[1.5rem] border-2 transition-all outline-none font-black text-xl ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                       : 'bg-slate-50 border-slate-200 focus:border-amber-500'
-                  } ${errors.target_amount ? 'border-red-500' : ''}`}
+                  }`}
                 />
               </div>
-              {errors.target_amount && <p className="text-red-500 text-[9px] ml-2 font-bold">{errors.target_amount.message}</p>}
+              {errors.target_amount && <p className="text-red-500 text-xs ml-2 font-bold">{errors.target_amount.message}</p>}
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Date</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Starting Balance</label>
               <div className="relative">
-                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-400">£</span>
                 <input
-                  type="date"
-                  {...register('target_date')}
-                  className={`w-full p-2.5 pl-8 rounded-xl border-2 transition-all outline-none font-bold text-[11px] ${
+                  type="number"
+                  {...register('current_amount', { valueAsNumber: true })}
+                  className={`w-full p-6 pl-12 rounded-[1.5rem] border-2 transition-all outline-none font-black text-xl ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                       : 'bg-slate-50 border-slate-200 focus:border-amber-500'
-                  } ${errors.target_date ? 'border-red-500' : ''}`}
+                  }`}
                 />
               </div>
-              {errors.target_date && <p className="text-red-500 text-[9px] ml-2 font-bold">{errors.target_date.message}</p>}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Link Categories</label>
+          <div className="space-y-3">
+            <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Date</label>
+            <input
+              type="date"
+              {...register('target_date')}
+              className={`w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold ${
+                isDark 
+                  ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
+                  : 'bg-slate-50 border-slate-200 focus:border-amber-500'
+              } ${errors.target_date ? 'border-red-500' : ''}`}
+            />
+            {errors.target_date && <p className="text-red-500 text-xs ml-2 font-bold">{errors.target_date.message}</p>}
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between ml-2">
+              <label className="text-xs font-black uppercase tracking-[0.2em] opacity-50">Link Categories</label>
+              <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500/10 text-amber-500 uppercase tracking-tighter">
+                {selectedCategoryIds.length} Selected
+              </span>
+            </div>
+            
+            <div className={`p-6 rounded-[2rem] border-2 space-y-4 ${
+              isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'
+            }`}>
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
                 <input 
                   type="text"
-                  placeholder="Filter..."
+                  placeholder="Search categories..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`pl-7 pr-3 py-0.5 rounded-lg text-[8px] font-bold outline-none border ${
-                    isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  className={`w-full p-4 pl-12 rounded-xl border outline-none text-sm transition-all ${
+                    isDark ? 'bg-slate-900 border-slate-700 focus:border-amber-500' : 'bg-white border-slate-200 focus:border-amber-500'
                   }`}
                 />
               </div>
-            </div>
 
-            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 p-1.5 rounded-xl max-h-[120px] overflow-y-auto custom-scrollbar border ${
-              isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'
-            }`}>
-              {filteredCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => toggleCategory(cat.id)}
-                  className={`flex items-center gap-1.5 p-1.5 rounded-lg border-2 transition-all text-left group ${
-                    selectedCategoryIds.includes(cat.id)
-                      ? 'border-amber-500 bg-amber-500/10'
-                      : isDark ? 'border-slate-800 bg-slate-800/50 hover:border-slate-700' : 'border-white bg-white hover:border-slate-200 shadow-sm'
-                  }`}
-                >
-                  <span className="text-[11px]">{cat.icon || '📁'}</span>
-                  <div className="min-w-0">
-                    <p className={`text-[8px] font-black truncate ${selectedCategoryIds.includes(cat.id) ? 'text-amber-500' : ''}`}>
-                      {cat.name}
-                    </p>
-                    <p className="text-[6px] font-bold opacity-40 uppercase tracking-tighter">{cat.type}</p>
-                  </div>
-                  {selectedCategoryIds.includes(cat.id) && (
-                    <Check className="w-2 h-2 text-amber-500 ml-auto shrink-0" />
-                  )}
-                </button>
-              ))}
+              <div className="grid grid-cols-2 gap-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredCategories.map(cat => {
+                  const isSelected = selectedCategoryIds.includes(cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => toggleCategory(cat.id)}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                        isSelected 
+                          ? 'border-amber-500 bg-amber-500/10 shadow-sm' 
+                          : isDark ? 'border-slate-700 hover:border-slate-600' : 'border-white hover:border-slate-100'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
+                        isSelected ? 'bg-amber-500 text-white' : isDark ? 'bg-slate-800' : 'bg-white shadow-sm'
+                      }`}>
+                        {isSelected ? <Check className="w-5 h-5" /> : cat.icon || '📁'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate">{cat.name}</p>
+                        <p className={`text-[9px] font-bold uppercase tracking-tighter opacity-40 ${
+                          cat.type === 'income' ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {cat.type}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+            
+            {selectedCategoryIds.length > 0 && (
+              <div className={`p-4 rounded-2xl border flex items-start gap-3 text-[11px] font-medium leading-relaxed animate-in fade-in duration-300 ${
+                isDark ? 'bg-amber-500/5 border-amber-500/10 text-amber-500/80' : 'bg-amber-50 border-amber-100 text-amber-700'
+              }`}>
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  Income categories linked will INCREASE your goal progress. 
+                  Expense categories will DECREASE it. Your goal tracks net savings.
+                </p>
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2.5 bg-amber-500 text-white rounded-xl font-black text-xs shadow-2xl shadow-amber-500/30 hover:bg-amber-600 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 active:scale-95"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 text-white font-black py-6 rounded-[2rem] transition-all shadow-2xl shadow-amber-500/40 flex items-center justify-center gap-4 mt-4 active:scale-95 text-lg uppercase tracking-[0.2em] shrink-0"
           >
             {isSubmitting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-7 h-7 animate-spin" />
             ) : (
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <>
+                {goal ? 'Update My Goal' : 'Start My Journey'}
+                <Target className="w-6 h-6" />
+              </>
             )}
-            {goal ? 'Update My Goal' : 'Activate My Goal'}
           </button>
         </form>
       </div>
@@ -627,26 +666,26 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
  * GoalSkeleton - Pulse loader for goals
  */
 const GoalSkeleton = ({ isDark }) => (
-  <div className={`p-3.5 rounded-2xl border-2 animate-pulse ${
+  <div className={`p-8 rounded-[2.5rem] border-2 animate-pulse ${
     isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-white border-slate-100'
   }`}>
-    <div className="flex justify-between mb-3">
-      <div className="space-y-1.5 flex-1">
-        <div className={`h-4 w-3/4 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-        <div className={`h-2 w-1/2 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+    <div className="flex justify-between mb-8">
+      <div className="space-y-3 flex-1">
+        <div className={`h-8 w-3/4 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <div className={`h-4 w-1/2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
-      <div className={`w-7 h-7 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className={`w-12 h-12 rounded-2xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
     </div>
-    <div className="flex items-center gap-3 mb-3">
-      <div className={`w-16 h-16 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-      <div className="flex-1 space-y-2">
-        <div className={`h-6 w-full rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-        <div className={`h-4 w-2/3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+    <div className="flex items-center gap-8 mb-8">
+      <div className={`w-32 h-32 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className="flex-1 space-y-4">
+        <div className={`h-12 w-full rounded-2xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <div className={`h-8 w-2/3 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
     </div>
     <div className="flex justify-between">
-      <div className={`h-5 w-1/3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-      <div className={`h-5 w-1/4 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className={`h-10 w-1/3 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className={`h-10 w-1/4 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
     </div>
   </div>
 );

@@ -40,19 +40,19 @@ const CHART_COLORS = {
 const CustomTooltipComponent = (theme) => ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className={`${theme === 'dark' ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-200'} backdrop-blur-xl border-2 rounded-2xl p-3 shadow-2xl animate-in fade-in zoom-in duration-300`}>
-        <p className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-black mb-2 text-sm tracking-tight`}>{label}</p>
-        <div className="space-y-1.5">
+      <div className={`${theme === 'dark' ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-200'} backdrop-blur-xl border-2 rounded-3xl p-4 shadow-2xl animate-in fade-in zoom-in duration-300`}>
+        <p className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-black mb-3 text-base tracking-tight`}>{label}</p>
+        <div className="space-y-2">
           {payload.map((entry, index) => (
-            <div key={index} className="flex items-center justify-between gap-4">
+            <div key={index} className="flex items-center justify-between gap-6">
               <div className="flex items-center gap-2">
                 <div
-                  className="w-2.5 h-2.5 rounded-full shadow-sm"
+                  className="w-3 h-3 rounded-full shadow-sm"
                   style={{ backgroundColor: entry.color }}
                 ></div>
-                <span className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-xs font-bold`}>{entry.name}:</span>
+                <span className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm font-bold`}>{entry.name}:</span>
               </div>
-              <span className={`${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'} font-black text-xs`}>
+              <span className={`${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'} font-black text-sm`}>
                   £{typeof entry.value === 'number' ? entry.value.toLocaleString('en-GB', { maximumFractionDigits: 0 }) : entry.value}
                 </span>
             </div>
@@ -657,32 +657,32 @@ function BudgetPlanning() {
         )}
 
         {/* Section 1: Header and Overview */}
-        <section className="relative pt-16 pb-12 px-6">
+        <section className="relative pt-32 pb-20 px-6">
           <div className="max-w-[1400px] mx-auto w-full">
-            <div className="text-center mb-8 animate-in fade-in slide-in-from-top-10 duration-700">
-              <div className="flex flex-col items-center gap-4 mb-6">
-                <div className="p-4 bg-amber-500 rounded-3xl shadow-2xl shadow-amber-500/40 transform -rotate-6 hover:rotate-0 transition-all duration-500">
-                  <Target className="w-8 h-8 text-white" strokeWidth={2.5} />
+            <div className="text-center mb-20 animate-in fade-in slide-in-from-top-10 duration-700">
+              <div className="flex flex-col items-center gap-6 mb-8">
+                <div className="p-6 bg-amber-500 rounded-[2.5rem] shadow-2xl shadow-amber-500/40 transform -rotate-6 hover:rotate-0 transition-all duration-500">
+                  <Target className="w-12 h-12 text-white" strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h1 className={`text-3xl md:text-4xl font-black mb-2 tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  <h1 className={`text-header-unified mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                     Budget <span className="text-amber-500">Planning</span>
                   </h1>
-                  <p className={`text-base md:text-lg font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} max-w-2xl mx-auto tracking-tight`}>
+                  <p className={`text-xl md:text-2xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} max-w-2xl mx-auto tracking-tight`}>
                     Master your cash flow and hit your financial goals with AI-powered budgeting.
                   </p>
                 </div>
               </div>
 
               {/* View Mode Toggle & Date Selector */}
-              <div className="flex flex-wrap items-center justify-center gap-4">
+              <div className="flex flex-wrap items-center justify-center gap-6">
                 {/* View Mode Toggle */}
-                <div className={`flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-200'} backdrop-blur-xl rounded-2xl p-1.5 border-2 shadow-xl`}>
+                <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-200'} backdrop-blur-xl rounded-[2rem] p-2 border-2 shadow-xl`}>
                   {['monthly', 'yearly', 'overall'].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
-                      className={`px-5 py-2 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${
+                      className={`px-8 py-3 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 ${
                         viewMode === mode
                           ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105'
                           : theme === 'dark'
@@ -697,14 +697,14 @@ function BudgetPlanning() {
 
                 {/* Date Selector */}
                 {viewMode !== 'overall' && (
-                  <div className={`flex items-center justify-center gap-4 ${theme === 'dark' ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-200'} backdrop-blur-xl rounded-2xl px-5 py-1.5 border-2 shadow-xl`}>
+                  <div className={`flex items-center justify-center gap-6 ${theme === 'dark' ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-200'} backdrop-blur-xl rounded-[2rem] px-8 py-3 border-2 shadow-xl`}>
                     <button
                       onClick={() => viewMode === 'monthly' ? changeMonth(-1) : changeYear(-1)}
-                      className={`p-2 ${theme === 'dark' ? 'hover:bg-slate-700 text-amber-500' : 'hover:bg-slate-100 text-amber-600'} rounded-xl transition-all active:scale-90 shadow-sm`}
+                      className={`p-3 ${theme === 'dark' ? 'hover:bg-slate-700 text-amber-500' : 'hover:bg-slate-100 text-amber-600'} rounded-2xl transition-all active:scale-90 shadow-sm`}
                     >
-                      <span className="text-lg font-black">◀</span>
+                      <span className="text-xl font-black">◀</span>
                     </button>
-                    <span className={`text-base font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} min-w-[150px] text-center`}>
+                    <span className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} min-w-[180px] text-center`}>
                       {viewMode === 'monthly'
                         ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', {
                             month: 'long',
@@ -715,22 +715,22 @@ function BudgetPlanning() {
                     </span>
                     <button
                       onClick={() => viewMode === 'monthly' ? changeMonth(1) : changeYear(1)}
-                      className={`p-2 ${theme === 'dark' ? 'hover:bg-slate-700 text-amber-500' : 'hover:bg-slate-100 text-amber-600'} rounded-xl transition-all active:scale-90 shadow-sm`}
+                      className={`p-3 ${theme === 'dark' ? 'hover:bg-slate-700 text-amber-500' : 'hover:bg-slate-100 text-amber-600'} rounded-2xl transition-all active:scale-90 shadow-sm`}
                     >
-                      <span className="text-lg font-black">▶</span>
+                      <span className="text-xl font-black">▶</span>
                     </button>
                   </div>
                 )}
                 {viewMode === 'overall' && (
-                  <div className={`flex items-center justify-center gap-2 ${theme === 'dark' ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-200'} backdrop-blur-xl rounded-2xl px-6 py-2 border-2 shadow-xl`}>
-                    <span className={`text-lg font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>All Time Data</span>
+                  <div className={`flex items-center justify-center gap-3 ${theme === 'dark' ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white/80 border-slate-200'} backdrop-blur-xl rounded-[2rem] px-8 py-4 border-2 shadow-xl`}>
+                    <span className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>All Time Data</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Budget Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
               {[
                 { label: 'Total Budget', value: totalBudgeted, icon: Target, color: 'blue', desc: 'Monthly allocation' },
                 { label: 'Total Spent', value: totalActual, icon: DollarSign, color: 'rose', desc: 'This period' },
@@ -739,32 +739,32 @@ function BudgetPlanning() {
               ].map((card, i) => (
                 <div 
                   key={i}
-                  className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-5 group animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-hidden`}
+                  className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} group animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-hidden`}
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{card.label}</span>
-                    <div className={`w-10 h-10 bg-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-${card.color}-500/10`}>
-                      <card.icon className={`w-6 h-6 text-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500`} strokeWidth={2.5} />
+                  <div className="flex items-center justify-between mb-8">
+                    <span className={`text-sm font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{card.label}</span>
+                    <div className={`w-14 h-14 bg-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500/20 rounded-[1.25rem] flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-${card.color}-500/10`}>
+                      <card.icon className={`w-8 h-8 text-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500`} strokeWidth={2.5} />
                     </div>
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <p className={`text-2xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  <div className="flex flex-col gap-1">
+                    <p className={`text-4xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                       {card.isPercent ? `${card.value.toFixed(0)}%` : `£${card.value.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`}
                     </p>
-                    <p className={`text-[10px] font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{card.desc}</p>
+                    <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{card.desc}</p>
                   </div>
                   {/* Decorative background icon */}
-                  <card.icon className={`absolute -bottom-4 -right-4 w-24 h-24 text-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500/5 -rotate-12 group-hover:rotate-0 transition-all duration-700`} />
+                  <card.icon className={`absolute -bottom-6 -right-6 w-32 h-32 text-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500/5 -rotate-12 group-hover:rotate-0 transition-all duration-700`} />
                 </div>
               ))}
             </div>
 
             {/* AI Budget Insights - Smart Caching */}
-            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-6 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden`} style={{ animationDelay: '400ms' }}>
+            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden`} style={{ animationDelay: '400ms' }}>
               {/* Model Badge */}
               {budgetModelUsed && (
-                <div className="absolute top-4 right-4 z-10">
+                <div className="absolute top-8 right-8 z-10">
                   {(() => {
                     const modelInfo = getModelInfo(budgetModelUsed);
                     const colorMap = {
@@ -782,69 +782,69 @@ function BudgetPlanning() {
                     const colorClass = colorMap[modelInfo.color] || colorMap.amber;
 
                     return (
-                      <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-xl rounded-xl px-3 py-1.5 border-2 shadow-xl flex items-center gap-1.5 transform hover:scale-105 transition-transform duration-300`}>
+                      <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-xl rounded-2xl px-5 py-2.5 border-2 shadow-xl flex items-center gap-3 transform hover:scale-105 transition-transform duration-300`}>
                         {modelInfo.logo.startsWith('http') ? (
-                          <img src={modelInfo.logo} alt={modelInfo.name} className="w-3.5 h-3.5 object-contain rounded-lg" />
+                          <img src={modelInfo.logo} alt={modelInfo.name} className="w-5 h-5 object-contain rounded-lg" />
                         ) : (
-                          <span className="text-sm">{modelInfo.logo}</span>
+                          <span className="text-lg">{modelInfo.logo}</span>
                         )}
-                        <span className="font-black tracking-[0.1em] text-[9px] uppercase">{modelInfo.name}</span>
+                        <span className="font-black tracking-[0.2em] text-sm uppercase">{modelInfo.name}</span>
                       </div>
                     );
                   })()}
                 </div>
               )}
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 bg-amber-500/10 rounded-xl border-2 border-amber-500/20 shadow-inner">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="p-4 bg-amber-500/10 rounded-2xl border-2 border-amber-500/20 shadow-inner">
                   {budgetInsightsLoading && currentTryingBudgetModel ? (
                     (() => {
                       const modelInfo = getModelInfo(currentTryingBudgetModel);
                       return modelInfo.logo.startsWith('http') ? (
-                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-6 h-6 object-contain animate-pulse rounded-lg" />
+                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-8 h-8 object-contain animate-pulse rounded-lg" />
                       ) : (
-                        <span className="text-xl animate-pulse">{modelInfo.logo}</span>
+                        <span className="text-3xl animate-pulse">{modelInfo.logo}</span>
                       );
                     })()
                   ) : budgetInsightsLoading ? (
-                    <RefreshCw className="w-6 h-6 text-amber-500 animate-spin" />
+                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
                   ) : (
-                    <Bot className="w-6 h-6 text-amber-500" strokeWidth={2.5} />
+                    <Bot className="w-8 h-8 text-amber-500" strokeWidth={2.5} />
                   )}
                 </div>
-                <h3 className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Smart Insights</h3>
+                <h3 className={`text-3xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Smart Insights</h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                <div className="md:col-span-8 space-y-3 pr-8 border-r-2 border-slate-700/10">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
+                <div className="md:col-span-8 space-y-6 pr-10 border-r-2 border-slate-700/10">
                   {budgetInsightsLoading ? (
-                    <div className="space-y-3">
-                      <div className={`h-5 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-lg animate-pulse w-full`}></div>
-                      <div className={`h-5 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-lg animate-pulse w-5/6`}></div>
-                      <div className={`h-5 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-lg animate-pulse w-4/6`}></div>
+                    <div className="space-y-4">
+                      <div className={`h-6 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-[1rem] animate-pulse w-full`}></div>
+                      <div className={`h-6 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-[1rem] animate-pulse w-5/6`}></div>
+                      <div className={`h-6 ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-200/50'} rounded-[1rem] animate-pulse w-4/6`}></div>
                     </div>
                   ) : aiBudgetInsights ? (
                     aiBudgetInsights.split('\n\n').map((line, index) => (
                       <div 
                         key={index} 
-                        className={`text-sm font-bold leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} animate-in fade-in slide-in-from-left-5 duration-500`}
+                        className={`text-lg font-bold leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} animate-in fade-in slide-in-from-left-5 duration-500`}
                         style={{ animationDelay: `${index * 100}ms` }}
                         dangerouslySetInnerHTML={{ __html: line }}
                       />
                     ))
                   ) : (
-                    <p className={`text-base font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} italic`}>Waiting for financial data to analyze...</p>
+                    <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} italic`}>Waiting for financial data to analyze...</p>
                   )}
                 </div>
 
-                <div className="md:col-span-4 flex flex-col justify-center h-full gap-4">
-                  <div className={`p-4 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100/50'} border-2 border-amber-500/10 shadow-inner`}>
-                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Analysis Status</p>
+                <div className="md:col-span-4 flex flex-col justify-center h-full gap-6">
+                  <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100/50'} border-2 border-amber-500/10 shadow-inner`}>
+                    <p className={`text-sm font-black uppercase tracking-[0.2em] mb-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Analysis Status</p>
                     <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-2.5 h-2.5 rounded-full ${budgetInsightsLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-lg shadow-current/20`}></div>
-                      <span className="font-black text-base tracking-[0.1em] uppercase">{budgetInsightsLoading ? 'Analyzing...' : 'Ready'}</span>
+                      <div className={`w-3 h-3 rounded-full ${budgetInsightsLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-lg shadow-current/20`}></div>
+                      <span className="font-black text-lg tracking-[0.2em] uppercase">{budgetInsightsLoading ? 'Analyzing...' : 'Ready'}</span>
                     </div>
-                    <p className="text-xs font-bold text-slate-500 leading-tight">Your financial health is being monitored in real-time by AI models.</p>
+                    <p className="text-sm font-bold text-slate-500 leading-tight">Your financial health is being monitored in real-time by AI models.</p>
                   </div>
 
                   <button
@@ -853,10 +853,10 @@ function BudgetPlanning() {
                       generateBudgetInsights();
                     }}
                     disabled={budgetInsightsLoading}
-                    className={`btn-primary-unified w-full !rounded-[1.25rem] !py-4 shadow-2xl transition-all duration-500 ${budgetInsightsLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:-translate-y-1'}`}
+                    className={`btn-primary-unified w-full !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 ${budgetInsightsLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:-translate-y-1'}`}
                   >
-                    <RefreshCw className={`w-5 h-5 ${budgetInsightsLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'}`} strokeWidth={3} />
-                    <span className="uppercase tracking-[0.1em] text-xs">{budgetInsightsLoading ? 'RECALCULATING...' : 'REFRESH INSIGHTS'}</span>
+                    <RefreshCw className={`w-6 h-6 ${budgetInsightsLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'}`} strokeWidth={3} />
+                    <span className="uppercase tracking-[0.2em]">{budgetInsightsLoading ? 'RECALCULATING...' : 'REFRESH INSIGHTS'}</span>
                   </button>
                 </div>
               </div>
@@ -865,48 +865,48 @@ function BudgetPlanning() {
         </section>
 
         {/* Section 2: Budget vs Actual Analysis */}
-        <section className={`py-16 px-6 relative overflow-hidden ${theme === 'dark' ? 'bg-slate-900/40' : 'bg-white shadow-inner shadow-slate-100'}`}>
+        <section className={`py-32 px-6 relative overflow-hidden ${theme === 'dark' ? 'bg-slate-900/40' : 'bg-white shadow-inner shadow-slate-100'}`}>
           <div className="max-w-[1400px] mx-auto w-full">
-            <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
-              <h2 className={`text-3xl md:text-4xl font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center justify-center gap-4`}>
-                <div className="p-3 bg-amber-500 rounded-xl shadow-xl rotate-3">
-                  <Wallet className="w-8 h-8 text-white" strokeWidth={2.5} />
+            <div className="text-center mb-20 animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <h2 className={`text-header-unified mb-6 ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center justify-center gap-6`}>
+                <div className="p-4 bg-amber-500 rounded-2xl shadow-xl rotate-3">
+                  <Wallet className="w-10 h-10 text-white" strokeWidth={2.5} />
                 </div>
                 Budget <span className="text-amber-500">Analysis</span>
               </h2>
-              <p className={`text-lg md:text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} max-w-2xl mx-auto tracking-tight`}>
+              <p className={`text-xl md:text-2xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} max-w-2xl mx-auto tracking-tight`}>
                 Visualizing your spending patterns against your goals.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
               {/* Budget vs Actual Bar Chart */}
-              <div className={`lg:col-span-8 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-6 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Spending vs Limit</h3>
-                  <div className={`px-3 py-1.5 rounded-lg ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100/50'} border-2 border-slate-700/10 flex items-center gap-2`}>
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Real-time Data</span>
+              <div className={`lg:col-span-8 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
+                <div className="flex items-center justify-between mb-10">
+                  <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Spending vs Limit</h3>
+                  <div className={`px-4 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100/50'} border-2 border-slate-700/10 flex items-center gap-2`}>
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Real-time Data</span>
                   </div>
                 </div>
-                <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2 uppercase tracking-[0.2em]`}>
+                <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2 uppercase tracking-[0.2em]`}>
                   <span className="text-blue-400">📈</span>
                   Monthly Comparison
                 </h3>
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} opacity={0.3} vertical={false} />
                     <XAxis
                       dataKey="name"
                       stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
-                      fontSize={11}
+                      fontSize={12}
                       fontWeight="bold"
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
                       stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
-                      fontSize={11}
+                      fontSize={12}
                       fontWeight="bold"
                       tickLine={false}
                       axisLine={false}
@@ -916,7 +916,7 @@ function BudgetPlanning() {
                     <Legend
                       wrapperStyle={{
                         color: theme === 'dark' ? '#94a3b8' : '#475569',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         paddingTop: '20px',
                         fontWeight: 'bold'
                       }}
@@ -924,29 +924,29 @@ function BudgetPlanning() {
                     <Bar
                       dataKey="Budgeted"
                       fill={CHART_COLORS.budget}
-                      radius={[8, 8, 0, 0]}
+                      radius={[10, 10, 0, 0]}
                       name="Budgeted"
-                      maxBarSize={40}
+                      maxBarSize={50}
                     />
                     <Bar
                       dataKey="Actual"
                       fill={CHART_COLORS.actual}
-                      radius={[8, 8, 0, 0]}
+                      radius={[10, 10, 0, 0]}
                       name="Actual"
-                      maxBarSize={40}
+                      maxBarSize={50}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Budget Performance Pie Chart */}
-              <div className={`lg:col-span-4 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-6 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
-                <h3 className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-8`}>Performance</h3>
-                <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2 uppercase tracking-[0.2em]`}>
+              <div className={`lg:col-span-4 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
+                <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-10`}>Performance</h3>
+                <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2 uppercase tracking-[0.2em]`}>
                   <span className="text-green-400">🎯</span>
                   Budget Health
                 </h3>
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={[
@@ -955,8 +955,8 @@ function BudgetPlanning() {
                       ]}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={85}
+                      innerRadius={60}
+                      outerRadius={100}
                       paddingAngle={8}
                       dataKey="value"
                       stroke={theme === 'dark' ? '#1e293b' : '#ffffff'}
@@ -982,7 +982,7 @@ function BudgetPlanning() {
                       height={36}
                       wrapperStyle={{
                         color: theme === 'dark' ? '#94a3b8' : '#475569',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         paddingTop: '20px',
                         fontWeight: 'bold'
                       }}
@@ -994,13 +994,13 @@ function BudgetPlanning() {
 
             {/* Create/Edit Budget Form */}
             {showBudgetForm && (
-              <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-6 mb-8 animate-in slide-in-from-top-10 duration-500 relative overflow-hidden`}>
-                <h3 className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-6`}>
+              <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 mb-12 animate-in slide-in-from-top-10 duration-500 relative overflow-hidden`}>
+                <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-8`}>
                   {editingBudget ? 'Update Budget Plan' : 'New Budget Strategy'}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                   <div>
-                    <label className={`block text-[10px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-2`}>Category</label>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-3`}>Category</label>
                     <select
                       value={newBudget.category_id}
                       onChange={(e) => setNewBudget({...newBudget, category_id: e.target.value})}
@@ -1017,38 +1017,38 @@ function BudgetPlanning() {
                     </select>
                   </div>
                   <div>
-                    <label className={`block text-[10px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-2`}>Monthly Budget (£)</label>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-3`}>Monthly Budget (£)</label>
                     <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-lg font-black text-amber-500">£</span>
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-amber-500">£</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         value={newBudget.amount}
                         onChange={(e) => setNewBudget({...newBudget, amount: e.target.value})}
-                        className="input-unified w-full pl-10"
+                        className="input-unified w-full pl-12"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={editingBudget ? handleUpdateBudget : handleCreateBudget}
                     disabled={!newBudget.category_id || !newBudget.amount || budgetLoading}
-                    className={`btn-primary-unified flex-1 !rounded-2xl !py-4 shadow-2xl transition-all duration-500 ${budgetLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:-translate-y-1'}`}
+                    className={`btn-primary-unified flex-1 !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 ${budgetLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:-translate-y-1'}`}
                   >
                     {budgetLoading ? (
-                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      <RefreshCw className="w-6 h-6 animate-spin" />
                     ) : (
-                      <Target className="w-5 h-5" strokeWidth={3} />
+                      <Target className="w-6 h-6" strokeWidth={3} />
                     )}
-                    <span className="uppercase tracking-[0.2em] font-black text-xs">{editingBudget ? 'SAVE CHANGES' : 'ESTABLISH BUDGET'}</span>
+                    <span className="uppercase tracking-[0.2em] font-black">{editingBudget ? 'SAVE CHANGES' : 'ESTABLISH BUDGET'}</span>
                   </button>
                   <button
                     onClick={cancelForm}
                     disabled={budgetLoading}
-                    className={`px-8 py-4 rounded-2xl font-black text-xs tracking-[0.2em] transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-400 border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-600 border-slate-200'} border-2 uppercase disabled:opacity-50 hover:scale-[1.02] hover:-translate-y-1`}
+                    className={`px-10 py-5 rounded-[1.5rem] font-black text-sm tracking-[0.2em] transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-400 border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-600 border-slate-200'} border-2 uppercase disabled:opacity-50 hover:scale-[1.02] hover:-translate-y-1`}
                   >
                     Cancel
                   </button>
@@ -1058,26 +1058,26 @@ function BudgetPlanning() {
 
             {/* Budget Categories Table */}
             <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden shadow-2xl relative`}>
-              <div className={`p-6 ${theme === 'dark' ? 'border-b-2 border-slate-700/30' : 'border-b-2 border-slate-100'}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className={`p-8 ${theme === 'dark' ? 'border-b-2 border-slate-700/30' : 'border-b-2 border-slate-100'}`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div>
-                    <h3 className={`text-xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Allocation Strategy</h3>
-                    <p className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mt-1`}>Manage your spending limits by category</p>
+                    <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Allocation Strategy</h3>
+                    <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mt-1`}>Manage your spending limits by category</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-4">
                     <button
                       onClick={handleCopyLastMonth}
                       disabled={budgetLoading}
-                      className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'} border-2 disabled:opacity-50 hover:scale-105`}
+                      className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'} border-2 disabled:opacity-50 hover:scale-105`}
                     >
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-4 h-4" />
                       <span>Copy Previous</span>
                     </button>
                     <button
                       onClick={() => setShowBudgetForm(true)}
-                      className="btn-primary-unified !px-5 !py-2.5 !rounded-xl !text-[10px] shadow-xl hover:scale-105"
+                      className="btn-primary-unified !px-6 !py-3 !rounded-2xl !text-xs shadow-xl hover:scale-105"
                     >
-                      <Target className="w-3.5 h-3.5" strokeWidth={3} />
+                      <Target className="w-4 h-4" strokeWidth={3} />
                       <span className="uppercase tracking-[0.2em]">ADD CATEGORY</span>
                     </button>
                   </div>
@@ -1088,37 +1088,37 @@ function BudgetPlanning() {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className={theme === 'dark' ? 'bg-slate-800/30' : 'bg-slate-50/50'}>
-                        <th className={`px-6 py-4 text-left text-[10px] font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Category</th>
-                        <th className={`px-6 py-4 text-right text-[10px] font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Allocated</th>
-                        <th className={`px-6 py-4 text-right text-[10px] font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Utilized</th>
-                        <th className={`px-6 py-4 text-right text-[10px] font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Remaining</th>
-                        <th className={`px-6 py-4 text-center text-[10px] font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Efficiency</th>
-                        <th className={`px-6 py-4 text-center text-[10px] font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Actions</th>
+                        <th className={`px-8 py-6 text-left text-xs font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Category</th>
+                        <th className={`px-8 py-6 text-right text-xs font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Allocated</th>
+                        <th className={`px-8 py-6 text-right text-xs font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Utilized</th>
+                        <th className={`px-8 py-6 text-right text-xs font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Remaining</th>
+                        <th className={`px-8 py-6 text-center text-xs font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Efficiency</th>
+                        <th className={`px-8 py-6 text-center text-xs font-black ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-[0.2em]`}>Actions</th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y-2 ${theme === 'dark' ? 'divide-slate-700/20' : 'divide-slate-100'}`}>
                       {budgetData.map((budget) => (
                         <tr key={budget.category} className={`${theme === 'dark' ? 'hover:bg-slate-800/20' : 'hover:bg-slate-50/30'} transition-all duration-500 group`}>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl shadow-inner border border-amber-500/20 group-hover:scale-110 transition-transform duration-500 group-hover:rotate-6">
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl shadow-inner border border-amber-500/20 group-hover:scale-110 transition-transform duration-500 group-hover:rotate-6">
                                 {budget.icon}
                               </div>
-                              <span className={`font-black text-base tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{budget.category}</span>
+                              <span className={`font-black text-lg tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{budget.category}</span>
                             </div>
                           </td>
-                          <td className={`px-6 py-4 text-right font-black text-base tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                             £{budget.budgeted.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
                           </td>
-                          <td className={`px-6 py-4 text-right font-black text-base tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                             £{budget.actual.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
                           </td>
-                          <td className={`px-6 py-4 text-right font-black text-base tracking-tight ${budget.remaining > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${budget.remaining > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             £{budget.remaining.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3 min-w-[130px]">
-                              <div className={`flex-1 ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'} rounded-full h-3 p-0.5 overflow-hidden shadow-inner`}>
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-4 min-w-[150px]">
+                              <div className={`flex-1 ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'} rounded-full h-4 p-1 overflow-hidden shadow-inner`}>
                                 <div
                                   className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${
                                     budget.overBudget ? 'bg-rose-500 shadow-rose-500/20' : 'bg-emerald-500 shadow-emerald-500/20'
@@ -1126,28 +1126,28 @@ function BudgetPlanning() {
                                   style={{ width: `${Math.min(100, (budget.actual / budget.budgeted) * 100)}%` }}
                                 />
                               </div>
-                              <span className={`text-[10px] font-black min-w-[35px] ${
+                              <span className={`text-sm font-black min-w-[45px] ${
                                 budget.overBudget ? 'text-rose-500' : 'text-emerald-500'
                               }`}>
                                 {budget.percentage}%
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-x-0 translate-x-4">
+                          <td className="px-8 py-6 text-center">
+                            <div className="flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-x-0 translate-x-4">
                               <button
                                 onClick={() => handleEditBudget(budget)}
-                                className={`p-2 rounded-lg transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-amber-600 border-slate-200'} border-2 hover:scale-110 shadow-lg`}
+                                className={`p-3 rounded-xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-amber-600 border-slate-200'} border-2 hover:scale-110 shadow-lg`}
                                 title="Edit Strategy"
                               >
-                                <Pencil className="w-4 h-4" />
+                                <Pencil className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteBudget(budget.id)}
-                                className={`p-2 rounded-lg transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 hover:bg-rose-900/40 text-rose-400 border-slate-700' : 'bg-slate-100 hover:bg-rose-100 text-rose-600 border-slate-200'} border-2 hover:scale-110 shadow-lg`}
+                                className={`p-3 rounded-xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 hover:bg-rose-900/40 text-rose-400 border-slate-700' : 'bg-slate-100 hover:bg-rose-100 text-rose-600 border-slate-200'} border-2 hover:scale-110 shadow-lg`}
                                 title="Dissolve Allocation"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-5 h-5" />
                               </button>
                             </div>
                           </td>
@@ -1156,25 +1156,25 @@ function BudgetPlanning() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="py-12 text-center">
-                    <div className="w-16 h-16 bg-amber-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border-2 border-amber-500/20 shadow-inner animate-bounce-slow">
-                      <Target className="w-8 h-8 text-amber-500" strokeWidth={2.5} />
+                  <div className="py-24 text-center">
+                    <div className="w-24 h-24 bg-amber-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border-2 border-amber-500/20 shadow-inner animate-bounce-slow">
+                      <Target className="w-12 h-12 text-amber-500" strokeWidth={2.5} />
                     </div>
-                    <h4 className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 uppercase tracking-[0.2em]`}>No budgets set for this period</h4>
-                    <p className={`text-base font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-8 max-w-md mx-auto leading-relaxed`}>
+                    <h4 className={`text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 uppercase tracking-[0.2em]`}>No budgets set for this period</h4>
+                    <p className={`text-lg font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-12 max-w-md mx-auto leading-relaxed`}>
                       Take control of your spending by setting monthly limits for your expense categories.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-6">
                       <button
                         onClick={handleCopyLastMonth}
-                        className={`px-6 py-3 rounded-[1.25rem] font-black text-xs tracking-[0.2em] transition-all duration-500 flex items-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-white border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-900 border-slate-200'} border-2 uppercase hover:scale-105 hover:-translate-y-1`}
+                        className={`px-8 py-4 rounded-[1.5rem] font-black text-sm tracking-[0.2em] transition-all duration-500 flex items-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-white border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-900 border-slate-200'} border-2 uppercase hover:scale-105 hover:-translate-y-1`}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-5 h-5" />
                         <span>Copy Previous</span>
                       </button>
                       <button
                       onClick={() => setShowBudgetForm(true)}
-                      className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2 shadow-xl hover:scale-105"
+                      className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-bold hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2"
                     >
                       <span>+</span>
                       Create First Budget
