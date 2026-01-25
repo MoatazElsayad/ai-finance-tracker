@@ -2,7 +2,7 @@
 Database Setup - Simple SQLite connection
 No need for complex configurations!
 """
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 # Import Base and others from models
 from models import Base, Category, DEFAULT_CATEGORIES 
@@ -21,17 +21,23 @@ def init_database():
     # Create all tables
     Base.metadata.create_all(bind=engine)
     
-    # Ensure 'gender' column exists in users table
-    with engine.connect() as conn:
+    # Ensure 'gender' and 'avatar_seed' columns exist in users table
+    with engine.begin() as conn:
         try:
-            cols = conn.execute("PRAGMA table_info(users)").fetchall()
+            # PRAGMA doesn't work well with text() in some cases, use exec_driver_sql
+            cols = conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
             col_names = [c[1] for c in cols]
+            
             if "gender" not in col_names:
-                conn.execute("ALTER TABLE users ADD COLUMN gender TEXT")
+                print("Adding 'gender' column to users table...")
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN gender TEXT")
+                
             if "avatar_seed" not in col_names:
-                conn.execute("ALTER TABLE users ADD COLUMN avatar_seed TEXT")
-        except Exception:
-            pass
+                print("Adding 'avatar_seed' column to users table...")
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN avatar_seed TEXT")
+                
+        except Exception as e:
+            print(f"Migration error: {e}")
     
     # Add default categories if they don't exist
     db = SessionLocal()
