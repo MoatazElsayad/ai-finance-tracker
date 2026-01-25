@@ -1,5 +1,5 @@
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, Activity } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
 import { CHART_COLORS, getModelInfo } from './DashboardUtils';
 
 export const CustomTooltip = ({ active, payload, label, theme }) => {
@@ -77,11 +77,6 @@ export const formatAISummary = (text, theme) => {
 
   const isDark = theme === 'dark';
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // You could add a toast notification here if you have a toast system
-  };
-
   return (
     <div className="space-y-6">
       {formattedSections.map((section, idx) => {
@@ -91,22 +86,13 @@ export const formatAISummary = (text, theme) => {
         return (
           <div 
             key={idx} 
-            className={`group p-6 rounded-[2rem] border ${colors.border} ${colors.bg} transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-${accentKey}-500/10 relative overflow-hidden`}
+            className={`p-6 rounded-[2rem] border ${colors.border} ${colors.bg} transition-all duration-300 hover:scale-[1.01]`}
           >
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <h4 className={`font-black text-[10px] uppercase tracking-[0.2em] ${colors.text} flex items-center gap-3`}>
-                <span className={`w-2 h-2 rounded-full ${colors.icon} shadow-[0_0_10px_rgba(0,0,0,0.2)]`} />
-                {section.title}
-              </h4>
-              <button 
-                onClick={() => copyToClipboard(`${section.title}\n${section.content}`)}
-                className={`p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'}`}
-                title="Copy to clipboard"
-              >
-                <History className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="pl-5 relative z-10">
+            <h4 className={`font-black text-[10px] uppercase tracking-[0.2em] ${colors.text} mb-4 flex items-center gap-3`}>
+              <span className={`w-2 h-2 rounded-full ${colors.icon} shadow-[0_0_10px_rgba(0,0,0,0.2)]`} />
+              {section.title}
+            </h4>
+            <div className="pl-5">
               {hasList ? (
                 <ul className="space-y-3">
                   {section.content.split('\n').filter((line) => line.trim()).map((line, i) => {
@@ -128,7 +114,6 @@ export const formatAISummary = (text, theme) => {
                 <p className={`${isDark ? 'text-slate-300' : 'text-slate-700'} leading-relaxed text-sm font-medium`}>{section.content}</p>
               )}
             </div>
-            <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full blur-[60px] opacity-10 ${colors.icon}`} />
           </div>
         );
       })}
@@ -221,17 +206,12 @@ export const SectionHeaderAndSummary = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <HealthScoreCard 
-            score={analytics?.health_score || 0} 
-            theme={theme} 
-          />
           <StatCard 
             label="Total Income" 
             value={analytics?.total_income} 
             icon={<TrendingUp className="w-6 h-6" />}
             color="green"
             isDark={isDark}
-            trend={12} // Mock trend for now
           />
           <StatCard 
             label="Total Expenses" 
@@ -239,7 +219,6 @@ export const SectionHeaderAndSummary = ({
             icon={<TrendingDown className="w-6 h-6" />}
             color="red"
             isDark={isDark}
-            trend={-5} // Mock trend for now
           />
           <StatCard 
             label="Net Savings" 
@@ -249,42 +228,20 @@ export const SectionHeaderAndSummary = ({
             isDark={isDark}
             isCurrency={true}
           />
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-800/30 border-slate-700/50' : 'bg-white border-slate-200'} flex items-center gap-4 group hover:border-amber-500/50 transition-colors duration-500`}>
-            <div className={`p-3 rounded-2xl ${isDark ? 'bg-amber-500/10 text-amber-500' : 'bg-amber-50 text-amber-600'} group-hover:scale-110 transition-transform`}>
-              <Percent className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Savings Rate</p>
-              <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{savingsRate}%</p>
-            </div>
-          </div>
-          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-800/30 border-slate-700/50' : 'bg-white border-slate-200'} flex items-center gap-4 group hover:border-emerald-500/50 transition-colors duration-500`}>
-            <div className={`p-3 rounded-2xl ${isDark ? 'bg-emerald-500/10 text-emerald-500' : 'bg-emerald-50 text-emerald-600'} group-hover:scale-110 transition-transform`}>
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Avg. Daily Spend</p>
-              <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>£{analytics?.avg_daily_spend || 0}</p>
-            </div>
-          </div>
-          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-800/30 border-slate-700/50' : 'bg-white border-slate-200'} flex items-center gap-4 group hover:border-blue-500/50 transition-colors duration-500`}>
-            <div className={`p-3 rounded-2xl ${isDark ? 'bg-blue-500/10 text-blue-500' : 'bg-blue-50 text-blue-600'} group-hover:scale-110 transition-transform`}>
-              <Wallet className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Projected Savings</p>
-              <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>£{analytics?.projected_savings || 0}</p>
-            </div>
-          </div>
+          <StatCard 
+            label="Savings Rate" 
+            value={savingsRate} 
+            icon={<Percent className="w-6 h-6" />}
+            color="amber"
+            isDark={isDark}
+            isPercent={true}
+          />
         </div>
       </div>
     </section>
   );
 };
-const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, trend }) => {
+const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency }) => {
   const colors = {
     green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
     red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',
@@ -301,84 +258,21 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, tr
   };
 
   return (
-    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} group hover:scale-[1.05] hover:shadow-2xl transition-all duration-500 overflow-hidden`}>
-      <div className="flex items-center justify-between mb-6 relative z-10">
+    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+      <div className="flex items-center justify-between mb-6">
         <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {label}
         </span>
-        <div className={`p-3 rounded-2xl ${colors[color]} border shadow-sm group-hover:rotate-12 transition-transform duration-500`}>
+        <div className={`p-3 rounded-2xl ${colors[color]} border shadow-sm`}>
           {icon}
         </div>
       </div>
-      <div className="flex items-baseline justify-between relative z-10">
-        <p className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          {formatValue(value)}
-        </p>
-        {trend !== undefined && (
-          <span className={`text-xs font-bold ${trend >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center gap-1`}>
-            {trend >= 0 ? '+' : ''}{trend}%
-          </span>
-        )}
-      </div>
-      <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 transition-all duration-700 group-hover:scale-150 group-hover:opacity-20 ${
+      <p className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+        {formatValue(value)}
+      </p>
+      <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
         color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : 'bg-blue-500'
       }`} />
-    </div>
-  );
-};
-
-export const HealthScoreCard = ({ score, theme }) => {
-  const isDark = theme === 'dark';
-  const getScoreColor = (s) => {
-    if (s >= 80) return 'text-emerald-500';
-    if (s >= 60) return 'text-green-500';
-    if (s >= 40) return 'text-amber-500';
-    return 'text-red-500';
-  };
-
-  const getScoreLabel = (s) => {
-    if (s >= 80) return 'Excellent';
-    if (s >= 60) return 'Good';
-    if (s >= 40) return 'Fair';
-    return 'Needs Work';
-  };
-
-  return (
-    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} flex flex-col items-center justify-center py-8 relative overflow-hidden group`}>
-      <div className="relative w-32 h-32 flex items-center justify-center mb-4 z-10">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle
-            cx="64"
-            cy="64"
-            r="58"
-            stroke="currentColor"
-            strokeWidth="8"
-            fill="transparent"
-            className={`${isDark ? 'text-slate-800' : 'text-slate-100'}`}
-          />
-          <circle
-            cx="64"
-            cy="64"
-            r="58"
-            stroke="currentColor"
-            strokeWidth="8"
-            strokeDasharray={364.4}
-            strokeDashoffset={364.4 - (364.4 * score) / 100}
-            strokeLinecap="round"
-            fill="transparent"
-            className={`${getScoreColor(score)} transition-all duration-1000 ease-out`}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{score}</span>
-          <span className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Score</span>
-        </div>
-      </div>
-      <div className="text-center z-10">
-        <h4 className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`}>{getScoreLabel(score)}</h4>
-        <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Financial Health</p>
-      </div>
-      <div className={`absolute inset-0 bg-gradient-to-br from-transparent to-${getScoreColor(score).split('-')[1]}-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
     </div>
   );
 };
