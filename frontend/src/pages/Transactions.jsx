@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
@@ -325,7 +325,7 @@ function Transactions() {
                   onClick={() => changeMonth(-1)}
                   className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 hover:text-amber-400 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 hover:text-amber-500 hover:bg-white'} transition-all shadow-sm group`}
                 >
-                  <ArrowLeftRight className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
+                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <span className={`text-xl font-black tracking-[0.1em] uppercase min-w-[200px] text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                   {new Date(selectedMonth.year, selectedMonth.month, 1).toLocaleDateString('en-US', {
@@ -337,7 +337,7 @@ function Transactions() {
                   onClick={() => changeMonth(1)}
                   className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 hover:text-amber-400 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 hover:text-amber-500 hover:bg-white'} transition-all shadow-sm group`}
                 >
-                  <ArrowLeftRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </>
             )}

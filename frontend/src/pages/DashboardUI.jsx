@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
 import { CHART_COLORS, getModelInfo } from './DashboardUtils';
 
 export const CustomTooltip = ({ active, payload, label, theme }) => {
@@ -133,21 +133,45 @@ export const SectionHeaderAndSummary = ({
   analytics,
 }) => {
   const isDark = theme === 'dark';
+
   const savingsRate =
     analytics?.total_income > 0
       ? ((analytics.net_savings / analytics.total_income) * 100).toFixed(1)
-      : 0;
-      
+      : '0';
+
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+    <section
+      className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${
+        isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'
+      }`}
+    >
       <div className="max-w-7xl mx-auto w-full">
         {user && (
           <div className="mb-8 animate-in fade-in duration-700">
-            <h2 className={`text-2xl md:text-3xl font-light ${isDark ? 'text-slate-400' : 'text-slate-500'} mb-1`}>
-              Welcome back, <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.first_name}</span>
+            <h2
+              className={`text-2xl md:text-3xl font-light ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              } mb-1`}
+            >
+              Welcome back,{' '}
+              <span
+                className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+              >
+                {user.first_name}
+              </span>
             </h2>
-            <p className={`text-lg font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Financial overview for {viewMode === 'monthly' ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : `${selectedMonth.year}`}
+            <p
+              className={`text-lg font-medium ${
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
+              Financial overview for{' '}
+              {viewMode === 'monthly'
+                ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString(
+                    'en-US',
+                    { month: 'long', year: 'numeric' }
+                  )
+                : `${selectedMonth.year}`}
             </p>
           </div>
         )}
@@ -160,13 +184,21 @@ export const SectionHeaderAndSummary = ({
               </div>
               Dashboard
             </h1>
-            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium`}>
+            <p
+              className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium`}
+            >
               Real-time insights into your spending habits and financial growth.
             </p>
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className={`flex p-1.5 rounded-2xl ${isDark ? 'bg-slate-800/50' : 'bg-slate-200/50'} backdrop-blur-md border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
+            <div
+              className={`flex p-1.5 rounded-2xl ${
+                isDark ? 'bg-slate-800/50' : 'bg-slate-200/50'
+              } backdrop-blur-md border ${
+                isDark ? 'border-slate-700' : 'border-slate-300'
+              }`}
+            >
               {['monthly', 'yearly', 'overall'].map((mode) => (
                 <button
                   key={mode}
@@ -174,7 +206,9 @@ export const SectionHeaderAndSummary = ({
                   className={`px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
                     viewMode === mode
                       ? 'bg-amber-500 text-white shadow-lg'
-                      : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                      : isDark
+                      ? 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {mode}
@@ -183,21 +217,38 @@ export const SectionHeaderAndSummary = ({
             </div>
 
             {viewMode !== 'overall' && (
-              <div className={`flex items-center justify-between gap-4 p-2 rounded-2xl ${isDark ? 'bg-slate-800/50' : 'bg-slate-200/50'} border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
+              <div
+                className={`flex items-center justify-between gap-4 p-2 rounded-2xl ${
+                  isDark ? 'bg-slate-800/50' : 'bg-slate-200/50'
+                } border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}
+              >
                 <button
                   onClick={() => (viewMode === 'monthly' ? changeMonth(-1) : changeYear(-1))}
-                  className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-300 text-slate-600'}`}
+                  className={`p-2 rounded-xl transition-all ${
+                    isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-300 text-slate-600'
+                  }`}
                 >
                   ◀
                 </button>
-                <span className={`font-black uppercase tracking-[0.2em] text-[10px] ${isDark ? 'text-white' : 'text-slate-900'}`}>
+
+                <span
+                  className={`font-black uppercase tracking-[0.2em] text-[10px] ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}
+                >
                   {viewMode === 'monthly'
-                    ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                    ? new Date(selectedMonth.year, selectedMonth.month - 1).toLocaleDateString(
+                        'en-US',
+                        { month: 'short', year: 'numeric' }
+                      )
                     : selectedMonth.year}
                 </span>
+
                 <button
                   onClick={() => (viewMode === 'monthly' ? changeMonth(1) : changeYear(1))}
-                  className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-300 text-slate-600'}`}
+                  className={`p-2 rounded-xl transition-all ${
+                    isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-300 text-slate-600'
+                  }`}
                 >
                   ▶
                 </button>
@@ -206,34 +257,41 @@ export const SectionHeaderAndSummary = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <StatCard 
-            label="Total Income" 
-            value={analytics?.total_income} 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <StatCard
+            label="Total Income"
+            value={analytics?.total_income ?? '—'}
             icon={<TrendingUp className="w-6 h-6" />}
+            className="text-emerald-600 dark:text-emerald-400"
             color="green"
             isDark={isDark}
           />
-          <StatCard 
-            label="Total Expenses" 
-            value={analytics?.total_expenses} 
+
+          <StatCard
+            label="Total Expenses"
+            value={analytics?.total_expenses ?? '—'}
             icon={<TrendingDown className="w-6 h-6" />}
+            className="text-rose-600 dark:text-rose-400"
             color="red"
             isDark={isDark}
           />
-          <StatCard 
-            label="Net Savings" 
-            value={analytics?.net_savings} 
+
+          <StatCard
+            label="Net Savings"
+            value={analytics?.net_savings ?? '—'}
             icon={<Wallet className="w-6 h-6" />}
+            className="text-amber-500"
             color="amber"
             isDark={isDark}
             isCurrency={true}
           />
-          <StatCard 
-            label="Savings Rate" 
-            value={savingsRate} 
+
+          <StatCard
+            label="Savings Rate"
+            value={savingsRate ?? '—'}
             icon={<Percent className="w-6 h-6" />}
-            color="amber"
+            className="text-blue-600 dark:text-blue-400"
+            color="blue"
             isDark={isDark}
             isPercent={true}
           />
@@ -242,6 +300,7 @@ export const SectionHeaderAndSummary = ({
     </section>
   );
 };
+
 const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency }) => {
   const colors = {
     green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
@@ -287,7 +346,7 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
           <div>
             <h2 className="text-header-unified flex items-center gap-4">
               <div className="p-3 bg-amber-500 rounded-2xl shadow-xl shadow-amber-500/20">
-                <Scale className="w-8 h-8 text-white" />
+                <FileText className="w-8 h-8 text-white" />
               </div>
               Reports
             </h2>
@@ -329,7 +388,7 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
                     : 'bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-900'
                 }`}
               >
-                <ArrowLeftRight className="w-5 h-5" />
+                <SheetIcon className="w-5 h-5" />
                 {reportLoading ? 'Preparing...' : 'Download CSV'}
               </button>
             </div>
@@ -940,7 +999,7 @@ export const AIInsightsSection = ({
                         disabled={chatLoading || !chatQuestion.trim()}
                         className={`p-5 rounded-[1.5rem] bg-amber-500 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:grayscale`}
                       >
-                        <ArrowLeftRight className="w-6 h-6 rotate-90" />
+                        <SendHorizonal className="w-6 h-6" />
                       </button>
                     </div>
                   </div>
@@ -1144,7 +1203,7 @@ export const ChatWidgetPopup = ({
           onClick={() => setIsChatWidgetOpen(false)} 
           className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`}
         >
-          <LayoutDashboard className="w-5 h-5 rotate-45" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -1192,7 +1251,7 @@ export const ChatWidgetPopup = ({
             disabled={chatWidgetLoading || !chatWidgetInput.trim()}
             className="p-3 bg-amber-500 text-white rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
           >
-            <ArrowLeftRight className="w-5 h-5 rotate-90" />
+            <SendHorizonalIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
