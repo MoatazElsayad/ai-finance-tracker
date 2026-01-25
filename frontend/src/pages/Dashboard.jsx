@@ -281,6 +281,24 @@ function Dashboard() {
       const netSavings = totalIncome - totalExpenses;
       const savingsRateValue = totalIncome > 0 ? ((netSavings / totalIncome) * 100) : 0;
 
+      // Calculate Financial Health Score (0-100)
+      // Factors: Savings Rate (50%), Expense Ratio (30%), Income Consistency (20%)
+      const savingsScore = Math.min(100, Math.max(0, savingsRateValue * 2)); // 50% savings rate = 100 points
+      const expenseRatio = totalIncome > 0 ? (totalExpenses / totalIncome) : 1;
+      const expenseScore = Math.min(100, Math.max(0, (1 - expenseRatio) * 100));
+      const incomeConsistency = totalIncome > 0 ? 100 : 0; // Simple check for now
+      
+      const healthScoreValue = Math.round(
+        (savingsScore * 0.5) + 
+        (expenseScore * 0.3) + 
+        (incomeConsistency * 0.2)
+      );
+
+      // Calculate Quick Stats
+      const daysInPeriod = Math.max(1, Math.round((periodEnd - periodStart) / (1000 * 60 * 60 * 24)));
+      const avgDailySpend = Math.round(totalExpenses / daysInPeriod);
+      const projectedSavings = Math.round(netSavings); // Simplistic for now
+
       const categoryBreakdown = {};
       periodTransactions
         .filter(t => t.amount < 0)
@@ -299,6 +317,9 @@ function Dashboard() {
         total_expenses: totalExpenses,
         net_savings: netSavings,
         savings_rate: savingsRateValue,
+        health_score: healthScoreValue,
+        avg_daily_spend: avgDailySpend,
+        projected_savings: projectedSavings,
         category_breakdown: categoryBreakdownArray
       });
     } catch (error) {
