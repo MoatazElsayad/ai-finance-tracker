@@ -82,7 +82,7 @@ body {
   /* index.css – correct @apply syntax */
   .btn-primary-unified {
     @apply 
-      group flex items-center justify-center gap-2
+      flex items-center justify-center gap-2
       bg-amber-500 hover:bg-amber-600
       text-white
       px-8 py-4
