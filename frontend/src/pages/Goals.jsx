@@ -496,87 +496,87 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
       <div className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-10 duration-500 max-h-[90vh] flex flex-col ${
         isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'
       }`}>
-        <div className="flex items-center justify-between p-4 md:p-5 border-b border-slate-500/10 shrink-0">
+        <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-500/10 shrink-0">
           <div>
-            <h2 className="text-lg font-black tracking-tight">{goal ? 'Edit Savings Goal' : 'New Savings Goal'}</h2>
-            <p className="text-slate-500 font-bold mt-0.5 uppercase text-[10px] tracking-[0.2em]">Connect multiple categories to track progress</p>
+            <h2 className="text-base font-black tracking-tight">{goal ? 'Edit Savings Goal' : 'New Savings Goal'}</h2>
+            <p className="text-slate-500 font-bold mt-0.5 uppercase text-[9px] tracking-[0.2em]">Connect multiple categories to track progress</p>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-xl transition-all ${
+          <button onClick={onClose} className={`p-1.5 rounded-xl transition-all ${
             isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100'
           }`}>
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-4 md:p-5 space-y-3 overflow-y-auto custom-scrollbar">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-3 md:p-4 space-y-2.5 overflow-y-auto custom-scrollbar">
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Goal Name</label>
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Goal Name</label>
             <input
               {...register('name')}
               placeholder="e.g. Master's in Cairo, New Laptop, Travel Fund"
-              className={`w-full p-3 rounded-xl border-2 transition-all outline-none font-bold text-xs focus:ring-8 focus:ring-amber-500/10 ${
+              className={`w-full p-2.5 rounded-xl border-2 transition-all outline-none font-bold text-[11px] focus:ring-8 focus:ring-amber-500/10 ${
                 isDark 
                   ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                   : 'bg-slate-50 border-slate-200 focus:border-amber-500'
               } ${errors.name ? 'border-red-500' : ''}`}
             />
-            {errors.name && <p className="text-red-500 text-[10px] ml-2 font-bold">{errors.name.message}</p>}
+            {errors.name && <p className="text-red-500 text-[9px] ml-2 font-bold">{errors.name.message}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Amount (EGP)</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Amount (EGP)</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-amber-500">£</span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-amber-500 text-xs">£</span>
                 <input
                   type="number"
                   {...register('target_amount', { valueAsNumber: true })}
-                  className={`w-full p-3 pl-7 rounded-xl border-2 transition-all outline-none font-black text-sm ${
+                  className={`w-full p-2.5 pl-6.5 rounded-xl border-2 transition-all outline-none font-black text-xs ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                       : 'bg-slate-50 border-slate-200 focus:border-amber-500'
                   } ${errors.target_amount ? 'border-red-500' : ''}`}
                 />
               </div>
-              {errors.target_amount && <p className="text-red-500 text-[10px] ml-2 font-bold">{errors.target_amount.message}</p>}
+              {errors.target_amount && <p className="text-red-500 text-[9px] ml-2 font-bold">{errors.target_amount.message}</p>}
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Date</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Date</label>
               <div className="relative">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
                 <input
                   type="date"
                   {...register('target_date')}
-                  className={`w-full p-3 pl-9 rounded-xl border-2 transition-all outline-none font-bold text-xs ${
+                  className={`w-full p-2.5 pl-8 rounded-xl border-2 transition-all outline-none font-bold text-[11px] ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                       : 'bg-slate-50 border-slate-200 focus:border-amber-500'
                   } ${errors.target_date ? 'border-red-500' : ''}`}
                 />
               </div>
-              {errors.target_date && <p className="text-red-500 text-[10px] ml-2 font-bold">{errors.target_date.message}</p>}
+              {errors.target_date && <p className="text-red-500 text-[9px] ml-2 font-bold">{errors.target_date.message}</p>}
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Link Categories</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] ml-2 opacity-50">Link Categories</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400" />
                 <input 
                   type="text"
                   placeholder="Filter..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`pl-8 pr-4 py-1 rounded-lg text-[9px] font-bold outline-none border ${
+                  className={`pl-7 pr-3 py-0.5 rounded-lg text-[8px] font-bold outline-none border ${
                     isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 />
               </div>
             </div>
 
-            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 rounded-xl max-h-[140px] overflow-y-auto custom-scrollbar border ${
+            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 p-1.5 rounded-xl max-h-[120px] overflow-y-auto custom-scrollbar border ${
               isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'
             }`}>
               {filteredCategories.map(cat => (
@@ -584,18 +584,18 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
                   key={cat.id}
                   type="button"
                   onClick={() => toggleCategory(cat.id)}
-                  className={`flex items-center gap-2 p-2 rounded-lg border-2 transition-all text-left group ${
+                  className={`flex items-center gap-1.5 p-1.5 rounded-lg border-2 transition-all text-left group ${
                     selectedCategoryIds.includes(cat.id)
                       ? 'border-amber-500 bg-amber-500/10'
                       : isDark ? 'border-slate-800 bg-slate-800/50 hover:border-slate-700' : 'border-white bg-white hover:border-slate-200 shadow-sm'
                   }`}
                 >
-                  <span className="text-xs">{cat.icon || '📁'}</span>
+                  <span className="text-[11px]">{cat.icon || '📁'}</span>
                   <div className="min-w-0">
-                    <p className={`text-[9px] font-black truncate ${selectedCategoryIds.includes(cat.id) ? 'text-amber-500' : ''}`}>
+                    <p className={`text-[8px] font-black truncate ${selectedCategoryIds.includes(cat.id) ? 'text-amber-500' : ''}`}>
                       {cat.name}
                     </p>
-                    <p className="text-[7px] font-bold opacity-40 uppercase tracking-tighter">{cat.type}</p>
+                    <p className="text-[6px] font-bold opacity-40 uppercase tracking-tighter">{cat.type}</p>
                   </div>
                   {selectedCategoryIds.includes(cat.id) && (
                     <Check className="w-2 h-2 text-amber-500 ml-auto shrink-0" />
@@ -608,12 +608,12 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 bg-amber-500 text-white rounded-xl font-black text-sm shadow-2xl shadow-amber-500/30 hover:bg-amber-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
+            className="w-full py-2.5 bg-amber-500 text-white rounded-xl font-black text-xs shadow-2xl shadow-amber-500/30 hover:bg-amber-600 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 active:scale-95"
           >
             {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
             )}
             {goal ? 'Update My Goal' : 'Activate My Goal'}
           </button>
@@ -627,26 +627,26 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
  * GoalSkeleton - Pulse loader for goals
  */
 const GoalSkeleton = ({ isDark }) => (
-  <div className={`p-4 rounded-2xl border-2 animate-pulse ${
+  <div className={`p-3.5 rounded-2xl border-2 animate-pulse ${
     isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-white border-slate-100'
   }`}>
-    <div className="flex justify-between mb-4">
-      <div className="space-y-2 flex-1">
-        <div className={`h-5 w-3/4 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-        <div className={`h-2.5 w-1/2 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+    <div className="flex justify-between mb-3">
+      <div className="space-y-1.5 flex-1">
+        <div className={`h-4 w-3/4 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <div className={`h-2 w-1/2 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
-      <div className={`w-8 h-8 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className={`w-7 h-7 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
     </div>
-    <div className="flex items-center gap-4 mb-4">
-      <div className={`w-20 h-20 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-      <div className="flex-1 space-y-3">
-        <div className={`h-8 w-full rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-        <div className={`h-5 w-2/3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+    <div className="flex items-center gap-3 mb-3">
+      <div className={`w-16 h-16 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className="flex-1 space-y-2">
+        <div className={`h-6 w-full rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <div className={`h-4 w-2/3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
     </div>
     <div className="flex justify-between">
-      <div className={`h-6 w-1/3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-      <div className={`h-6 w-1/4 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className={`h-5 w-1/3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+      <div className={`h-5 w-1/4 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
     </div>
   </div>
 );
