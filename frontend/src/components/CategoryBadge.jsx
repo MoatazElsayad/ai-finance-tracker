@@ -10,9 +10,9 @@ function CategoryBadge({ icon, name, size = 'md', type = 'expense' }) {
   const isDark = theme === 'dark';
 
   const sizeClasses = {
-    sm: 'px-3 py-1 text-[10px]',
-    md: 'px-4 py-2 text-xs',
-    lg: 'px-5 py-3 text-sm',
+    sm: 'px-2 py-0.5 text-[8px]',
+    md: 'px-3 py-1 text-[10px]',
+    lg: 'px-4 py-1.5 text-xs',
   };
 
   const bgColors = {
@@ -31,11 +31,11 @@ function CategoryBadge({ icon, name, size = 'md', type = 'expense' }) {
   const isImage = typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('data:'));
 
   return (
-    <div className={`inline-flex items-center gap-2 rounded-xl border font-black uppercase tracking-[0.2em] transition-all duration-300 ${sizeClasses[size]} ${color}`}>
+    <div className={`inline-flex items-center gap-1.5 rounded-lg border font-black uppercase tracking-[0.2em] transition-all duration-300 ${sizeClasses[size]} ${color}`}>
       {isImage ? (
-        <img src={icon} alt={name || 'icon'} className="w-4 h-4 rounded-lg object-cover" />
+        <img src={icon} alt={name || 'icon'} className="w-3.5 h-3.5 rounded-md object-cover" />
       ) : (
-        <span className="text-sm leading-none">{icon}</span>
+        <span className="text-xs leading-none">{icon}</span>
       )}
       <span className="whitespace-nowrap">{name}</span>
     </div>

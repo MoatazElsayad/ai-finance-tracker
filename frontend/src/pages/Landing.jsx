@@ -30,26 +30,26 @@ export default function Landing() {
       {/* Navigation */}
       <nav className={`${isDark ? 'bg-[#0a0e27]/80' : 'bg-white/80'} backdrop-blur-md border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} sticky top-0 z-50 shadow-sm`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-amber-500 rounded-xl shadow-lg shadow-amber-500/20 rotate-3">
-                <Rocket className="w-7 h-7 text-white" />
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500 rounded-xl shadow-lg shadow-amber-500/20 rotate-3">
+                <Rocket className="w-6 h-6 text-white" />
               </div>
               <div>
-                <span className={`text-header-unified !text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <span className={`text-header-unified !text-xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Finance<span className="text-amber-500">AI</span>
                 </span>
-                <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} -mt-1`}>Powered by Intelligence</p>
+                <p className={`text-[9px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} -mt-1`}>Powered by Intelligence</p>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-10">
-              <a href="#features" className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-xs transition-colors`}>Features</a>
-              <a href="#ai" className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-xs transition-colors`}>AI Engine</a>
-              <a href="#contact" className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-xs transition-colors`}>Contact</a>
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#features" className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-[10px] transition-colors`}>Features</a>
+              <a href="#ai" className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-[10px] transition-colors`}>AI Engine</a>
+              <a href="#contact" className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-[10px] transition-colors`}>Contact</a>
             </div>
-            <div className="flex items-center gap-4">
-              <Link to="/login" className={`px-6 py-2.5 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-[10px] transition-colors`}>Sign In</Link>
-              <Link to="/register" className="px-8 py-4 bg-amber-500 text-white rounded-[1.5rem] hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all font-black uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-amber-500/10 hover:-translate-y-0.5">
+            <div className="flex items-center gap-3">
+              <Link to="/login" className={`px-4 py-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} font-black uppercase tracking-[0.2em] text-[10px] transition-colors`}>Sign In</Link>
+              <Link to="/register" className="px-6 py-2.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all font-black uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-amber-500/10 hover:-translate-y-0.5">
                 Get Started
               </Link>
             </div>
@@ -58,38 +58,38 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[calc(100vh-80px)] flex items-center py-20">
+      <section className="relative overflow-hidden min-h-[calc(100vh-64px)] flex items-center py-16">
         <div className={`absolute inset-0 z-0 opacity-30 ${isDark ? 'bg-[radial-gradient(circle_at_top_right,#fbbf24_0%,transparent_40%)]' : 'bg-[radial-gradient(circle_at_top_right,#fbbf24_0%,transparent_50%)]'}`}></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-10 text-center lg:text-left animate-in fade-in slide-in-from-left-8 duration-1000">
-              <div className={`inline-flex items-center gap-3 px-5 py-2.5 ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur rounded-2xl shadow-xl border-2`}>
-                <div className="flex h-3 w-3 relative">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8 text-center lg:text-left animate-in fade-in slide-in-from-left-8 duration-1000">
+              <div className={`inline-flex items-center gap-3 px-4 py-2 ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur rounded-2xl shadow-xl border-2`}>
+                <div className="flex h-2.5 w-2.5 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                 </div>
-                <span className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Next-Gen AI Finance</span>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Next-Gen AI Finance</span>
               </div>
 
-              <h1 className={`text-6xl md:text-7xl lg:text-8xl font-black ${isDark ? 'text-white' : 'text-slate-900'} leading-[0.9] tracking-[-0.04em]`}>
+              <h1 className={`text-4xl md:text-5xl lg:text-6xl font-black ${isDark ? 'text-white' : 'text-slate-900'} leading-[0.9] tracking-[-0.04em]`}>
                 Master Your <br />
                 <span className="text-amber-500 relative">
                   Money
-                  <Sparkles className="absolute -top-6 -right-10 w-12 h-12 text-amber-400/30 animate-pulse" />
+                  <Sparkles className="absolute -top-4 -right-8 w-8 h-8 text-amber-400/30 animate-pulse" />
                 </span>
               </h1>
 
-              <p className={`text-xl md:text-2xl ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed max-w-xl font-medium tracking-tight mx-auto lg:mx-0`}>
+              <p className={`text-base md:text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed max-w-xl font-medium tracking-tight mx-auto lg:mx-0`}>
                 Stop guessing and start growing. Get AI-powered insights, real-time tracking, and reach your goals faster.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-                <Link to="/register" className="btn-primary-unified group !px-12 !py-6 !rounded-[2rem] !text-xs uppercase tracking-[0.2em] hover:-translate-y-1">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link to="/register" className="btn-primary-unified group !px-8 !py-4 !rounded-xl !text-[10px] uppercase tracking-[0.2em] hover:-translate-y-1">
                   Start Journey
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link to="/login" className={`px-12 py-6 ${isDark ? 'bg-slate-800/50 text-white border-slate-700 hover:bg-slate-800' : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50'} rounded-[2rem] transition-all border-2 font-black uppercase tracking-[0.2em] text-xs text-center shadow-2xl shadow-black/5 hover:-translate-y-1`}>
+                <Link to="/login" className={`px-8 py-4 ${isDark ? 'bg-slate-800/50 text-white border-slate-700 hover:bg-slate-800' : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50'} rounded-xl transition-all border-2 font-black uppercase tracking-[0.2em] text-[10px] text-center shadow-2xl shadow-black/5 hover:-translate-y-1`}>
                   Login
                 </Link>
               </div>
@@ -97,56 +97,56 @@ export default function Landing() {
 
             {/* Dashboard Preview Widget */}
             <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-              <div className={`card-unified ${isDark ? 'card-unified-dark border-slate-700/50' : 'card-unified-light border-slate-200'} p-8 shadow-2xl relative overflow-hidden group`}>
+              <div className={`card-unified ${isDark ? 'card-unified-dark border-slate-700/50' : 'card-unified-light border-slate-200'} p-5 shadow-2xl relative overflow-hidden group`}>
                 <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h3 className={`text-header-unified !text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Monthly Overview</h3>
-                    <p className={`text-xs uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1`}>January {year}</p>
+                    <h3 className={`text-header-unified !text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Monthly Overview</h3>
+                    <p className={`text-[9px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1`}>January {year}</p>
                   </div>
-                  <div className="px-4 py-2 bg-emerald-500/10 border-2 border-emerald-500/20 text-emerald-500 rounded-2xl text-xs font-black uppercase tracking-[0.2em]">
+                  <div className="px-2.5 py-1 bg-emerald-500/10 border-2 border-emerald-500/20 text-emerald-500 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                     +39% Savings
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 mb-8">
-                  <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-5 rounded-3xl border-2 transition-transform hover:scale-105 duration-300`}>
-                    <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Income</p>
-                    <p className="text-2xl font-black text-emerald-500">£5,240</p>
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-3 rounded-xl border-2 transition-transform hover:scale-105 duration-300`}>
+                    <p className={`text-[8px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Income</p>
+                    <p className="text-lg font-black text-emerald-500">£5,240</p>
                   </div>
-                  <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-5 rounded-3xl border-2 transition-transform hover:scale-105 duration-300`}>
-                    <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Expenses</p>
-                    <p className="text-2xl font-black text-rose-500">£3,180</p>
+                  <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-3 rounded-xl border-2 transition-transform hover:scale-105 duration-300`}>
+                    <p className={`text-[8px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Expenses</p>
+                    <p className="text-lg font-black text-rose-500">£3,180</p>
                   </div>
-                  <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-5 rounded-3xl border-2 transition-transform hover:scale-105 duration-300`}>
-                    <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Saved</p>
-                    <p className="text-2xl font-black text-amber-500">£2,060</p>
+                  <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-3 rounded-xl border-2 transition-transform hover:scale-105 duration-300`}>
+                    <p className={`text-[8px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Saved</p>
+                    <p className="text-lg font-black text-amber-500">£2,060</p>
                   </div>
                 </div>
 
-                <div className={`${isDark ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50 border-amber-500/10'} p-6 rounded-[2rem] border-2 mb-6 relative group/ai`}>
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="p-2 bg-amber-500 rounded-lg shadow-lg shadow-amber-500/20">
-                      <Brain className="w-5 h-5 text-white" />
+                <div className={`${isDark ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50 border-amber-500/10'} p-4 rounded-2xl border-2 mb-5 relative group/ai`}>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="p-1.5 bg-amber-500 rounded-lg shadow-lg shadow-amber-500/20">
+                      <Brain className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <p className={`font-black uppercase tracking-[0.2em] text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>AI Financial Insight</p>
+                    <p className={`font-black uppercase tracking-[0.2em] text-[9px] ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>AI Financial Insight</p>
                   </div>
-                  <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'} leading-relaxed font-medium italic`}>
+                  <p className={`text-[11px] ${isDark ? 'text-slate-300' : 'text-slate-700'} leading-relaxed font-medium italic`}>
                     "Excellent progress! Your savings rate is strong. The AI suggests reviewing your subscription costs for potential savings of £150/mo."
                   </p>
                 </div>
 
                 {/* Mini Chart */}
-                <div className={`${isDark ? 'bg-slate-800/20 border-slate-700/30' : 'bg-slate-50/50 border-slate-200'} p-5 rounded-3xl border-2`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Savings Trend</p>
-                    <div className="flex items-center gap-1 text-emerald-500 font-black text-xs">
-                      <TrendingUp className="w-3 h-3" />
+                <div className={`${isDark ? 'bg-slate-800/20 border-slate-700/30' : 'bg-slate-50/50 border-slate-200'} p-3.5 rounded-xl border-2`}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className={`text-[8px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Savings Trend</p>
+                    <div className="flex items-center gap-1 text-emerald-500 font-black text-[9px]">
+                      <TrendingUp className="w-2.5 h-2.5" />
                       +12.4%
                     </div>
                   </div>
-                  <div className="h-20 w-full">
+                  <div className="h-16 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={[
                         { day: 1, value: 1800 },
@@ -180,18 +180,18 @@ export default function Landing() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className={`py-32 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} relative overflow-hidden`}>
+      <section id="features" className={`py-20 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} relative overflow-hidden`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h2 className={`text-header-unified ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>
+          <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <h2 className={`text-3xl md:text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-4`}>
               Everything You <span className="text-amber-500">Need</span>
             </h2>
-            <p className={`text-xl ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium max-w-2xl mx-auto`}>
+            <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium max-w-2xl mx-auto`}>
               Powerful tools designed for your financial success.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { icon: <Brain />, title: "AI Insights", desc: "Personalized financial advice and smart recommendations from advanced models.", color: "amber" },
               { icon: <PieChart />, title: "Smart Visuals", desc: "Beautiful, interactive charts that tell the story of your money.", color: "purple" },
@@ -200,14 +200,14 @@ export default function Landing() {
               { icon: <Target />, title: "Goal Tracking", desc: "Set and achieve financial milestones with precision tracking.", color: "blue" },
               { icon: <Shield />, title: "Bank-Grade Security", desc: "Your data is protected with industry-leading encryption.", color: "slate" },
             ].map((f, i) => (
-              <div key={i} className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} !p-12 hover:-translate-y-2`}>
-                <div className={`w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mb-10 shadow-xl shadow-amber-500/20 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500`}>
-                  <div className="text-white">
+              <div key={i} className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} !p-8 hover:-translate-y-2`}>
+                <div className={`w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-6 shadow-xl shadow-amber-500/20 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500`}>
+                  <div className="text-white scale-75">
                     {f.icon}
                   </div>
                 </div>
-                <h3 className={`text-header-unified !text-3xl ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>{f.title}</h3>
-                <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-medium text-lg`}>{f.desc}</p>
+                <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-4`}>{f.title}</h3>
+                <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-medium text-sm`}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -215,21 +215,21 @@ export default function Landing() {
       </section>
 
       {/* AI Engine Section */}
-      <section id="ai" className={`py-32 ${isDark ? 'bg-slate-900/50' : 'bg-white'} border-y ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+      <section id="ai" className={`py-20 ${isDark ? 'bg-slate-900/50' : 'bg-white'} border-y ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-amber-500/10 rounded-2xl mb-8">
-            <Cpu className="w-5 h-5 text-amber-500" />
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">Multimodal Engine</span>
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-amber-500/10 rounded-2xl mb-6">
+            <Cpu className="w-4 h-4 text-amber-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">Multimodal Engine</span>
           </div>
           
-          <h2 className={`text-header-unified ${isDark ? 'text-white' : 'text-slate-900'} mb-8`}>
+          <h2 className={`text-3xl md:text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>
             Unified <span className="text-amber-500">AI Intelligence</span>
           </h2>
-          <p className={`text-xl ${isDark ? 'text-slate-400' : 'text-slate-600'} max-w-3xl mx-auto mb-20 font-medium leading-relaxed`}>
+          <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'} max-w-3xl mx-auto mb-16 font-medium leading-relaxed`}>
             We combine the strengths of the world's most powerful language models to deliver unmatched financial analysis.
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12 max-w-4xl mx-auto">
             {[
               { name: 'GPT-4o', img: 'openai.png' },
               { name: 'Gemini 2', img: 'gemini-color.png' },
@@ -240,72 +240,72 @@ export default function Landing() {
               { name: 'Nemotron', img: 'nvidia-color.png' },
               { name: 'Qwen 2.5', img: 'qwen-color.png' },
             ].map((ai) => (
-              <div key={ai.name} className={`flex items-center gap-4 ${isDark ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60' : 'bg-white border-slate-200 hover:bg-slate-50'} border-2 rounded-[1.5rem] px-6 py-5 shadow-sm hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 group hover:-translate-y-1`}>
+              <div key={ai.name} className={`flex items-center gap-2.5 ${isDark ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60' : 'bg-white border-slate-200 hover:bg-slate-50'} border-2 rounded-xl px-4 py-3 shadow-sm hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 group hover:-translate-y-1`}>
                 <img 
                   src={`https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-png/dark/${ai.img}`} 
                   alt={ai.name} 
-                  className="w-8 h-8 group-hover:scale-110 transition-transform" 
+                  className="w-5 h-5 group-hover:scale-110 transition-transform" 
                 />
-                <span className={`font-black uppercase tracking-[0.2em] text-[10px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{ai.name}</span>
+                <span className={`font-black uppercase tracking-[0.2em] text-[8px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{ai.name}</span>
               </div>
             ))}
           </div>
 
-          <Link to="/register" className="btn-primary-unified group !px-16 !py-8 !rounded-[2.5rem] !text-xs uppercase tracking-[0.2em] hover:-translate-y-1">
+          <Link to="/register" className="btn-primary-unified group !px-10 !py-5 !rounded-2xl !text-[10px] uppercase tracking-[0.2em] hover:-translate-y-1">
             Try AI Insights
-            <Zap className="w-6 h-6 fill-current" />
+            <Zap className="w-4 h-4 fill-current" />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer id="contact" className={`py-24 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-12 mb-20 text-center md:text-left">
+      <footer id="contact" className={`py-12 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8 mb-12 text-center md:text-left">
             <div className="col-span-2">
-              <div className="flex items-center gap-4 mb-6 justify-center md:justify-start">
-                <div className="p-2 bg-amber-500 rounded-lg">
-                  <Rocket className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 mb-4 justify-center md:justify-start">
+                <div className="p-1.5 bg-amber-500 rounded-lg">
+                  <Rocket className="w-4 h-4 text-white" />
                 </div>
-                <span className={`font-black text-2xl tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>FinanceAI</span>
+                <span className={`font-black text-lg tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>FinanceAI</span>
               </div>
-              <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium max-w-sm mx-auto md:mx-0`}>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium max-w-sm mx-auto md:mx-0`}>
                 Empowering the next generation of financial intelligence in Egypt and beyond.
               </p>
             </div>
             
             <div>
-              <h4 className={`font-black uppercase tracking-[0.2em] text-xs ${isDark ? 'text-white' : 'text-slate-900'} mb-8`}>Product</h4>
-              <ul className="space-y-4">
-                <li><a href="#features" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Features</a></li>
-                <li><a href="#ai" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>AI Engine</a></li>
-                <li><Link to="/login" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Sign In</Link></li>
+              <h4 className={`font-black uppercase tracking-[0.2em] text-[9px] ${isDark ? 'text-white' : 'text-slate-900'} mb-5`}>Product</h4>
+              <ul className="space-y-2.5">
+                <li><a href="#features" className={`text-[11px] font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Features</a></li>
+                <li><a href="#ai" className={`text-[11px] font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>AI Engine</a></li>
+                <li><Link to="/login" className={`text-[11px] font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Sign In</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className={`font-black uppercase tracking-[0.2em] text-xs ${isDark ? 'text-white' : 'text-slate-900'} mb-8`}>Company</h4>
-              <ul className="space-y-4">
-                <li><a href="#" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>About Us</a></li>
-                <li><a href="#" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Privacy</a></li>
-                <li><a href="mailto:support@financeai.com" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Contact</a></li>
+              <h4 className={`font-black uppercase tracking-[0.2em] text-[9px] ${isDark ? 'text-white' : 'text-slate-900'} mb-5`}>Company</h4>
+              <ul className="space-y-2.5">
+                <li><a href="#" className={`text-[11px] font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>About Us</a></li>
+                <li><a href="#" className={`text-[11px] font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Privacy</a></li>
+                <li><a href="mailto:support@financeai.com" className={`text-[11px] font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Contact</a></li>
               </ul>
             </div>
           </div>
 
-          <div className={`pt-12 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'} flex flex-col md:flex-row justify-between items-center gap-6`}>
-            <p className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+          <div className={`pt-8 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'} flex flex-col md:flex-row justify-between items-center gap-6`}>
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
               &copy; {year} FinanceAI. Built for Excellence.
             </p>
-            <div className="flex gap-6">
+            <div className="flex gap-5">
               <a href="#" className={`${isDark ? 'text-slate-600 hover:text-white' : 'text-slate-400 hover:text-slate-900'} transition-colors`}>
-                <Github className="w-5 h-5" />
+                <Github className="w-4 h-4" />
               </a>
               <a href="#" className={`${isDark ? 'text-slate-600 hover:text-white' : 'text-slate-400 hover:text-slate-900'} transition-colors`}>
-                <Globe className="w-5 h-5" />
+                <Globe className="w-4 h-4" />
               </a>
               <a href="#" className={`${isDark ? 'text-slate-600 hover:text-white' : 'text-slate-400 hover:text-slate-900'} transition-colors`}>
-                <Smartphone className="w-5 h-5" />
+                <Smartphone className="w-4 h-4" />
               </a>
             </div>
           </div>

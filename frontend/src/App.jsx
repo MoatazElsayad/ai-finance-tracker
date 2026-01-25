@@ -112,28 +112,28 @@ function Layout() {
         isCollapsed ? 'md:ml-20' : 'md:ml-64'
       }`}>
         <div className="px-4 md:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 ${
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
                 isDark 
                   ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40' 
                   : 'bg-gradient-to-br from-amber-400 to-amber-500 shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40'
               }`}>
-                <span className="text-white font-black text-xl tracking-tighter">FT</span>
+                <span className="text-white font-black text-lg tracking-tighter">FT</span>
               </div>
               <div className="flex flex-col">
-                <span className={`font-black text-xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <span className={`font-black text-lg tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Finance <span className="text-amber-500">Tracker</span>
                 </span>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   Intelligence
                 </span>
               </div>
             </div>
 
             {/* Navigation Links - Hidden on Mobile */}
-            <div className="hidden lg:flex gap-8">
+            <div className="hidden lg:flex gap-6">
               {[
                 { to: '/dashboard', label: 'Dashboard' },
                 { to: '/transactions', label: 'Transactions' },
@@ -142,7 +142,7 @@ function Layout() {
                 <Link 
                   key={item.to}
                   to={item.to} 
-                  className={`text-sm font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                  className={`text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
                     location.pathname === item.to
                       ? 'text-amber-500'
                       : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
@@ -154,38 +154,38 @@ function Layout() {
             </div>
 
             {/* Actions - Show on Desktop */}
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
               <Link
                 to="/receipt-upload"
                 state={{ fromNavbarScan: true }}
-                className={`p-3 rounded-2xl flex items-center gap-2 transition-all duration-300 ${
+                className={`p-2.5 rounded-xl flex items-center gap-2 transition-all duration-300 ${
                   isDark 
                     ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-700' 
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border-slate-200'
                 } border shadow-sm group`}
                 title="Scan Receipt"
               >
-                <ScanLine className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <ScanLine className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </Link>
               
               <Link
                 to="/transactions"
                 state={{ openForm: true }}
-                className={`p-3 rounded-2xl flex items-center gap-2 transition-all duration-300 ${
+                className={`p-2.5 rounded-xl flex items-center gap-2 transition-all duration-300 ${
                   isDark 
                     ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/30' 
                     : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
                 } border shadow-sm group`}
                 title="Add Transaction"
               >
-                <CirclePlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <CirclePlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </Link>
 
-              <div className={`w-px h-8 mx-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              <div className={`w-px h-6 mx-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
 
               <button
                 onClick={toggleTheme}
-                className={`p-3 rounded-2xl transition-all duration-300 ${
+                className={`p-2.5 rounded-xl transition-all duration-300 ${
                   isDark 
                     ? 'bg-slate-800/50 text-amber-400 hover:bg-slate-700 border-slate-700' 
                     : 'bg-slate-100 text-amber-600 hover:bg-slate-200 border-slate-200'
@@ -193,9 +193,9 @@ function Layout() {
                 title={isDark ? 'Light Mode' : 'Dark Mode'}
               >
                 {isDark ? (
-                  <Sun className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                  <Sun className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
                 ) : (
-                  <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform duration-500" />
+                  <Moon className="w-4 h-4 group-hover:-rotate-12 transition-transform duration-500" />
                 )}
               </button>
 
