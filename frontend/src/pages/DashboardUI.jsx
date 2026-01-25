@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
-import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils.jsx';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
 
 export const CustomTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
@@ -132,7 +132,7 @@ export const SectionHeaderAndSummary = ({
                     isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-300 text-slate-600'
                   }`}
                 >
-                  ◀
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
 
                 <span
@@ -154,7 +154,7 @@ export const SectionHeaderAndSummary = ({
                     isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-300 text-slate-600'
                   }`}
                 >
-                  ▶
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             )}
@@ -292,7 +292,7 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
                     : 'bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-900'
                 }`}
               >
-                <SheetIcon className="w-5 h-5" />
+                <FileSpreadsheet className="w-5 h-5" />
                 {reportLoading ? 'Preparing...' : 'Download CSV'}
               </button>
             </div>
@@ -966,7 +966,7 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
                 }`}
               >
                 View All
-                <span className="text-lg">→</span>
+                <ArrowRight className="w-4 h-4" />
               </a>
             </div>
 
@@ -1155,7 +1155,7 @@ export const ChatWidgetPopup = ({
             disabled={chatWidgetLoading || !chatWidgetInput.trim()}
             className="p-3 bg-amber-500 text-white rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
           >
-            <SendHorizonalIcon className="w-5 h-5" />
+            <SendHorizonal className="w-5 h-5" />
           </button>
         </div>
       </div>
