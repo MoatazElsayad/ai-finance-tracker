@@ -25,6 +25,16 @@ function Transactions() {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(new Set());
 
+  const toggleExpand = (id) => {
+    const newExpanded = new Set(expanded);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpanded(newExpanded);
+  };
+
   // Form state
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
@@ -657,13 +667,33 @@ function Transactions() {
               {displayTransactions.map((txn) => {
                 const isNote = txn.description.includes('||notes||');
                 const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
+                const isExpanded = expanded.has(txn.id);
                 
                 return (
-                  <tr key={txn.id} className={`${theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50/50'} transition-all group border-b border-slate-800/5`}>
+                  <tr 
+                    key={txn.id} 
+                    onClick={() => toggleExpand(txn.id)}
+                    className={`${theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50/50'} transition-all group border-b border-slate-800/5 cursor-pointer ${isExpanded ? (theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/50') : ''}`}
+                  >
                     <td className="px-10 py-8">
                       <div className="flex flex-col gap-1">
-                        <span className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors duration-300`}>{desc}</span>
-                        {note && <span className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{note}</span>}
+                        <div className="flex items-center gap-3">
+                          <span className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors duration-300`}>{desc}</span>
+                          {note && (
+                            <div className={`p-1 rounded-md ${isExpanded ? 'bg-amber-500 text-white' : 'bg-slate-500/10 text-slate-500'} transition-all`}>
+                              <FileText className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                        </div>
+                        {note && isExpanded && (
+                          <div className={`mt-3 p-4 rounded-2xl ${theme === 'dark' ? 'bg-slate-800/50 text-slate-300' : 'bg-white text-slate-600'} border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'} text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm`}>
+                            <p className="flex items-center gap-2 mb-1 opacity-50 text-[10px] uppercase tracking-[0.2em]">
+                              <FileText className="w-3 h-3" />
+                              Transaction Note
+                            </p>
+                            {note}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-10 py-8">

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText } from 'lucide-react';
 import { CHART_COLORS, getModelInfo } from './DashboardUtils';
 
 export const CustomTooltip = ({ active, payload, label, theme }) => {
@@ -955,6 +956,18 @@ export const AIInsightsSection = ({
 
 export const RecentActivitySection = ({ theme, recentTransactions }) => {
   const isDark = theme === 'dark';
+  const [expanded, setExpanded] = useState(new Set());
+
+  const toggleExpand = (id) => {
+    const newExpanded = new Set(expanded);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpanded(newExpanded);
+  };
+
   return (
     <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
       <div className="max-w-7xl mx-auto w-full">
@@ -1007,38 +1020,63 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recentTransactions.map((txn) => (
-                  <div 
-                    key={txn.id} 
-                    className={`group flex items-center justify-between p-5 rounded-[2rem] border transition-all duration-300 hover:scale-[1.02] ${
-                      isDark 
-                        ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60 hover:border-slate-600' 
-                        : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 shadow-sm hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center gap-5">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform group-hover:rotate-12 ${
-                        txn.amount > 0 
-                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-                          : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                      }`}>
-                        {txn.category_icon}
+                {recentTransactions.map((txn) => {
+                  const isNote = txn.description.includes('||notes||');
+                  const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
+                  const isExpanded = expanded.has(txn.id);
+
+                  return (
+                    <div 
+                      key={txn.id} 
+                      onClick={() => toggleExpand(txn.id)}
+                      className={`group flex flex-col p-5 rounded-[2rem] border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
+                        isDark 
+                          ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60 hover:border-slate-600' 
+                          : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 shadow-sm hover:shadow-md'
+                      } ${isExpanded ? (isDark ? 'bg-slate-800/80 border-amber-500/50' : 'bg-white border-amber-500/50 shadow-lg') : ''}`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-5">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform group-hover:rotate-12 ${
+                            txn.amount > 0 
+                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                              : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                          }`}>
+                            {txn.category_icon}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className={`font-black text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>{desc}</p>
+                              {note && (
+                                <div className={`p-1 rounded-md ${isExpanded ? 'bg-amber-500 text-white' : 'bg-slate-500/10 text-slate-500'} transition-all`}>
+                                  <FileText className="w-3 h-3" />
+                                </div>
+                              )}
+                            </div>
+                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1`}>{txn.category_name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xl font-black ${txn.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {txn.amount > 0 ? '+' : ''}{Math.abs(txn.amount).toLocaleString('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).replace('EGP', '£')}
+                          </p>
+                          <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-400'} mt-1`}>
+                            {new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className={`font-black text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>{txn.description}</p>
-                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1`}>{txn.category_name}</p>
-                      </div>
+                      {note && isExpanded && (
+                        <div className={`mt-4 p-4 rounded-2xl ${isDark ? 'bg-slate-900/50 text-slate-300' : 'bg-slate-100 text-slate-600'} border ${isDark ? 'border-slate-700' : 'border-slate-200'} text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300 shadow-inner`}>
+                          <p className="flex items-center gap-2 mb-1 opacity-50 text-[10px] uppercase tracking-[0.2em]">
+                            <FileText className="w-3 h-3" />
+                            Transaction Note
+                          </p>
+                          {note}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className={`text-xl font-black ${txn.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {txn.amount > 0 ? '+' : ''}{Math.abs(txn.amount).toLocaleString('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).replace('EGP', '£')}
-                      </p>
-                      <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-400'} mt-1`}>
-                        {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
