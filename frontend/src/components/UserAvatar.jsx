@@ -9,8 +9,8 @@ function UserAvatar({ user, size = "w-10 h-10", showName = false }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Use username as seed for consistent avatar
-  const seed = user?.username || user?.email || "anonymous";
+  // Use custom avatar_seed if available, otherwise fallback to username/email
+  const seed = user?.avatar_seed || user?.username || user?.email || "anonymous";
   
   // DiceBear API URL with avataaars style
   // Format: https://api.dicebear.com/9.x/{style}/svg?seed={seed}

@@ -32,6 +32,7 @@ class User(Base):
     last_name = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     gender = Column(String, nullable=True)
+    avatar_seed = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     

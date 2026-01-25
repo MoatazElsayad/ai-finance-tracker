@@ -125,6 +125,7 @@ class ProfileUpdate(BaseModel):
     last_name: str | None = None
     phone: str | None = None
     gender: str | None = None
+    avatar_seed: str | None = None
 
 class CategoryCreate(BaseModel):
     name: str
@@ -271,6 +272,7 @@ def get_me(token: str, db: Session = Depends(get_db)):
         "last_name": user.last_name,
         "phone": user.phone,
         "gender": user.gender,
+        "avatar_seed": user.avatar_seed,
         "createdAt": user.created_at.isoformat() if user.created_at else None
     }
 
@@ -1429,6 +1431,9 @@ def update_profile(
     if data.gender is not None:
         current_user.gender = data.gender
     
+    if data.avatar_seed is not None:
+        current_user.avatar_seed = data.avatar_seed
+    
     db.commit()
     db.refresh(current_user)
     return {
@@ -1439,6 +1444,7 @@ def update_profile(
         "last_name": current_user.last_name,
         "phone": current_user.phone,
         "gender": current_user.gender,
+        "avatar_seed": current_user.avatar_seed,
         "createdAt": current_user.created_at.isoformat() if current_user.created_at else None
     }
 

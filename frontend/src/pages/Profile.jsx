@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { getCurrentUser, updateUserProfile, generateReport } from '../api'; // Adjust import path as needed
 import { useTheme } from '../context/ThemeContext';
-import { User, Mail, Calendar, Shield, Edit, Save, X, Upload, FileText, ArrowLeftRight } from 'lucide-react';
+import { User, Mail, Calendar, Shield, Edit, Save, X, Upload, FileText, ArrowLeftRight, RefreshCw } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 
 function Profile() {
@@ -20,6 +20,7 @@ function Profile() {
     last_name: '',
     phone: '',
     gender: '',
+    avatar_seed: '',
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' }); // success / error
@@ -37,6 +38,7 @@ function Profile() {
           last_name: userData.last_name || '',
           phone: userData.phone || '',
           gender: userData.gender || '',
+          avatar_seed: userData.avatar_seed || '',
         });
       } catch (err) {
         console.error('Failed to load user profile:', err);
@@ -48,6 +50,19 @@ function Profile() {
 
     fetchUser();
   }, []);
+
+  const handleRandomizeAvatar = () => {
+    const randomSeed = Math.random().toString(36).substring(2, 15);
+    setFormData(prev => ({
+      ...prev,
+      avatar_seed: randomSeed
+    }));
+    // Also update the local user object so the avatar updates instantly in the preview
+    setUser(prev => ({
+      ...prev,
+      avatar_seed: randomSeed
+    }));
+  };
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -163,6 +178,16 @@ function Profile() {
                 <div className={`relative w-48 h-48 rounded-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'} flex items-center justify-center border-4 border-amber-500 shadow-2xl overflow-hidden transform group-hover:scale-105 transition-transform duration-500`}>
                   {user && <UserAvatar user={user} size="w-48 h-48" />}
                 </div>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={handleRandomizeAvatar}
+                    className="absolute -bottom-2 -right-2 p-4 bg-amber-500 text-white rounded-2xl shadow-xl hover:bg-amber-600 transition-all active:scale-90 group/btn border-4 border-slate-900"
+                    title="Randomize Avatar"
+                  >
+                    <RefreshCw className="w-6 h-6 group-hover/btn:rotate-180 transition-transform duration-500" />
+                  </button>
+                )}
               </div>
               
               <div className="text-center md:text-left">

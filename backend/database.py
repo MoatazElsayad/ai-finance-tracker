@@ -28,6 +28,8 @@ def init_database():
             col_names = [c[1] for c in cols]
             if "gender" not in col_names:
                 conn.execute("ALTER TABLE users ADD COLUMN gender TEXT")
+            if "avatar_seed" not in col_names:
+                conn.execute("ALTER TABLE users ADD COLUMN avatar_seed TEXT")
         except Exception:
             pass
     
