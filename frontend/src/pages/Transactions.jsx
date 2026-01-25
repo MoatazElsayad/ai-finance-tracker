@@ -2,7 +2,7 @@
  * Transactions Page - Enhanced Dark Mode Finance Tracker
  * Professional transaction management with advanced filtering and insights
  */
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
@@ -656,78 +656,89 @@ function Transactions() {
             </thead>
             <tbody className="divide-y-2 divide-slate-800/5">
               {Object.entries(groupedTransactions).map(([dateLabel, txns]) => (
-                <tr key={dateLabel} className={`${theme === 'dark' ? 'bg-slate-900/30' : 'bg-slate-50/30'}`}>
-                  <td colSpan="5" className="px-10 py-5">
-                    <span className={`text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-amber-500/80' : 'text-amber-600/80'}`}>
-                      {dateLabel}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {displayTransactions.map((txn) => {
-                const isNote = txn.description.includes('||notes||');
-                const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
-                const isExpanded = expanded.has(txn.id);
-                
-                return (
-                  <tr 
-                    key={txn.id} 
-                    onClick={() => toggleExpand(txn.id)}
-                    className={`${theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50/50'} transition-all group border-b border-slate-800/5 cursor-pointer ${isExpanded ? (theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/50') : ''}`}
-                  >
-                    <td className="px-10 py-8">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-3">
-                          <span className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors duration-300`}>{desc}</span>
-                          {note && (
-                            <div className={`p-1 rounded-md ${isExpanded ? 'bg-amber-500 text-white' : 'bg-slate-500/10 text-slate-500'} transition-all`}>
-                              <FileText className="w-3.5 h-3.5" />
-                            </div>
-                          )}
+                <React.Fragment key={dateLabel}>
+                  <tr className={`${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/30'} backdrop-blur-sm sticky top-0 z-10`}>
+                    <td colSpan="5" className="px-10 py-4 border-y border-slate-800/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
+                        <span className={`text-sm font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>
+                          {dateLabel}
+                        </span>
+                        <div className={`ml-auto px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] ${theme === 'dark' ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-500'}`}>
+                          {txns.length} {txns.length === 1 ? 'Transaction' : 'Transactions'}
                         </div>
-                        {note && isExpanded && (
-                          <div className={`mt-3 p-4 rounded-2xl ${theme === 'dark' ? 'bg-slate-800/50 text-slate-300' : 'bg-white text-slate-600'} border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'} text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm`}>
-                            <p className="flex items-center gap-2 mb-1 opacity-50 text-[10px] uppercase tracking-[0.2em]">
-                              <FileText className="w-3 h-3" />
-                              Transaction Note
-                            </p>
-                            {note}
-                          </div>
-                        )}
                       </div>
-                    </td>
-                    <td className="px-10 py-8">
-                      <span className={`inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl text-sm font-black ${
-                        theme === 'dark' ? 'bg-slate-800/50 text-slate-300' : 'bg-white text-slate-600'
-                      } border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-100'} shadow-sm group-hover:border-amber-500/30 transition-all duration-300`}>
-                        <span className="text-xl">{txn.category_icon}</span>
-                        <span className="uppercase tracking-[0.1em]">{txn.category_name}</span>
-                      </span>
-                    </td>
-                    <td className="px-10 py-8">
-                      <span className={`font-black uppercase tracking-[0.1em] text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </td>
-                    <td className={`px-10 py-8 text-right font-black text-2xl ${
-                      txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500'
-                    }`}>
-                      <div className="flex items-center justify-end gap-2">
-                        <span>{txn.amount > 0 ? '+' : '-'}</span>
-                        <span>£{Math.abs(txn.amount).toLocaleString()}</span>
-                      </div>
-                    </td>
-                    <td className="px-10 py-8 text-center">
-                      <button
-                        onClick={() => handleDelete(txn.id)}
-                        className={`p-4 rounded-2xl ${theme === 'dark' ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white'} transition-all shadow-sm group/btn hover:scale-110 active:scale-95`}
-                      >
-                        <Trash2 className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
-                      </button>
                     </td>
                   </tr>
-                );
-              })}
+                  {txns.map((txn) => {
+                    const isNote = txn.description.includes('||notes||');
+                    const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
+                    const isExpanded = expanded.has(txn.id);
+                    
+                    return (
+                      <tr 
+                        key={txn.id} 
+                        onClick={() => toggleExpand(txn.id)}
+                        className={`${theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50/50'} transition-all group border-b border-slate-800/5 cursor-pointer ${isExpanded ? (theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/50') : ''}`}
+                      >
+                        <td className="px-10 py-8">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-3">
+                              <span className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors duration-300`}>{desc}</span>
+                              {note && (
+                                <div className={`p-1 rounded-md ${isExpanded ? 'bg-amber-500 text-white' : 'bg-slate-500/10 text-slate-500'} transition-all`}>
+                                  <FileText className="w-3.5 h-3.5" />
+                                </div>
+                              )}
+                            </div>
+                            {note && isExpanded && (
+                              <div className={`mt-3 p-4 rounded-2xl ${theme === 'dark' ? 'bg-slate-800/50 text-slate-300' : 'bg-white text-slate-600'} border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'} text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm`}>
+                                <p className="flex items-center gap-2 mb-1 opacity-50 text-[10px] uppercase tracking-[0.2em]">
+                                  <FileText className="w-3 h-3" />
+                                  Transaction Note
+                                </p>
+                                {note}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-10 py-8">
+                          <span className={`inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl text-sm font-black ${
+                            theme === 'dark' ? 'bg-slate-800/50 text-slate-300' : 'bg-white text-slate-600'
+                          } border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-100'} shadow-sm group-hover:border-amber-500/30 transition-all duration-300`}>
+                            <span className="text-xl">{txn.category_icon}</span>
+                            <span className="uppercase tracking-[0.1em]">{txn.category_name}</span>
+                          </span>
+                        </td>
+                        <td className="px-10 py-8">
+                          <span className={`font-black uppercase tracking-[0.1em] text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </td>
+                        <td className={`px-10 py-8 text-right font-black text-2xl ${
+                          txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500'
+                        }`}>
+                          <div className="flex items-center justify-end gap-2">
+                            <span>{txn.amount > 0 ? '+' : '-'}</span>
+                            <span>£{Math.abs(txn.amount).toLocaleString()}</span>
+                          </div>
+                        </td>
+                        <td className="px-10 py-8 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(txn.id);
+                            }}
+                            className={`p-4 rounded-2xl ${theme === 'dark' ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white'} transition-all shadow-sm group/btn hover:scale-110 active:scale-95`}
+                          >
+                            <Trash2 className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
             </tbody>
           </table>
         </div>
