@@ -739,23 +739,38 @@ function BudgetPlanning() {
               ].map((card, i) => (
                 <div 
                   key={i}
-                  className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} group animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-hidden`}
+                  className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} group animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-hidden relative`}
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
                   <div className="flex items-center justify-between mb-8">
-                    <span className={`text-sm font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{card.label}</span>
-                    <div className={`w-14 h-14 bg-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500/20 rounded-[1.25rem] flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-${card.color}-500/10`}>
-                      <card.icon className={`w-8 h-8 text-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500`} strokeWidth={2.5} />
+                    <span className={`text-sm font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {card.label}
+                    </span>
+                    <div className={`w-14 h-14 bg-${card.color}-500/20 rounded-[1.25rem] flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-${card.color}-500/10`}>
+                      <card.icon 
+                        className={`w-8 h-8 text-${card.color}-500`} 
+                        strokeWidth={2.5} 
+                      />
                     </div>
                   </div>
+
                   <div className="flex flex-col gap-1">
-                    <p className={`text-4xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                      {card.isPercent ? `${card.value.toFixed(0)}%` : `£${card.value.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`}
+                    <p 
+                      className={`text-4xl font-black tracking-tight text-${card.color}-500`}
+                    >
+                      {card.isPercent 
+                        ? `${card.value.toFixed(0)}%` 
+                        : `£${card.value.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`}
                     </p>
-                    <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{card.desc}</p>
+                    <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {card.desc}
+                    </p>
                   </div>
-                  {/* Decorative background icon */}
-                  <card.icon className={`absolute -bottom-6 -right-6 w-32 h-32 text-${card.color === 'amber' ? 'amber' : card.color === 'blue' ? 'blue' : card.color === 'rose' ? 'rose' : 'emerald'}-500/5 -rotate-12 group-hover:rotate-0 transition-all duration-700`} />
+
+                  {/* Decorative background icon – same color as icon but faded */}
+                  <card.icon 
+                    className={`absolute -bottom-8 -right-8 w-40 h-40 text-slate-500 -rotate-12 group-hover:rotate-0 transition-all duration-700 ease-out`}
+                  />
                 </div>
               ))}
             </div>
