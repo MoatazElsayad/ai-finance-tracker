@@ -16,7 +16,7 @@ function Transactions() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showCustomCategoryCreator, setShowCustomCategoryCreator] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(true);
   const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -163,19 +163,29 @@ function Transactions() {
       filtered = filtered.filter(t => t.category_id === parseInt(filterCategory));
     }
 
-    const now = new Date();
-    if (dateRange === 'today') {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      filtered = filtered.filter(t => new Date(t.date) >= today);
-    } else if (dateRange === 'week') {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filtered = filtered.filter(t => new Date(t.date) >= weekAgo);
-    } else if (dateRange === 'month') {
-      const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
-      filtered = filtered.filter(t => new Date(t.date) >= monthAgo);
-    } else if (dateRange === 'year') {
-      const yearAgo = new Date(now.getFullYear(), 0, 1);
-      filtered = filtered.filter(t => new Date(t.date) >= yearAgo);
+    // Apply date range filter based on viewMode and selectedMonth
+    const { startDate, endDate } = getDateRange();
+    filtered = filtered.filter(t => {
+      const txnDate = new Date(t.date);
+      return txnDate >= startDate && txnDate <= endDate;
+    });
+
+    // Also apply quick dateRange filters if they were set (though UI doesn't use them currently)
+    if (dateRange !== 'all') {
+      const now = new Date();
+      if (dateRange === 'today') {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        filtered = filtered.filter(t => new Date(t.date) >= today);
+      } else if (dateRange === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(t => new Date(t.date) >= weekAgo);
+      } else if (dateRange === 'month') {
+        const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
+        filtered = filtered.filter(t => new Date(t.date) >= monthAgo);
+      } else if (dateRange === 'year') {
+        const yearAgo = new Date(now.getFullYear(), 0, 1);
+        filtered = filtered.filter(t => new Date(t.date) >= yearAgo);
+      }
     }
 
     filtered.sort((a, b) => {
@@ -191,7 +201,7 @@ function Transactions() {
     });
 
     return filtered;
-  }, [transactions, searchQuery, filterType, filterCategory, dateRange, sortBy, sortOrder]);
+  }, [transactions, searchQuery, filterType, filterCategory, dateRange, viewMode, selectedMonth, sortBy, sortOrder]);
 
   // Calculate totals based on current filters
   const totals = useMemo(() => {
