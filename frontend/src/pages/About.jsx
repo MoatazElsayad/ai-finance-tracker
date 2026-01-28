@@ -1,9 +1,9 @@
 import { useTheme } from '../context/ThemeContext';
-import { Info, Code2, User, Github, Layers } from 'lucide-react';
+import { Info, Code2, User, Github, Layers, ImagePlus, BarChart3, Target, Wallet } from 'lucide-react';
 
-function TechIcon({ src, alt }) {
+function TechIcon({ src, alt, isDark }) {
   return (
-    <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-500">
+    <div className={`p-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'} rounded-xl transition-colors group-hover:scale-110 transition-transform duration-500`}>
       <img
         src={src}
         alt={alt}
@@ -19,9 +19,44 @@ function About() {
   const isDark = theme === 'dark';
 
   const usage = [
-    { label: 'React/Tailwind', color: 'bg-amber-500', pct: 40 },
-    { label: 'FastAPI/Python', color: 'bg-purple-500', pct: 40 },
-    { label: 'SQLite/SQLAlchemy', color: 'bg-slate-500', pct: 20 },
+    { label: 'Frontend (React/Tailwind)', color: 'bg-amber-500', pct: 30 },
+    { label: 'Backend (FastAPI/Python)', color: 'bg-purple-500', pct: 55 },
+    { label: 'Data (SQLite/SQLAlchemy)', color: 'bg-slate-500', pct: 15 },
+  ];
+
+  const features = [
+    {
+      title: 'Smart AI Parsing',
+      desc: 'Automatic extraction of merchant, amount, and date from receipt images using advanced OCR and LLM models.',
+      icon: ImagePlus,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/20'
+    },
+    {
+      title: 'Professional Reports',
+      desc: 'High-quality PDF export with side-by-side financial charts, executive summaries, and transaction ledgers.',
+      icon: BarChart3,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+      borderColor: 'border-emerald-500/20'
+    },
+    {
+      title: 'Savings Goals',
+      desc: 'Track your progress towards long-term financial targets with real-time percentage calculations and visual cues.',
+      icon: Target,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-500/10',
+      borderColor: 'border-amber-500/20'
+    },
+    {
+      title: 'Budget Compliance',
+      desc: 'Set category-based budgets and monitor your spending limits with intelligent over-budget warnings.',
+      icon: Wallet,
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+      borderColor: 'border-purple-500/20'
+    }
   ];
 
   return (
@@ -66,24 +101,39 @@ function About() {
               </div>
             </blockquote>
 
-            <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-8`}>Languages & Tools Used</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+            <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-8`}>Languages & Core Tools</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { name: 'React', icon: 'react/react-original.svg' },
-                { name: 'Vite', icon: 'vitejs/vitejs-original.svg' },
-                { name: 'Tailwind', icon: 'tailwindcss/tailwindcss-plain.svg' },
-                { name: 'Python', icon: 'python/python-original.svg' },
                 { name: 'FastAPI', icon: 'fastapi/fastapi-original.svg' },
+                { name: 'Python', icon: 'python/python-original.svg' },
                 { name: 'SQLite', icon: 'sqlite/sqlite-original.svg' },
+                { name: 'Tailwind', icon: 'tailwindcss/tailwindcss-plain.svg' },
                 { name: 'SQLAlchemy', icon: 'sqlalchemy/sqlalchemy-original.svg' },
+                { name: 'Matplotlib', icon: 'matplotlib/matplotlib-original.svg' },
                 { name: 'OpenRouter', icon: 'https://avatars.githubusercontent.com/u/12627020?s=200&v=4', custom: true }
               ].map((tech) => (
-                <div key={tech.name} className={`group p-6 rounded-[2rem] border-2 ${isDark ? 'border-slate-700/50 hover:border-amber-500/50 bg-slate-800/30' : 'border-slate-200 hover:border-amber-500/30 bg-white'} transition-all duration-500 flex flex-col items-center gap-4 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1`}>
+                <div key={tech.name} className={`group p-4 rounded-2xl border ${isDark ? 'border-slate-700/50 hover:border-amber-500/50 bg-slate-800/30' : 'border-slate-200 hover:border-amber-500/30 bg-white'} transition-all duration-500 flex flex-col items-center gap-3 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1`}>
                   <TechIcon 
                     src={tech.custom ? tech.icon : `https://cdn.jsdelivr.net/gh/devicons/devicon/icons/${tech.icon}`} 
                     alt={tech.name} 
+                    isDark={isDark}
                   />
-                  <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-black text-[10px] uppercase tracking-[0.2em]`}>{tech.name}</span>
+                  <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-black text-[9px] uppercase tracking-[0.1em]`}>{tech.name}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Key Features Section */}
+            <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-12 mb-8`}>Key Capabilities</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {features.map((feature) => (
+                <div key={feature.title} className={`p-6 rounded-[2rem] border-2 ${isDark ? 'border-slate-700/50 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'} group/feat hover:border-amber-500/30 transition-all duration-500`}>
+                  <div className={`w-12 h-12 rounded-xl ${feature.bgColor} ${feature.borderColor} border flex items-center justify-center mb-4 group-hover/feat:scale-110 transition-transform`}>
+                    <feature.icon className={`w-6 h-6 ${feature.color}`} />
+                  </div>
+                  <h4 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'} mb-2`}>{feature.title}</h4>
+                  <p className={`text-xs font-bold leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -99,12 +149,12 @@ function About() {
                   <div className="p-3 bg-purple-500/10 rounded-xl border-2 border-purple-500/20">
                     <Code2 className="w-6 h-6 text-purple-500" strokeWidth={3} />
                   </div>
-                  Tech Stack
+                  System Architecture
                 </h2>
-                <p className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Language distribution in this project.</p>
+                <p className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'} text-sm uppercase tracking-widest`}>Engineering distribution</p>
               </div>
               
-              <div className="w-full h-14 rounded-[1.25rem] overflow-hidden flex shadow-inner border-4 border-slate-700/10 relative z-10">
+              <div className="w-full h-10 rounded-2xl overflow-hidden flex shadow-inner border-4 border-slate-700/10 relative z-10">
                 {usage.map((u) => (
                   <div
                     key={u.label}
@@ -115,14 +165,14 @@ function About() {
                 ))}
               </div>
               
-              <div className="mt-10 grid grid-cols-1 gap-4 relative z-10">
+              <div className="mt-8 grid grid-cols-1 gap-3 relative z-10">
                 {usage.map((u) => (
-                  <div key={u.label} className={`flex items-center justify-between p-5 rounded-[1.5rem] ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100'} border-2 transition-all hover:border-amber-500/20`}>
-                    <div className="flex items-center gap-4">
-                      <span className={`inline-block w-5 h-5 rounded-full ${u.color} shadow-lg shadow-${u.color.split('-')[1]}-500/20`} />
-                      <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'} font-black text-[10px] uppercase tracking-[0.2em]`}>{u.label}</span>
+                  <div key={u.label} className={`flex items-center justify-between p-4 rounded-2xl ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100'} border transition-all hover:border-amber-500/20`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-block w-4 h-4 rounded-full ${u.color} shadow-lg shadow-${u.color.split('-')[1]}-500/20`} />
+                      <span className={`${isDark ? 'text-slate-400' : 'text-slate-600'} font-black text-[9px] uppercase tracking-[0.2em]`}>{u.label}</span>
                     </div>
-                    <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'} text-lg`}>{u.pct}%</span>
+                    <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'} text-md`}>{u.pct}%</span>
                   </div>
                 ))}
               </div>
