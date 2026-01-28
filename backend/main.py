@@ -1817,55 +1817,71 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     styles.add(ParagraphStyle(
         name="MainTitle", 
         fontName="Helvetica-Bold", 
-        fontSize=24, 
+        fontSize=28, 
         textColor=dark_slate, 
-        spaceAfter=0, # Removed for table alignment
-        alignment=0 # Left
+        spaceAfter=0,
+        alignment=0,
+        leading=32
     ))
     styles.add(ParagraphStyle(
         name="StatLabel", 
         fontName="Helvetica-Bold", 
-        fontSize=9, 
+        fontSize=8.5, 
         textColor=slate_500, 
         textTransform='uppercase',
-        alignment=1 # Center
+        alignment=1,
+        leading=12
     ))
     styles.add(ParagraphStyle(
         name="StatValue", 
         fontName="Helvetica-Bold", 
-        fontSize=16, 
+        fontSize=18, 
         textColor=dark_slate, 
-        alignment=1 # Center
+        alignment=1,
+        leading=22
     ))
     styles.add(ParagraphStyle(
         name="SectionHeader", 
         fontName="Helvetica-Bold", 
-        fontSize=14, 
+        fontSize=15, 
         textColor=accent,
-        spaceBefore=20,
-        spaceAfter=12,
-        borderPadding=(5, 0, 5, 0),
-        # borderSide='bottom',
-        # borderType='line'
+        spaceBefore=25,
+        spaceAfter=15,
+        leading=20
     ))
     styles.add(ParagraphStyle(
         name="Subtitle",
         fontName="Helvetica",
-        fontSize=10,
+        fontSize=10.5,
         textColor=slate_500,
-        spaceAfter=2 # Reduced for table usage
+        spaceAfter=2,
+        leading=14
     ))
     styles.add(ParagraphStyle(
         name="RightSubtitle",
         parent=styles["Subtitle"],
-        alignment=2 # Right
+        alignment=2
     ))
     styles.add(ParagraphStyle(
         name="NormalFancy",
         fontName="Helvetica",
-        fontSize=10,
+        fontSize=11,
         textColor=dark_slate,
-        leading=14
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name="TableHeader",
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        textColor=colors.white,
+        alignment=0
+    ))
+    styles.add(ParagraphStyle(
+        name="TableCell",
+        fontName="Helvetica",
+        fontSize=9.5,
+        textColor=dark_slate,
+        leading=12
     ))
 
     story = []
@@ -1921,8 +1937,8 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#e2e8f0")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 12),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+        ('TOPPADDING', (0,0), (-1,-1), 15),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 15),
     ]))
     story.append(summary_table)
     story.append(Spacer(1, 24))
@@ -1959,8 +1975,13 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
             ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#3b82f6")), # Blue for goals
             ("TEXTCOLOR", (0,0), (-1,0), colors.white),
             ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 9),
+            ("FONTSIZE", (0,0), (-1,0), 10.5), # Slightly larger header
+            ("FONTNAME", (0,1), (-1,-1), "Helvetica"),
+            ("FONTSIZE", (0,1), (-1,-1), 9.5),
             ("ALIGN", (1,1), (3,-1), "RIGHT"),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+            ("TOPPADDING", (0,0), (-1,-1), 8),
         ])
         goal_tbl.setStyle(goal_style)
         story.append(goal_tbl)
@@ -2016,10 +2037,10 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         ]))
         story.append(rec_table)
         if rec_model:
-            # Clean model name for display (remove provider prefix)
-            display_model = rec_model.split('/')[-1].split(':')[0].replace('-', ' ').title()
-            story.append(Paragraph(f"Analysis engine: {display_model}", styles["Subtitle"]))
-        story.append(Spacer(1, 24))
+             # Clean model name for display (remove provider prefix)
+             display_model = rec_model.split('/')[-1].split(':')[0].replace('-', ' ').title()
+             story.append(Paragraph(f"<i>Analysis engine: {display_model}</i>", styles["Subtitle"]))
+         story.append(Spacer(1, 24))
 
 
     # 5. Budget Performance
@@ -2044,9 +2065,14 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
             ("BACKGROUND", (0,0), (-1,0), accent),
             ("TEXTCOLOR", (0,0), (-1,0), colors.white),
             ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 9),
+            ("FONTSIZE", (0,0), (-1,0), 10.5),
+            ("FONTNAME", (0,1), (-1,-1), "Helvetica"),
+            ("FONTSIZE", (0,1), (-1,-1), 9.5),
             ("ALIGN", (1,1), (3,-1), "RIGHT"),
             ("ALIGN", (4,1), (4,-1), "CENTER"),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+            ("TOPPADDING", (0,0), (-1,-1), 6),
         ])
         
         for i in range(1, len(bs_rows)):
@@ -2084,9 +2110,14 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         ("BACKGROUND", (0,0), (-1,0), dark_slate),
         ("TEXTCOLOR", (0,0), (-1,0), colors.white),
         ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("FONTSIZE", (0,0), (-1,0), 9.5),
+        ("FONTNAME", (0,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE", (0,1), (-1,-1), 8.5),
         ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, bg_light]),
         ("ALIGN", (3,1), (3,-1), "RIGHT"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ("TOPPADDING", (0,0), (-1,-1), 4),
     ])
     
     for i in range(1, len(rows)):
