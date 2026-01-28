@@ -1819,7 +1819,7 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         fontName="Helvetica-Bold", 
         fontSize=24, 
         textColor=dark_slate, 
-        spaceAfter=12,
+        spaceAfter=0, # Removed for table alignment
         alignment=0 # Left
     ))
     styles.add(ParagraphStyle(
@@ -1853,7 +1853,12 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         fontName="Helvetica",
         fontSize=10,
         textColor=slate_500,
-        spaceAfter=10
+        spaceAfter=2 # Reduced for table usage
+    ))
+    styles.add(ParagraphStyle(
+        name="RightSubtitle",
+        parent=styles["Subtitle"],
+        alignment=2 # Right
     ))
     styles.add(ParagraphStyle(
         name="NormalFancy",
@@ -1866,16 +1871,30 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     story = []
     
     # 1. Header Section
+    from datetime import datetime
+    gen_date = datetime.now().strftime("%d %b %Y")
+    
     header_data = [
-        [Paragraph("Moataz Finance", styles["MainTitle"]), ""],
-        [Paragraph(f"<b>Financial Intelligence Report</b> • {period_label}", styles["Subtitle"]), ""],
-        [Paragraph(f"Client: {user.first_name or ''} {user.last_name or ''} ({user.email})", styles["Subtitle"]), ""],
+        [
+            Paragraph("Moataz Finance", styles["MainTitle"]), 
+            Paragraph(f"<b>Financial Intelligence</b>", styles["RightSubtitle"])
+        ],
+        [
+            Paragraph(f"Client: {user.first_name or ''} {user.last_name or ''}", styles["Subtitle"]), 
+            Paragraph(f"Period: {period_label}", styles["RightSubtitle"])
+        ],
+        [
+            Paragraph(f"{user.email}", styles["Subtitle"]),
+            Paragraph(f"Generated: {gen_date}", styles["RightSubtitle"])
+        ]
     ]
-    header_table = Table(header_data, colWidths=[4*inch, 3*inch])
+    header_table = Table(header_data, colWidths=[3.75*inch, 3.5*inch])
     header_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
         ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(header_table)
     story.append(HRFlowable(width="100%", color=accent, thickness=2, spaceBefore=10, spaceAfter=20))
