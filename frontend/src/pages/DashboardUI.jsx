@@ -205,12 +205,19 @@ export const SectionHeaderAndSummary = ({
   );
 };
 
-const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency }) => {
+const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className }) => {
   const colors = {
     green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
     red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',
     amber: isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-600 bg-amber-50 border-amber-100',
     blue: isDark ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-600 bg-blue-50 border-blue-100',
+  };
+
+  const textColors = {
+    green: isDark ? 'text-green-400' : 'text-green-600',
+    red: isDark ? 'text-red-400' : 'text-red-600',
+    amber: isDark ? 'text-amber-400' : 'text-amber-600',
+    blue: isDark ? 'text-blue-400' : 'text-blue-600',
   };
 
   const formatValue = (v) => {
@@ -231,7 +238,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency }) 
           {icon}
         </div>
       </div>
-      <p className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+      <p className={`text-3xl font-black tracking-tight ${className || textColors[color]}`}>
         {formatValue(value)}
       </p>
       <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
