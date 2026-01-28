@@ -49,20 +49,20 @@ function Transactions() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('date'); // 'date', 'amount', 'category'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
-  const [dateRange, setDateRange] = useState('all'); // 'all', 'today', 'week', 'month', 'year'
 
-  // Get date range based on view mode
+  // Get date range based on view mode (using YYYY-MM-DD strings for safe comparison)
   const getDateRange = () => {
     if (viewMode === 'monthly') {
-      const start = new Date(selectedMonth.year, selectedMonth.month, 1);
-      const end = new Date(selectedMonth.year, selectedMonth.month + 1, 0);
+      const start = `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(selectedMonth.year, selectedMonth.month + 1, 0).getDate();
+      const end = `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
       return { startDate: start, endDate: end };
     } else if (viewMode === 'yearly') {
-      const start = new Date(selectedMonth.year, 0, 1);
-      const end = new Date(selectedMonth.year, 11, 31);
+      const start = `${selectedMonth.year}-01-01`;
+      const end = `${selectedMonth.year}-12-31`;
       return { startDate: start, endDate: end };
     } else {
-      return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+      return { startDate: '1900-01-01', endDate: '2100-12-31' };
     }
   };
 
@@ -166,28 +166,11 @@ function Transactions() {
     // Apply date range filter based on viewMode and selectedMonth
     const { startDate, endDate } = getDateRange();
     filtered = filtered.filter(t => {
-      const txnDate = new Date(t.date);
-      return txnDate >= startDate && txnDate <= endDate;
+      const dateStr = t.date.split('T')[0];
+      return dateStr >= startDate && dateStr <= endDate;
     });
 
-    // Also apply quick dateRange filters if they were set (though UI doesn't use them currently)
-    if (dateRange !== 'all') {
-      const now = new Date();
-      if (dateRange === 'today') {
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        filtered = filtered.filter(t => new Date(t.date) >= today);
-      } else if (dateRange === 'week') {
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(t => new Date(t.date) >= weekAgo);
-      } else if (dateRange === 'month') {
-        const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
-        filtered = filtered.filter(t => new Date(t.date) >= monthAgo);
-      } else if (dateRange === 'year') {
-        const yearAgo = new Date(now.getFullYear(), 0, 1);
-        filtered = filtered.filter(t => new Date(t.date) >= yearAgo);
-      }
-    }
-
+    // Sort transactions
     filtered.sort((a, b) => {
       let comparison = 0;
       if (sortBy === 'date') {
@@ -201,7 +184,7 @@ function Transactions() {
     });
 
     return filtered;
-  }, [transactions, searchQuery, filterType, filterCategory, dateRange, viewMode, selectedMonth, sortBy, sortOrder]);
+  }, [transactions, searchQuery, filterType, filterCategory, viewMode, selectedMonth, sortBy, sortOrder]);
 
   // Calculate totals based on current filters
   const totals = useMemo(() => {
@@ -236,7 +219,9 @@ function Transactions() {
   const groupedTransactions = useMemo(() => {
     const groups = {};
     displayTransactions.forEach(txn => {
-      const dateKey = new Date(txn.date).toLocaleDateString('en-US', {
+      const dateParts = txn.date.split('T')[0].split('-');
+      const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      const dateKey = dateObj.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -722,7 +707,11 @@ function Transactions() {
                         </td>
                         <td className="px-10 py-8">
                           <span className={`font-black uppercase tracking-[0.1em] text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {(() => {
+                              const dateParts = txn.date.split('T')[0].split('-');
+                              const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                              return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            })()}
                           </span>
                         </td>
                         <td className={`px-10 py-8 text-right font-black text-2xl ${
