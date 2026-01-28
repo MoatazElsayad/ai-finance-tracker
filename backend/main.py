@@ -1932,13 +1932,33 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         # Recommendation Card
         rec_story = []
         for line in lines:
-            if line.startswith(('-', '*', '1.', '2.', '3.')):
-                rec_story.append(ListItem(Paragraph(line.lstrip('-*123. '), styles["NormalFancy"])))
+            # Check for bullet points or numbered lists
+            clean_line = re.sub(r"^[*-]\s+", "", line) # Remove bullet
+            clean_line = re.sub(r"^\d+\.\s+", "", clean_line) # Remove numbering
+            
+            if line.startswith(('-', '*', '1.', '2.', '3.', '4.', '5.')):
+                rec_story.append(ListItem(Paragraph(clean_line, styles["NormalFancy"])))
             else:
                 rec_story.append(Paragraph(line, styles["NormalFancy"]))
                 rec_story.append(Spacer(1, 6))
         
-        rec_box_data = [[rec_story]]
+        # Wrap rec_story in ListFlowable if it contains ListItems
+        final_rec_content = []
+        current_list_items = []
+        
+        for item in rec_story:
+            if isinstance(item, ListItem):
+                current_list_items.append(item)
+            else:
+                if current_list_items:
+                    final_rec_content.append(ListFlowable(current_list_items, bulletType='bullet'))
+                    current_list_items = []
+                final_rec_content.append(item)
+        
+        if current_list_items:
+            final_rec_content.append(ListFlowable(current_list_items, bulletType='bullet'))
+
+        rec_box_data = [[final_rec_content]]
         rec_table = Table(rec_box_data, colWidths=[7*inch])
         rec_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fffbeb")),
