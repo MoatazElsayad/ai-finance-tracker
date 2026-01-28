@@ -1848,6 +1848,20 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         # borderSide='bottom',
         # borderType='line'
     ))
+    styles.add(ParagraphStyle(
+        name="Subtitle",
+        fontName="Helvetica",
+        fontSize=10,
+        textColor=slate_500,
+        spaceAfter=10
+    ))
+    styles.add(ParagraphStyle(
+        name="NormalFancy",
+        fontName="Helvetica",
+        fontSize=10,
+        textColor=dark_slate,
+        leading=14
+    ))
 
     story = []
     
