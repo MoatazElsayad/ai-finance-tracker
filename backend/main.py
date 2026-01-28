@@ -1705,17 +1705,39 @@ def _plot_monthly_trend(trend: Dict[str, List]) -> bytes:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(figsize=(8, 3))
+    from matplotlib.ticker import FuncFormatter
+
+    # Professional Styling
+    plt.style.use('bmh')
+    fig, ax = plt.subplots(figsize=(8, 4), dpi=150)
+    
     x = list(range(len(trend["labels"])))
-    ax.plot(x, trend["incomes"], label="Income", color="#f59e0b")
-    ax.plot(x, trend["expenses"], label="Expenses", color="#1f2937")
+    
+    # Fill area for better visual
+    ax.fill_between(x, trend["incomes"], color="#10b981", alpha=0.1)
+    ax.fill_between(x, trend["expenses"], color="#ef4444", alpha=0.1)
+    
+    ax.plot(x, trend["incomes"], label="Income", color="#10b981", linewidth=2.5, marker='o', markersize=4)
+    ax.plot(x, trend["expenses"], label="Expenses", color="#ef4444", linewidth=2.5, marker='s', markersize=4)
+    
     ax.set_xticks(x)
-    ax.set_xticklabels(trend["labels"], rotation=45, ha="right")
-    ax.legend()
-    ax.grid(True, alpha=0.2)
+    ax.set_xticklabels(trend["labels"], rotation=30, ha="right", fontsize=9)
+    
+    # Format Y axis as currency
+    def currency_formatter(x, pos):
+        return f'£{x:,.0f}'
+    ax.yaxis.set_major_formatter(FuncFormatter(currency_formatter))
+    
+    ax.legend(frameon=True, facecolor='white', framealpha=0.8, loc='upper left', fontsize=9)
+    ax.set_title("Financial Trends", fontsize=12, fontweight='bold', pad=15)
+    
+    # Remove top/right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
     buf = io.BytesIO()
     plt.tight_layout()
-    fig.savefig(buf, format="png", dpi=150)
+    fig.savefig(buf, format="png", dpi=150, transparent=True)
     plt.close(fig)
     return buf.getvalue()
 
@@ -1723,120 +1745,288 @@ def _plot_category_pie(categories: List[Dict]) -> bytes:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    labels = [c["name"] for c in categories[:8]]
-    sizes = [c["amount"] for c in categories[:8]]
+    
+    # Filter only expenses for pie chart as it makes more sense
+    expense_cats = [c for c in categories if c["amount"] > 0][:7]
+    
+    labels = [c["name"] for c in expense_cats]
+    sizes = [c["amount"] for c in expense_cats]
+    
     if not sizes:
         sizes = [1]
         labels = ["No data"]
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.pie(sizes, labels=labels, autopct="%1.0f%%", colors=["#f59e0b", "#fbbf24", "#fde68a", "#111827", "#374151", "#6b7280", "#9ca3af", "#d1d5db"])
+    
+    fig, ax = plt.subplots(figsize=(6, 5), dpi=150)
+    
+    # Modern color palette (Amber/Slate based)
+    colors = ["#f59e0b", "#fbbf24", "#fcd34d", "#fb923c", "#f97316", "#10b981", "#34d399"]
+    
+    wedges, texts, autotexts = ax.pie(
+        sizes, 
+        labels=labels, 
+        autopct="%1.0f%%", 
+        colors=colors,
+        startangle=140,
+        pctdistance=0.85,
+        explode=[0.05] * len(sizes), # Explode all slightly
+        wedgeprops={'width': 0.5, 'edgecolor': 'white', 'linewidth': 1} # Donut style
+    )
+    
+    plt.setp(autotexts, size=8, weight="bold", color="white")
+    plt.setp(texts, size=9)
+    
+    ax.set_title("Spending Breakdown", fontsize=12, fontweight='bold', pad=10)
     ax.axis("equal")
+    
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=150)
+    fig.savefig(buf, format="png", dpi=150, transparent=True)
     plt.close(fig)
     return buf.getvalue()
 
 def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, pie_png: bytes, transactions: List[Transaction], budget_status: List[Dict] | None, rec_text: str | None, rec_model: str | None) -> bytes:
     from reportlab.lib.pagesizes import A4
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, ListFlowable, ListItem, HRFlowable
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, ListFlowable, ListItem, HRFlowable, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+    
+    # Custom Canvas for Footer
+    class MyCanvas(SimpleDocTemplate):
+        def __init__(self, *args, **kwargs):
+            SimpleDocTemplate.__init__(self, *args, **kwargs)
+            
+        def afterPage(self):
+            self.canv.saveState()
+            self.canv.setFont('Helvetica', 9)
+            self.canv.setStrokeColor(colors.HexColor("#e5e7eb"))
+            self.canv.line(0.5*inch, 0.5*inch, 7.75*inch, 0.5*inch)
+            page_num = self.canv.getPageNumber()
+            text = f"Page {page_num} | Moataz Finance Tracker | Confidential"
+            self.canv.drawCentredString(4.125*inch, 0.3*inch, text)
+            self.canv.restoreState()
+
+    doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=60)
     styles = getSampleStyleSheet()
+    
+    # Custom Colors
     accent = colors.HexColor("#f59e0b")
-    dark_text = colors.HexColor("#0f172a")
-    muted_text = colors.HexColor("#475569")
-    styles.add(ParagraphStyle(name="TitleFancy", fontName="Helvetica-Bold", fontSize=22, textColor=dark_text, spaceAfter=8))
-    styles.add(ParagraphStyle(name="Subtitle", fontName="Helvetica", fontSize=11, textColor=muted_text))
-    styles.add(ParagraphStyle(name="HeadingFancy", parent=styles["Heading2"], fontName="Helvetica-Bold", textColor=accent))
-    styles.add(ParagraphStyle(name="NormalFancy", fontName="Helvetica", fontSize=10, leading=14))
+    income_green = colors.HexColor("#10b981")
+    expense_red = colors.HexColor("#ef4444")
+    dark_slate = colors.HexColor("#0f172a")
+    slate_500 = colors.HexColor("#64748b")
+    bg_light = colors.HexColor("#f8fafc")
+
+    # Custom Styles
+    styles.add(ParagraphStyle(
+        name="MainTitle", 
+        fontName="Helvetica-Bold", 
+        fontSize=24, 
+        textColor=dark_slate, 
+        spaceAfter=12,
+        alignment=0 # Left
+    ))
+    styles.add(ParagraphStyle(
+        name="StatLabel", 
+        fontName="Helvetica-Bold", 
+        fontSize=9, 
+        textColor=slate_500, 
+        textTransform='uppercase',
+        alignment=1 # Center
+    ))
+    styles.add(ParagraphStyle(
+        name="StatValue", 
+        fontName="Helvetica-Bold", 
+        fontSize=16, 
+        textColor=dark_slate, 
+        alignment=1 # Center
+    ))
+    styles.add(ParagraphStyle(
+        name="SectionHeader", 
+        fontName="Helvetica-Bold", 
+        fontSize=14, 
+        textColor=accent,
+        spaceBefore=20,
+        spaceAfter=12,
+        borderPadding=(5, 0, 5, 0),
+        # borderSide='bottom',
+        # borderType='line'
+    ))
+
     story = []
-    title = Paragraph("Moataz Finance Tracker", styles["TitleFancy"])
-    user_line = Paragraph(f"{user.first_name or ''} {user.last_name or ''} &lt;{user.email}&gt;", styles["Subtitle"])
-    period_line = Paragraph(f"Report Period: {period_label}", styles["Subtitle"])
-    gen_line = Paragraph(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d')}", styles["Subtitle"])
-    story += [title, HRFlowable(width="100%", color=accent, thickness=2), Spacer(1, 10), user_line, period_line, gen_line, Spacer(1, 18)]
-    data = [
-        ["Total Income", f"{summary['income']:.2f}"],
-        ["Total Expenses", f"{summary['expenses']:.2f}"],
-        ["Net Savings", f"{summary['net']:.2f}"],
-        ["Savings Rate", f"{summary['savings_rate']:.2f}%"],
-        ["Average Amount", f"{summary['avg_amount']:.2f}"],
-        ["Transactions", f"{summary['count']}"],
+    
+    # 1. Header Section
+    header_data = [
+        [Paragraph("Moataz Finance", styles["MainTitle"]), ""],
+        [Paragraph(f"<b>Financial Intelligence Report</b> • {period_label}", styles["Subtitle"]), ""],
+        [Paragraph(f"Client: {user.first_name or ''} {user.last_name or ''} ({user.email})", styles["Subtitle"]), ""],
     ]
-    summary_rows = [["Metric", "Value"]] + data
-    tbl = Table(summary_rows, hAlign="LEFT")
-    tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), accent),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
-        ("FONTSIZE", (0,0), (-1,-1), 10),
-        ("ALIGN", (1,1), (1,-1), "RIGHT"),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
-        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.HexColor("#fff7ed"), colors.HexColor("#fffbeb")]),
+    header_table = Table(header_data, colWidths=[4*inch, 3*inch])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
-    story += [tbl, Spacer(1, 18)]
-    trend_img = Image(io.BytesIO(trend_png), width=500, height=200)
-    story += [Paragraph("Monthly Trend (6 months)", styles["HeadingFancy"]), trend_img, Spacer(1, 18)]
-    pie_img = Image(io.BytesIO(pie_png), width=350, height=250)
-    story += [Paragraph("Category Breakdown", styles["HeadingFancy"]), pie_img, Spacer(1, 18)]
+    story.append(header_table)
+    story.append(HRFlowable(width="100%", color=accent, thickness=2, spaceBefore=10, spaceAfter=20))
+
+    # 2. Executive Summary (Cards View)
+    summary_cards_data = [
+        [
+            Paragraph("Total Income", styles["StatLabel"]),
+            Paragraph("Total Expenses", styles["StatLabel"]),
+            Paragraph("Net Savings", styles["StatLabel"]),
+            Paragraph("Savings Rate", styles["StatLabel"]),
+        ],
+        [
+            Paragraph(f"£{summary['income']:,.0f}", ParagraphStyle('V1', parent=styles['StatValue'], textColor=income_green)),
+            Paragraph(f"£{summary['expenses']:,.0f}", ParagraphStyle('V2', parent=styles['StatValue'], textColor=expense_red)),
+            Paragraph(f"£{summary['net']:,.0f}", styles['StatValue']),
+            Paragraph(f"{summary['savings_rate']:.1f}%", styles['StatValue']),
+        ]
+    ]
+    
+    summary_table = Table(summary_cards_data, colWidths=[1.8*inch]*4)
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), bg_light),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#e2e8f0")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 12),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+    ]))
+    story.append(summary_table)
+    story.append(Spacer(1, 24))
+
+    # 3. Visual Analysis
+    story.append(Paragraph("Market Trends & Performance", styles["SectionHeader"]))
+    
+    # Side by side charts if they fit, or stacked
+    trend_img = Image(io.BytesIO(trend_png), width=6.5*inch, height=3*inch)
+    story.append(trend_img)
+    story.append(Spacer(1, 20))
+    
+    pie_img = Image(io.BytesIO(pie_png), width=5*inch, height=4*inch)
+    story.append(pie_img)
+    story.append(Spacer(1, 24))
+
+    # 4. AI Insights Section
+    if rec_text:
+        story.append(PageBreak())
+        story.append(Paragraph("AI Financial Recommendations", styles["SectionHeader"]))
+        
+        rec_html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", rec_text)
+        # Split into points and format nicely
+        lines = [l.strip() for l in rec_html.split("\n") if l.strip()]
+        
+        # Recommendation Card
+        rec_story = []
+        for line in lines:
+            if line.startswith(('-', '*', '1.', '2.', '3.')):
+                rec_story.append(ListItem(Paragraph(line.lstrip('-*123. '), styles["NormalFancy"])))
+            else:
+                rec_story.append(Paragraph(line, styles["NormalFancy"]))
+                rec_story.append(Spacer(1, 6))
+        
+        rec_box_data = [[rec_story]]
+        rec_table = Table(rec_box_data, colWidths=[7*inch])
+        rec_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fffbeb")),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#fde68a")),
+            ('TOPPADDING', (0,0), (-1,-1), 15),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 15),
+            ('LEFTPADDING', (0,0), (-1,-1), 15),
+            ('RIGHTPADDING', (0,0), (-1,-1), 15),
+        ]))
+        story.append(rec_table)
+        if rec_model:
+            story.append(Paragraph(f"Analysis engine: {rec_model}", styles["Subtitle"]))
+        story.append(Spacer(1, 24))
+
+    # 5. Budget Performance
     if budget_status:
+        story.append(Paragraph("Budget Compliance", styles["SectionHeader"]))
         bs_rows = [["Category", "Budgeted", "Spent", "Used %", "Status"]]
         for b in budget_status:
+            used_pct = (b['actual']/b['budget']*100 if ('actual' in b and b['budget']>0) else b.get('percentage', 0))
+            status = "Over Budget" if used_pct > 100 else ("On Track" if used_pct > 80 else "Good")
+            
             bs_rows.append([
                 b["category"],
-                f"{b.get('budget', b.get('budgeted', 0)):.2f}",
-                f"{b.get('actual', b.get('spent', 0)):.2f}",
-                f"{(b['actual']/b['budget']*100 if ('actual' in b and b['budget']>0) else b.get('percentage', 0)):.1f}%",
-                "Over Budget" if b.get("status") in ["Over", "over"] else ("On Track" if b.get("status") == "on_track" else "Good")
+                f"£{b.get('budget', 0):,.2f}",
+                f"£{b.get('actual', 0):,.2f}",
+                f"{used_pct:.1f}%",
+                status
             ])
-        bs_tbl = Table(bs_rows, repeatRows=1)
+        
+        bs_tbl = Table(bs_rows, repeatRows=1, colWidths=[2*inch, 1.25*inch, 1.25*inch, 1*inch, 1.5*inch])
         bs_style = TableStyle([
             ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
             ("BACKGROUND", (0,0), (-1,0), accent),
-            ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
             ("FONTSIZE", (0,0), (-1,-1), 9),
+            ("ALIGN", (1,1), (3,-1), "RIGHT"),
+            ("ALIGN", (4,1), (4,-1), "CENTER"),
         ])
+        
         for i in range(1, len(bs_rows)):
-            status_text = bs_rows[i][4]
-            if "Over Budget" in status_text:
+            pct_val = float(bs_rows[i][3].replace('%', ''))
+            if pct_val > 100:
+                bs_style.add("TEXTCOLOR", (4,i), (4,i), expense_red)
                 bs_style.add("BACKGROUND", (0,i), (-1,i), colors.HexColor("#fee2e2"))
-            elif "On Track" in status_text:
+            elif pct_val > 80:
+                bs_style.add("TEXTCOLOR", (4,i), (4,i), accent)
                 bs_style.add("BACKGROUND", (0,i), (-1,i), colors.HexColor("#fff7ed"))
             else:
-                bs_style.add("BACKGROUND", (0,i), (-1,i), colors.HexColor("#fef3c7"))
+                bs_style.add("TEXTCOLOR", (4,i), (4,i), income_green)
+        
         bs_tbl.setStyle(bs_style)
-        story += [Paragraph("Budget Status", styles["HeadingFancy"]), bs_tbl, Spacer(1, 18)]
-    rows = [["Date", "Merchant", "Category", "Description", "Amount", "Type"]]
+        story.append(bs_tbl)
+        story.append(Spacer(1, 24))
+
+    # 6. Detailed Ledger
+    story.append(Paragraph("Transaction Detail Ledger", styles["SectionHeader"]))
+    rows = [["Date", "Description", "Category", "Amount", "Type"]]
     for t in transactions:
         cat_name = t.category.name if t.category else "Uncategorized"
-        typ = "income" if t.amount > 0 else "expense"
-        desc = t.description or ""
-        merch = ""
-        if desc.lower().startswith("receipt:"):
-            merch = desc.split(":", 1)[1].strip()
-        r = [t.date.strftime("%Y-%m-%d"), merch or "-", cat_name, desc, f"{abs(t.amount):.2f}", typ]
-        rows.append(r)
-    detail = Table(rows, repeatRows=1)
-    detail.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
-        ("BACKGROUND", (0,0), (-1,0), accent),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+        typ = "Income" if t.amount > 0 else "Expense"
+        rows.append([
+            t.date.strftime("%d %b"),
+            (t.description or "-")[:40],
+            cat_name,
+            f"£{abs(t.amount):,.2f}",
+            typ
+        ])
+        
+    detail = Table(rows, repeatRows=1, colWidths=[1*inch, 2.5*inch, 1.5*inch, 1*inch, 1*inch])
+    detail_style = TableStyle([
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
+        ("BACKGROUND", (0,0), (-1,0), dark_slate),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
         ("FONTSIZE", (0,0), (-1,-1), 8),
-    ]))
-    story += [Paragraph("Transactions", styles["HeadingFancy"]), detail, Spacer(1, 10)]
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, bg_light]),
+        ("ALIGN", (3,1), (3,-1), "RIGHT"),
+    ])
+    
+    for i in range(1, len(rows)):
+        if rows[i][4] == "Income":
+            detail_style.add("TEXTCOLOR", (3,i), (4,i), income_green)
+        else:
+            detail_style.add("TEXTCOLOR", (3,i), (4,i), expense_red)
+            
+    detail.setStyle(detail_style)
+    story.append(detail)
+    
+    # Subtotal line
     subtotal = sum(t.amount for t in transactions)
-    story += [Paragraph(f"Subtotal (net): {subtotal:.2f}", styles["NormalFancy"])]
-    if rec_text:
-        rec_html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", rec_text)
-        lines = [l.strip() for l in rec_html.split("\n") if l.strip()]
-        items = [ListItem(Paragraph(l, styles["NormalFancy"])) for l in lines]
-        story += [Spacer(1, 18), HRFlowable(width="100%", color=accent, thickness=1.2), Spacer(1, 6)]
-        story += [Paragraph("Recommendations", styles["HeadingFancy"]), Spacer(1, 6)]
-        story += [ListFlowable(items, bulletType="bullet", bulletFontName="Helvetica", bulletFontSize=10, leftPadding=12), Spacer(1, 6)]
-        if rec_model:
-            story += [Paragraph(f"Generated by: {rec_model}", styles["Subtitle"])]
-    doc.build(story)
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"<b>Net Period Flow:</b> <font color='{income_green if subtotal > 0 else expense_red}'>£{subtotal:,.2f}</font>", styles["NormalFancy"]))
+
+    # Build PDF with custom canvas
+    doc.build(story, canvasmaker=MyCanvas)
     return buf.getvalue()
 
 def _build_csv(transactions: List[Transaction]) -> bytes:
