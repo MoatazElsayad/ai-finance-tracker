@@ -1792,20 +1792,15 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     
     buf = io.BytesIO()
     
-    # Custom Canvas for Footer
-    class MyCanvas(SimpleDocTemplate):
-        def __init__(self, *args, **kwargs):
-            SimpleDocTemplate.__init__(self, *args, **kwargs)
-            
-        def afterPage(self):
-            self.canv.saveState()
-            self.canv.setFont('Helvetica', 9)
-            self.canv.setStrokeColor(colors.HexColor("#e5e7eb"))
-            self.canv.line(0.5*inch, 0.5*inch, 7.75*inch, 0.5*inch)
-            page_num = self.canv.getPageNumber()
-            text = f"Page {page_num} | Moataz Finance Tracker | Confidential"
-            self.canv.drawCentredString(4.125*inch, 0.3*inch, text)
-            self.canv.restoreState()
+    def my_footer(canvas, doc):
+        canvas.saveState()
+        canvas.setFont('Helvetica', 9)
+        canvas.setStrokeColor(colors.HexColor("#e5e7eb"))
+        canvas.line(0.5*inch, 0.5*inch, 7.75*inch, 0.5*inch)
+        page_num = canvas.getPageNumber()
+        text = f"Page {page_num} | Moataz Finance Tracker | Confidential"
+        canvas.drawCentredString(4.125*inch, 0.3*inch, text)
+        canvas.restoreState()
 
     doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=60)
     styles = getSampleStyleSheet()
@@ -2025,8 +2020,8 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     story.append(Spacer(1, 12))
     story.append(Paragraph(f"<b>Net Period Flow:</b> <font color='{income_green if subtotal > 0 else expense_red}'>£{subtotal:,.2f}</font>", styles["NormalFancy"]))
 
-    # Build PDF with custom canvas
-    doc.build(story, canvasmaker=MyCanvas)
+    # Build PDF with custom footer
+    doc.build(story, onFirstPage=my_footer, onLaterPages=my_footer)
     return buf.getvalue()
 
 def _build_csv(transactions: List[Transaction]) -> bytes:
