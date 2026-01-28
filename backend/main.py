@@ -1913,7 +1913,12 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(header_table)
-    story.append(HRFlowable(width="100%", color=accent, thickness=2, spaceBefore=10, spaceAfter=20))
+    story.append(HRFlowable(width="100%", color=accent, thickness=2, spaceBefore=10, spaceAfter=15))
+
+    # Period Description
+    period_desc = f"This report reflects the financial activity for <b>{period_label}</b>."
+    story.append(Paragraph(period_desc, styles["NormalFancy"]))
+    story.append(Spacer(1, 15))
 
     # 2. Executive Summary (Cards View)
     summary_cards_data = [
@@ -2172,7 +2177,12 @@ def generate_report(data: ReportRequest, token: str, db: Session = Depends(get_d
     if end < start:
         raise HTTPException(status_code=400, detail="Invalid date range")
     tx = _fetch_transactions(db, user.id, start, end)
-    period_label = f"{start.strftime('%B %Y')}" if start.year == end.year and start.month == end.month else f"{start.isoformat()} to {end.isoformat()}"
+    
+    if start.year == end.year and start.month == end.month:
+        period_label = start.strftime('%B %Y')
+    else:
+        period_label = f"{start.strftime('%d %b %Y')} to {end.strftime('%d %b %Y')}"
+
     if not tx:
         if data.format == "csv":
             empty = "date,merchant,category,description,amount,type\n"
