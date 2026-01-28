@@ -2038,9 +2038,9 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
         story.append(rec_table)
         if rec_model:
              # Clean model name for display (remove provider prefix)
-             display_model = rec_model.split('/')[-1].split(':')[0].replace('-', ' ').title()
-             story.append(Paragraph(f"<i>Analysis engine: {display_model}</i>", styles["Subtitle"]))
-         story.append(Spacer(1, 24))
+            display_model = rec_model.split('/')[-1].split(':')[0].replace('-', ' ').title()
+            story.append(Paragraph(f"<i>Analysis engine: {display_model}</i>", styles["Subtitle"]))
+            story.append(Spacer(1, 24))
 
 
     # 5. Budget Performance
