@@ -1783,7 +1783,7 @@ def _plot_category_pie(categories: List[Dict]) -> bytes:
     plt.close(fig)
     return buf.getvalue()
 
-def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, pie_png: bytes, transactions: List[Transaction], budget_status: List[Dict] | None, rec_text: str | None, rec_model: str | None) -> bytes:
+def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, pie_png: bytes, transactions: List[Transaction], budget_status: List[Dict] | None, rec_text: str | None, rec_model: str | None, goals: List[Dict] | None = None) -> bytes:
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, ListFlowable, ListItem, HRFlowable, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -1930,67 +1930,51 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     # 3. Visual Analysis
     story.append(Paragraph("Market Trends & Performance", styles["SectionHeader"]))
     
-    # Side by side charts if they fit, or stacked
-    trend_img = Image(io.BytesIO(trend_png), width=6.5*inch, height=3*inch)
-    story.append(trend_img)
-    story.append(Spacer(1, 20))
-    
-    pie_img = Image(io.BytesIO(pie_png), width=5*inch, height=4*inch)
-    story.append(pie_img)
-    story.append(Spacer(1, 24))
+    # Side by side charts
+    charts_data = [
+        [
+            Image(io.BytesIO(trend_png), width=3.5*inch, height=2*inch),
+            Image(io.BytesIO(pie_png), width=3.5*inch, height=2*inch)
+        ]
+    ]
+    charts_table = Table(charts_data, colWidths=[3.6*inch, 3.6*inch])
+    charts_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    story.append(charts_table)
+    story.append(Spacer(1, 12))
 
-    # 4. AI Insights Section
-    if rec_text:
-        story.append(PageBreak())
-        story.append(Paragraph("AI Financial Recommendations", styles["SectionHeader"]))
+    # 4. Savings Goals
+    if goals:
+        story.append(Paragraph("Financial Goals Progress", styles["SectionHeader"]))
+        goal_rows = [["Goal Name", "Target", "Current", "Progress", "Target Date"]]
+        for g in goals:
+            progress = (g['current_amount'] / g['target_amount'] * 100) if g['target_amount'] > 0 else 0
+            goal_rows.append([
+                g['name'],
+                f"£{g['target_amount']:,.0f}",
+                f"£{g['current_amount']:,.0f}",
+                f"{progress:.1f}%",
+                g['target_date'].strftime("%d %b %Y") if hasattr(g['target_date'], 'strftime') else str(g['target_date'])
+            ])
         
-        rec_html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", rec_text)
-        # Split into points and format nicely
-        lines = [l.strip() for l in rec_html.split("\n") if l.strip()]
-        
-        # Recommendation Card
-        rec_story = []
-        for line in lines:
-            # Check for bullet points or numbered lists
-            clean_line = re.sub(r"^[*-]\s+", "", line) # Remove bullet
-            clean_line = re.sub(r"^\d+\.\s+", "", clean_line) # Remove numbering
-            
-            if line.startswith(('-', '*', '1.', '2.', '3.', '4.', '5.')):
-                rec_story.append(ListItem(Paragraph(clean_line, styles["NormalFancy"])))
-            else:
-                rec_story.append(Paragraph(line, styles["NormalFancy"]))
-                rec_story.append(Spacer(1, 6))
-        
-        # Wrap rec_story in ListFlowable if it contains ListItems
-        final_rec_content = []
-        current_list_items = []
-        
-        for item in rec_story:
-            if isinstance(item, ListItem):
-                current_list_items.append(item)
-            else:
-                if current_list_items:
-                    final_rec_content.append(ListFlowable(current_list_items, bulletType='bullet'))
-                    current_list_items = []
-                final_rec_content.append(item)
-        
-        if current_list_items:
-            final_rec_content.append(ListFlowable(current_list_items, bulletType='bullet'))
-
-        rec_box_data = [[final_rec_content]]
-        rec_table = Table(rec_box_data, colWidths=[7*inch])
-        rec_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fffbeb")),
-            ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#fde68a")),
-            ('TOPPADDING', (0,0), (-1,-1), 15),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 15),
-            ('LEFTPADDING', (0,0), (-1,-1), 15),
-            ('RIGHTPADDING', (0,0), (-1,-1), 15),
-        ]))
-        story.append(rec_table)
-        if rec_model:
-            story.append(Paragraph(f"Analysis engine: {rec_model}", styles["Subtitle"]))
+        goal_tbl = Table(goal_rows, repeatRows=1, colWidths=[2.25*inch, 1.25*inch, 1.25*inch, 1*inch, 1.5*inch])
+        goal_style = TableStyle([
+            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e5e7eb")),
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#3b82f6")), # Blue for goals
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 9),
+            ("ALIGN", (1,1), (3,-1), "RIGHT"),
+        ])
+        goal_tbl.setStyle(goal_style)
+        story.append(goal_tbl)
         story.append(Spacer(1, 24))
+
+    # 5. AI Insights Section (REMOVED as per request)
+    # AI insights logic was here
+
 
     # 5. Budget Performance
     if budget_status:
@@ -2126,75 +2110,23 @@ def generate_report(data: ReportRequest, token: str, db: Session = Depends(get_d
     if start.year == end.year and start.month == end.month:
         bs = get_budget_comparison(db, user.id, start.year, start.month)
     
+    # Fetch goals for report
+    user_goals = db.query(Goal).filter(Goal.user_id == user.id).all()
+    goals_data = []
+    for g in user_goals:
+        goals_data.append({
+            "name": g.name,
+            "target_amount": g.target_amount,
+            "current_amount": g.current_amount,
+            "target_date": g.target_date
+        })
+
     rec_text = None
     rec_model = None
-    try:
-        OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-        if not OPENROUTER_API_KEY:
-            rec_text = "Focus on reducing discretionary expenses, maintain consistent income streams, and set clear limits on categories trending over budget. Prioritize top two actions for the coming period."
-            rec_model = "mock-model-for-testing"
-        else:
-            url = "https://openrouter.ai/api/v1/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:8000",
-                "X-Title": "Finance Tracker AI",
-            }
-            MODELS = FREE_MODELS.copy()
-            random.shuffle(MODELS)
-            
-            # Build context for report AI
-            spending_text = "\n".join([f"- {c['name']}: ${c['amount']:.2f} ({c['percent']:.1f}%)" for c in cats[:5]])
-            budget_text = ""
-            if bs:
-                budget_text = "\n".join([f"- {b['category']}: ${b['actual']:.2f} / ${b['budget']:.2f} ({'⚠️ OVER' if b['status'] == 'Over' else '✅ OK'})" for b in bs])
-            
-            prompt_text = f"""You are a professional financial advisor. Analyze this data for {start.strftime('%B %Y')}:
-
-📊 SUMMARY:
-- Income: ${summary['income']:.2f}
-- Expenses: ${summary['expenses']:.2f}
-- Savings: ${summary['net']:.2f}
-- Savings Rate: {summary['savings_rate']:.1f}%
-
-💰 TOP SPENDING:
-{spending_text}
-
-🎯 BUDGET PERFORMANCE:
-{budget_text if budget_text else "No budgets set for this period."}
-
-PROVIDE A CONCISE ANALYSIS (150-250 words max):
-1. **Financial Health** (1-2 sentences)
-2. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget and which are UNDER/ON TRACK with specific numbers.
-3. **Top 2 Actions** (2 bullet points) - Specific, actionable steps.
-
-Be direct, encouraging, and specific with numbers. Keep it SHORT but DETAILED regarding budgets."""
-
-            for model_id in MODELS:
-                payload = {
-                    "model": model_id,
-                    "messages": [
-                        {"role": "system", "content": "You are a concise financial coach. Output short, actionable sections."},
-                        {"role": "user", "content": prompt_text}
-                    ],
-                    "max_tokens": 500,
-                    "temperature": 0.7
-                }
-                with httpx.Client(verify=False, timeout=20.0) as client:
-                    r = client.post(url, headers=headers, json=payload)
-                    if r.status_code == 200:
-                        result = r.json()
-                        rec_text = result["choices"][0]["message"]["content"]
-                        rec_model = model_id
-                        break
-    except Exception:
-        if not rec_text:
-            rec_text = "Focus on reducing discretionary expenses, maintain consistent income streams, and set clear limits on categories trending over budget. Prioritize top two actions for the coming period."
-        if not rec_model:
-            rec_model = "mock-model-for-testing"
+    # AI logic disabled as per request
+    
     if data.format == "csv":
         csv_bytes = _build_csv(tx)
         return StreamingResponse(io.BytesIO(csv_bytes), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="report_{period_label}.csv"'})
-    pdf_bytes = _build_pdf(user, period_label, summary, trend_png, pie_png, tx, bs, rec_text, rec_model)
+    pdf_bytes = _build_pdf(user, period_label, summary, trend_png, pie_png, tx, bs, rec_text, rec_model, goals_data)
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="report_{period_label}.pdf"'})
