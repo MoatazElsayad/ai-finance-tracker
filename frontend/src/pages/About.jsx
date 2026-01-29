@@ -3,7 +3,7 @@ import {
   Info, 
   Code2, 
   User, 
-  Github, 
+  GitHub, 
   Layers, 
   ImagePlus, 
   BarChart3, 
@@ -17,7 +17,7 @@ import {
 
 function TechIcon({ src, alt, isDark }) {
   return (
-    <div className={`p-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'} rounded-xl transition-colors group-hover:scale-110 transition-transform duration-500`}>
+    <div className={`p-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'} rounded-xl transition-all group-hover:scale-110 duration-500`}>
       <img
         src={src}
         alt={alt}
@@ -248,7 +248,7 @@ function About() {
           <div className="grid lg:grid-cols-2 gap-8">
             <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-12 group overflow-hidden relative flex flex-col justify-center items-center text-center`}>
               <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 group-hover:scale-110">
-                <Github className="w-64 h-64" />
+                <GitHub className="w-64 h-64" />
               </div>
               <p className={`text-2xl font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-10 leading-relaxed max-w-lg`}>
                 The source code is open for review and contributions. Help us build the future of private finance.
@@ -259,7 +259,7 @@ function About() {
                 rel="noreferrer"
                 className="inline-flex items-center gap-4 px-10 py-6 rounded-[2rem] bg-amber-500 text-white font-black text-sm uppercase tracking-[0.2em] hover:bg-amber-600 transition-all duration-500 shadow-xl shadow-amber-500/20 group/btn hover:-translate-y-1"
               >
-                <Github className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
+                <GitHub className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
                 Explore Repository
               </a>
             </div>
