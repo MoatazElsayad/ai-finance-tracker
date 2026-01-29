@@ -20,6 +20,7 @@ import Profile from './pages/Profile';
 import ReceiptUpload from './pages/ReceiptUpload';
 import About from './pages/About';
 import Sidebar from './components/Sidebar';
+import Footer from './components/Footer';
 
 function App() {
   return (
@@ -218,10 +219,11 @@ function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className={`transition-all duration-500 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'} min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-        <div className="animate-in fade-in duration-700">
+      <main className={`transition-all duration-500 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'} min-h-screen flex flex-col ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+        <div className="animate-in fade-in duration-700 flex-grow">
           <Outlet />
         </div>
+        <Footer />
       </main>
     </div>
   );

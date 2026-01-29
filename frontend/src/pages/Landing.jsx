@@ -18,6 +18,7 @@ import {
   Smartphone,
   Globe
 } from 'lucide-react';
+import Footer from '../components/Footer';
 
 export default function Landing() {
   const { theme } = useTheme();
@@ -259,58 +260,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className={`py-24 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-12 mb-20 text-center md:text-left">
-            <div className="col-span-2">
-              <div className="flex items-center gap-4 mb-6 justify-center md:justify-start">
-                <div className="p-2 bg-amber-500 rounded-lg">
-                  <Rocket className="w-6 h-6 text-white" />
-                </div>
-                <span className={`font-black text-2xl tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>FinanceAI</span>
-              </div>
-              <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'} font-medium max-w-sm mx-auto md:mx-0`}>
-                Empowering the next generation of financial intelligence in Egypt and beyond.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className={`font-black uppercase tracking-[0.2em] text-xs ${isDark ? 'text-white' : 'text-slate-900'} mb-8`}>Product</h4>
-              <ul className="space-y-4">
-                <li><a href="#features" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Features</a></li>
-                <li><a href="#ai" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>AI Engine</a></li>
-                <li><Link to="/login" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Sign In</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className={`font-black uppercase tracking-[0.2em] text-xs ${isDark ? 'text-white' : 'text-slate-900'} mb-8`}>Company</h4>
-              <ul className="space-y-4">
-                <li><a href="#" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>About Us</a></li>
-                <li><a href="#" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Privacy</a></li>
-                <li><a href="mailto:support@financeai.com" className={`text-sm font-medium ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-500 hover:text-amber-600'} transition-colors`}>Contact</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className={`pt-12 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'} flex flex-col md:flex-row justify-between items-center gap-6`}>
-            <p className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-              &copy; {year} FinanceAI. Built for Excellence.
-            </p>
-            <div className="flex gap-6">
-              <a href="#" className={`${isDark ? 'text-slate-600 hover:text-white' : 'text-slate-400 hover:text-slate-900'} transition-colors`}>
-                <Github className="w-5 h-5" />
-              </a>
-              <a href="#" className={`${isDark ? 'text-slate-600 hover:text-white' : 'text-slate-400 hover:text-slate-900'} transition-colors`}>
-                <Globe className="w-5 h-5" />
-              </a>
-              <a href="#" className={`${isDark ? 'text-slate-600 hover:text-white' : 'text-slate-400 hover:text-slate-900'} transition-colors`}>
-                <Smartphone className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

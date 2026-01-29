@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
+import Footer from '../components/Footer';
 
 function Login() {
   const { theme } = useTheme();
@@ -57,8 +58,9 @@ function Login() {
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} flex items-center justify-center px-6 py-12 transition-colors duration-500`}>
-      <div className="max-w-xl w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} flex flex-col transition-colors duration-500`}>
+      <div className="flex-grow flex items-center justify-center px-6 py-20">
+        <div className="max-w-xl w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
         {/* Logo & Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl mb-6 shadow-xl shadow-amber-500/20 rotate-3">
@@ -277,6 +279,7 @@ function Login() {
           ))}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
