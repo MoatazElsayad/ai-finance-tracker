@@ -44,36 +44,53 @@ def init_database():
     try:
         # Check for missing default categories and add them
         for cat_data in DEFAULT_CATEGORIES:
-            # Check by name and type to be more robust than just ID
-            exists = db.query(Category).filter(
-                Category.name == cat_data["name"],
-                Category.type == cat_data["type"],
-                Category.user_id == None
-            ).first()
+            # Check by ID first since these are fixed default categories
+            id_match = db.query(Category).filter(Category.id == cat_data["id"]).first()
             
-            if not exists:
-                # If name exists but type/id is different, it might be an old version
-                # Check if we should update an existing category name or ID
-                id_match = db.query(Category).filter(Category.id == cat_data["id"]).first()
-                if id_match and id_match.user_id is None:
-                    # Update existing default category with this ID
+            if id_match:
+                # If it's a default category (user_id is None), update it
+                if id_match.user_id is None:
                     id_match.name = cat_data["name"]
                     id_match.type = cat_data["type"]
                     id_match.icon = cat_data["icon"]
-                    print(f"Updated default category ID {cat_data['id']}: {cat_data['name']}")
+                    print(f"Ensured default category: {cat_data['name']}")
+                else:
+                    # ID is taken by a user category? This is bad but we must handle it.
+                    # We can't insert a new one with this ID.
+                    # Let's check if the category exists by name instead.
+                    name_match = db.query(Category).filter(
+                        Category.name == cat_data["name"],
+                        Category.type == cat_data["type"],
+                        Category.user_id == None
+                    ).first()
+                    
+                    if name_match:
+                        name_match.icon = cat_data["icon"]
+                        print(f"Ensured default category (by name): {cat_data['name']}")
+                    else:
+                        print(f"Warning: Default category ID {cat_data['id']} is taken by user. Skipping {cat_data['name']}.")
+            else:
+                # ID not taken, but maybe name/type exists?
+                name_match = db.query(Category).filter(
+                    Category.name == cat_data["name"],
+                    Category.type == cat_data["type"],
+                    Category.user_id == None
+                ).first()
+                
+                if name_match:
+                    name_match.icon = cat_data["icon"]
+                    # We could try to update the ID here, but it's risky
+                    print(f"Ensured default category (by name): {cat_data['name']}")
                 else:
                     # Create new
                     category = Category(**cat_data)
                     db.add(category)
                     print(f"Adding missing default category: {cat_data['name']}")
-            else:
-                # Update existing default category to match models.py (especially icon and type)
-                exists.icon = cat_data["icon"]
-                exists.type = cat_data["type"]
-                # Also ensure ID matches if possible, but SQLAlchemy doesn't like changing PKs
-                print(f"Ensured default category: {cat_data['name']}")
         
         db.commit()
+    except Exception as e:
+        print(f"Database seeding error: {e}")
+        db.rollback()
     finally:
         db.close()
 
