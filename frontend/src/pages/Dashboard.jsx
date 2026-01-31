@@ -268,17 +268,31 @@ function Dashboard() {
         return txnDate >= periodStart && txnDate <= periodEnd;
       });
 
+      // Separation of regular expenses and special savings
       const totalIncome = periodTransactions
         .filter(t => t.amount > 0)
         .reduce((sum, t) => sum + t.amount, 0);
 
-      const totalExpenses = Math.abs(
+      // Total of all negative amounts (Expenses + Savings)
+      const totalOutflow = Math.abs(
         periodTransactions
           .filter(t => t.amount < 0)
           .reduce((sum, t) => sum + t.amount, 0)
       );
 
-      const netSavings = totalIncome - totalExpenses;
+      // Total dedicated savings (transactions with 'Savings' category)
+      const totalSavingsTx = Math.abs(
+        periodTransactions
+          .filter(t => t.amount < 0 && t.category_name === 'Savings')
+          .reduce((sum, t) => sum + t.amount, 0)
+      );
+
+      // Actual spending (regular expenses only, excluding savings)
+      const actualSpending = totalOutflow - totalSavingsTx;
+
+      // Net Savings = Income - Actual Spending (this is what's left over)
+      const netSavings = totalIncome - actualSpending;
+      
       const savingsRateValue = totalIncome > 0 ? ((netSavings / totalIncome) * 100) : 0;
 
       const categoryBreakdown = {};
@@ -296,7 +310,8 @@ function Dashboard() {
       setTransactions(txns);
       setAnalytics({
         total_income: totalIncome,
-        total_expenses: totalExpenses,
+        total_expenses: actualSpending, // Show actual spending as expenses
+        total_savings: totalSavingsTx, // New field for total savings transactions
         net_savings: netSavings,
         savings_rate: savingsRateValue,
         category_breakdown: categoryBreakdownArray

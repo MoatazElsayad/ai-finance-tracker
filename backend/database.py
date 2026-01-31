@@ -44,11 +44,34 @@ def init_database():
     try:
         # Check for missing default categories and add them
         for cat_data in DEFAULT_CATEGORIES:
-            exists = db.query(Category).filter(Category.id == cat_data["id"]).first()
+            # Check by name and type to be more robust than just ID
+            exists = db.query(Category).filter(
+                Category.name == cat_data["name"],
+                Category.type == cat_data["type"],
+                Category.user_id == None
+            ).first()
+            
             if not exists:
-                category = Category(**cat_data)
-                db.add(category)
-                print(f"Adding missing default category: {cat_data['name']}")
+                # If name exists but type/id is different, it might be an old version
+                # Check if we should update an existing category name or ID
+                id_match = db.query(Category).filter(Category.id == cat_data["id"]).first()
+                if id_match and id_match.user_id is None:
+                    # Update existing default category with this ID
+                    id_match.name = cat_data["name"]
+                    id_match.type = cat_data["type"]
+                    id_match.icon = cat_data["icon"]
+                    print(f"Updated default category ID {cat_data['id']}: {cat_data['name']}")
+                else:
+                    # Create new
+                    category = Category(**cat_data)
+                    db.add(category)
+                    print(f"Adding missing default category: {cat_data['name']}")
+            else:
+                # Update existing default category to match models.py (especially icon and type)
+                exists.icon = cat_data["icon"]
+                exists.type = cat_data["type"]
+                # Also ensure ID matches if possible, but SQLAlchemy doesn't like changing PKs
+                print(f"Ensured default category: {cat_data['name']}")
         
         db.commit()
     finally:

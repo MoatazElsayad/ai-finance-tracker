@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight, Landmark } from 'lucide-react';
 import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
 
 export const CustomTooltip = ({ active, payload, label, theme }) => {
@@ -161,7 +161,7 @@ export const SectionHeaderAndSummary = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <StatCard
             label="Total Income"
             value={analytics?.total_income ?? '—'}
@@ -172,11 +172,20 @@ export const SectionHeaderAndSummary = ({
           />
 
           <StatCard
-            label="Total Expenses"
+            label="Actual Spending"
             value={analytics?.total_expenses ?? '—'}
             icon={<TrendingDown className="w-6 h-6" />}
             className="text-rose-600 dark:text-rose-400"
             color="red"
+            isDark={isDark}
+          />
+
+          <StatCard
+            label="Total Savings"
+            value={analytics?.total_savings ?? '—'}
+            icon={<Landmark className="w-6 h-6" />}
+            className="text-blue-500"
+            color="blue"
             isDark={isDark}
           />
 
@@ -192,10 +201,10 @@ export const SectionHeaderAndSummary = ({
 
           <StatCard
             label="Savings Rate"
-            value={savingsRate ?? '—'}
+            value={analytics?.savings_rate ?? '—'}
             icon={<Percent className="w-6 h-6" />}
-            className="text-blue-600 dark:text-blue-400"
-            color="blue"
+            className="text-indigo-600 dark:text-indigo-400"
+            color="indigo"
             isDark={isDark}
             isPercent={true}
           />
@@ -211,6 +220,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
     red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',
     amber: isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-600 bg-amber-50 border-amber-100',
     blue: isDark ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-600 bg-blue-50 border-blue-100',
+    indigo: isDark ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' : 'text-indigo-600 bg-indigo-50 border-indigo-100',
   };
 
   const textColors = {
@@ -218,6 +228,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
     red: isDark ? 'text-red-400' : 'text-red-600',
     amber: isDark ? 'text-amber-400' : 'text-amber-600',
     blue: isDark ? 'text-blue-400' : 'text-blue-600',
+    indigo: isDark ? 'text-indigo-400' : 'text-indigo-600',
   };
 
   const formatValue = (v) => {
@@ -242,7 +253,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
         {formatValue(value)}
       </p>
       <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
-        color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : 'bg-blue-500'
+        color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
       }`} />
     </div>
   );

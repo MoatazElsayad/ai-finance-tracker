@@ -3,11 +3,11 @@
  * Dark Mode Finance Tracker - Professional budget management with AI insights
  */
 import { useState, useEffect } from 'react';
-import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets } from '../api';
+import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
-import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy } from 'lucide-react';
+import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy, History, Landmark, ArrowUpRight, TrendingUp, AlertCircle } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -81,6 +81,12 @@ const getModelInfo = (modelId) => {
     return {
       name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
       logo: modelLower.includes('gemma') ? `${lobeBase}/gemma-color.png` : `${lobeBase}/gemini-color.png`,
+      color: 'blue'
+    };
+  } else if (modelLower.includes('z-ai') || modelLower.includes('glm')) {
+    return {
+      name: 'GLM 4.5 Air',
+      logo: `${lobeBase}/zhipu.png`,
       color: 'blue'
     };
   } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
@@ -157,6 +163,9 @@ function BudgetPlanning() {
   const [budgetModelUsed, setBudgetModelUsed] = useState(null);
   const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
   const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
+  const [savingsAmount, setSavingsAmount] = useState('');
+  const [showSavingsHistory, setShowSavingsHistory] = useState(false);
+  const [isAddingSavings, setIsAddingSavings] = useState(false);
   const { theme } = useTheme();
 
 
@@ -597,6 +606,47 @@ function BudgetPlanning() {
     setNewBudget({ category_id: '', amount: '' });
   };
 
+  const handleAddSavings = async () => {
+    if (!savingsAmount || isAddingSavings) return;
+
+    const savingsCategory = categories.find(c => c.name === 'Savings' && c.type === 'expense');
+    if (!savingsCategory) {
+      alert('Savings category not found. Please create one or wait for it to be seeded.');
+      return;
+    }
+
+    setIsAddingSavings(true);
+    try {
+      await createTransaction(
+        savingsCategory.id,
+        -Math.abs(parseFloat(savingsAmount)), // Count as expense
+        'Monthly Savings Contribution',
+        new Date().toISOString().split('T')[0]
+      );
+
+      setSavingsAmount('');
+      setToastMessage('Savings added successfully!');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+
+      // Reload data
+      loadData();
+      clearInsightsCache();
+    } catch (error) {
+      console.error('Failed to add savings:', error);
+      alert(error.message);
+    } finally {
+      setIsAddingSavings(false);
+    }
+  };
+
+  const savingsTransactions = transactions.filter(t => {
+    const cat = categories.find(c => c.id === t.category_id);
+    return cat && cat.name === 'Savings' && cat.type === 'expense';
+  });
+
+  const totalSavings = savingsTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
   const changeMonth = (offset) => {
     let newMonth = selectedMonth.month + offset;
     let newYear = selectedMonth.year;
@@ -824,7 +874,41 @@ function BudgetPlanning() {
                   ) : budgetInsightsLoading ? (
                     <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
                   ) : (
-                    <Bot className="w-8 h-8 text-amber-500" strokeWidth={2.5} />
+                    (() => {
+                      // Check for insight sentiment and return appropriate icon/color
+                      const insightText = aiBudgetInsights?.toLowerCase() || '';
+                      
+                      // Keywords for positive sentiment
+                      const isPositive = 
+                        insightText.includes('great job') || 
+                        insightText.includes('on track') || 
+                        insightText.includes('well done') || 
+                        insightText.includes('excellent') ||
+                        insightText.includes('healthy') ||
+                        insightText.includes('discipline');
+                        
+                      // Keywords for negative/bad sentiment
+                      const isBad = 
+                        insightText.includes('alert') || 
+                        insightText.includes('over budget') || 
+                        insightText.includes('warning') || 
+                        insightText.includes('critical') ||
+                        insightText.includes('danger');
+                        
+                      // Keywords for moderate sentiment (if not positive or bad)
+                      const isModerate = 
+                        insightText.includes('careful') || 
+                        insightText.includes('monitor') || 
+                        insightText.includes('adjust') ||
+                        insightText.includes('attention');
+                      
+                      if (isPositive) return <TrendingUp className="w-8 h-8 text-emerald-500" strokeWidth={2.5} />;
+                      if (isBad) return <Target className="w-8 h-8 text-rose-500" strokeWidth={2.5} />;
+                      if (isModerate) return <AlertCircle className="w-8 h-8 text-amber-500" strokeWidth={2.5} />;
+                      
+                      // Default to Bot if unclear
+                      return <Bot className="w-8 h-8 text-amber-500" strokeWidth={2.5} />;
+                    })()
                   )}
                 </div>
                 <h3 className={`text-3xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>AI Smart Insights</h3>
@@ -1184,24 +1268,135 @@ function BudgetPlanning() {
                         onClick={handleCopyLastMonth}
                         className={`px-8 py-4 rounded-[1.5rem] font-black text-sm tracking-[0.2em] transition-all duration-500 flex items-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-white border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-900 border-slate-200'} border-2 uppercase hover:scale-105 hover:-translate-y-1`}
                       >
-                        <Copy className="w-5 h-5" />
+                        <History className="w-5 h-5" />
                         <span>Copy Previous</span>
                       </button>
                       <button
-                      onClick={() => setShowBudgetForm(true)}
-                      className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl font-bold hover:from-amber-500 hover:to-amber-600 transition-all flex items-center gap-2"
-                    >
-                      <span>+</span>
-                      Create First Budget
-                    </button>
+                        onClick={() => setShowBudgetForm(true)}
+                        className="btn-primary-unified !px-8 !py-4 !rounded-[1.5rem] !text-sm shadow-2xl hover:scale-105"
+                      >
+                        <Target className="w-5 h-5" strokeWidth={3} />
+                        <span className="uppercase tracking-[0.2em]">Create First Budget</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+
+        {/* Section 3: Special Savings Management */}
+        <section className="pb-32 px-6">
+          <div className="max-w-[1400px] mx-auto w-full">
+            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark border-blue-500/20' : 'card-unified-light border-blue-200'} p-10 relative overflow-hidden group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-700`}>
+              {/* Decorative Bank Background */}
+              <Landmark className={`absolute -right-12 -bottom-12 w-64 h-64 ${theme === 'dark' ? 'text-blue-500/5' : 'text-blue-500/10'} -rotate-12 group-hover:rotate-0 transition-all duration-1000`} />
+              
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+                {/* Left side: Info and Total */}
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="flex items-center gap-6">
+                    <div className="p-5 bg-blue-600 rounded-[2rem] shadow-2xl shadow-blue-500/40 rotate-3 group-hover:rotate-0 transition-all duration-500">
+                      <Landmark className="w-10 h-10 text-white" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} uppercase`}>
+                        Savings <span className="text-blue-500">Vault</span>
+                      </h3>
+                      <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Track and grow your wealth automatically.</p>
+                    </div>
+                  </div>
+
+                  <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-blue-500/20' : 'border-blue-100'} shadow-inner`}>
+                    <p className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Total Savings Balance</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-black text-blue-500">£{totalSavings.toLocaleString()}</span>
+                      <TrendingUp className="w-6 h-6 text-emerald-500" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle: Add Savings Form */}
+                <div className="lg:col-span-5">
+                  <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl`}>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Quick Savings Deposit</label>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="relative flex-1">
+                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-blue-500">£</span>
+                        <input
+                          type="number"
+                          value={savingsAmount}
+                          onChange={(e) => setSavingsAmount(e.target.value)}
+                          placeholder="Amount to save"
+                          className="input-unified w-full !pl-12 !py-5 !rounded-[1.5rem]"
+                        />
+                      </div>
+                      <button
+                        onClick={handleAddSavings}
+                        disabled={!savingsAmount || isAddingSavings}
+                        className={`btn-primary-unified !bg-blue-600 hover:!bg-blue-700 !rounded-[1.5rem] !px-10 shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50`}
+                      >
+                        {isAddingSavings ? (
+                          <RefreshCw className="w-6 h-6 animate-spin" />
+                        ) : (
+                          <ArrowUpRight className="w-6 h-6" strokeWidth={3} />
+                        )}
+                        <span className="font-black uppercase tracking-[0.1em]">Deposit</span>
+                      </button>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-500 mt-4 uppercase tracking-widest text-center italic">
+                      This will be recorded as a special savings transaction.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right: Actions and Mini-History */}
+                <div className="lg:col-span-3 flex flex-col gap-4">
+                  <button
+                    onClick={() => setShowSavingsHistory(!showSavingsHistory)}
+                    className={`flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all duration-500 ${
+                      showSavingsHistory 
+                        ? 'bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/20' 
+                        : `${theme === 'dark' ? 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-blue-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-blue-600'}`
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <History className="w-6 h-6" />
+                      <span className="font-black uppercase tracking-[0.1em]">History</span>
+                    </div>
+                    <span className={`text-xs font-black px-3 py-1 rounded-full ${showSavingsHistory ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'}`}>
+                      {savingsTransactions.length}
+                    </span>
+                  </button>
+
+                  {showSavingsHistory && (
+                    <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white'} border-2 border-blue-500/20 max-h-[200px] overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500`}>
+                      <div className="space-y-4">
+                        {savingsTransactions.length > 0 ? (
+                          [...savingsTransactions].reverse().map((t, i) => (
+                            <div key={i} className="flex items-center justify-between border-b border-slate-700/10 pb-2 last:border-0">
+                              <div>
+                                <p className={`text-xs font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                  {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                </p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Contribution</p>
+                              </div>
+                              <span className="text-sm font-black text-blue-500">£{Math.abs(t.amount).toLocaleString()}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs font-bold text-slate-500 text-center py-4">No savings history yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -318,6 +318,16 @@ def create_transaction(
     """
     user = get_current_user(token, db)
     
+    # 1. Verify if this is a 'Savings' transaction and handle type mismatch
+    category = db.query(Category).filter(Category.id == data.category_id).first()
+    if category and category.name == 'Savings':
+        # Ensure the amount is treated as an expense (negative) if it's the Savings category
+        # even if the frontend sends a positive number (common for 'deposit' UI)
+        if category.type == 'expense' and data.amount > 0:
+            data.amount = -data.amount
+        elif category.type == 'income' and data.amount < 0:
+            data.amount = abs(data.amount)
+
     # Create transaction
     transaction = Transaction(
         user_id=user.id,
@@ -335,9 +345,14 @@ def create_transaction(
     ).all()
     
     for goal in linked_goals:
-        # amount is positive for income, negative for expense
-        # so adding it correctly handles both (adds income, subtracts expense)
-        goal.current_amount += transaction.amount
+        # If it's a Savings category, we treat the absolute value as progress 
+        # (since savings is an expense but increases the goal balance)
+        if category and category.name == 'Savings':
+            goal.current_amount += abs(transaction.amount)
+        else:
+            # amount is positive for income, negative for expense
+            # so adding it correctly handles both (adds income, subtracts expense)
+            goal.current_amount += transaction.amount
             
     db.commit()
     
@@ -371,8 +386,12 @@ def delete_transaction(
     ).all()
     
     for goal in linked_goals:
-        # Subtract the amount we previously added (this correctly handles both income and expense)
-        goal.current_amount -= transaction.amount
+        # Reverse the effect based on category type
+        if transaction.category and transaction.category.name == 'Savings':
+            goal.current_amount -= abs(transaction.amount)
+        else:
+            # Subtract the amount we previously added (this correctly handles both income and expense)
+            goal.current_amount -= transaction.amount
 
     db.delete(transaction)
     db.commit()
@@ -497,7 +516,11 @@ def get_monthly_stats_logic(db: Session, user_id: int, year: int, month: int):
     monthly_tx = [t for t in transactions if t.date.year == year and t.date.month == month]
     
     total_income = sum(t.amount for t in monthly_tx if t.amount > 0)
-    total_expenses = abs(sum(t.amount for t in monthly_tx if t.amount < 0))
+    
+    # Calculate regular expenses vs savings
+    total_expenses_all = abs(sum(t.amount for t in monthly_tx if t.amount < 0))
+    total_savings = abs(sum(t.amount for t in monthly_tx if t.amount < 0 and t.category and t.category.name == 'Savings'))
+    actual_spending = total_expenses_all - total_savings
     
     categories = {}
     for t in monthly_tx:
@@ -507,7 +530,10 @@ def get_monthly_stats_logic(db: Session, user_id: int, year: int, month: int):
             
     return {
         "total_income": round(total_income, 2),
-        "total_expenses": round(total_expenses, 2),
+        "total_expenses": round(total_expenses_all, 2),
+        "total_savings": round(total_savings, 2),
+        "actual_spending": round(actual_spending, 2),
+        "net_savings": round(total_income - actual_spending, 2), # Income - Actual Expenses
         "category_breakdown": [{"name": k, "amount": round(v, 2)} for k, v in categories.items()]
     }
 
@@ -563,19 +589,23 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     
     # Calculate current month stats
     current_income = sum(t.amount for t in current_month_tx if t.amount > 0)
-    current_expenses = abs(sum(t.amount for t in current_month_tx if t.amount < 0))
-    current_savings = current_income - current_expenses
-    current_savings_rate = (current_savings / current_income * 100) if current_income > 0 else 0
+    current_expenses_all = abs(sum(t.amount for t in current_month_tx if t.amount < 0))
+    current_savings_from_tx = abs(sum(t.amount for t in current_month_tx if t.amount < 0 and t.category and t.category.name == 'Savings'))
+    current_spending = current_expenses_all - current_savings_from_tx
+    current_net_savings = current_income - current_spending
+    current_savings_rate = (current_net_savings / current_income * 100) if current_income > 0 else 0
     
     # Calculate previous month stats
     prev_income = sum(t.amount for t in prev_month_tx if t.amount > 0)
-    prev_expenses = abs(sum(t.amount for t in prev_month_tx if t.amount < 0))
-    prev_savings = prev_income - prev_expenses
+    prev_expenses_all = abs(sum(t.amount for t in prev_month_tx if t.amount < 0))
+    prev_savings_from_tx = abs(sum(t.amount for t in prev_month_tx if t.amount < 0 and t.category and t.category.name == 'Savings'))
+    prev_spending = prev_expenses_all - prev_savings_from_tx
+    prev_net_savings = prev_income - prev_spending
     
     # Calculate trends
     income_change = ((current_income - prev_income) / prev_income * 100) if prev_income > 0 else 0
-    expense_change = ((current_expenses - prev_expenses) / prev_expenses * 100) if prev_expenses > 0 else 0
-    savings_change = ((current_savings - prev_savings) / abs(prev_savings) * 100) if prev_savings != 0 else 0
+    expense_change = ((current_spending - prev_spending) / prev_spending * 100) if prev_spending > 0 else 0
+    savings_change = ((current_net_savings - prev_net_savings) / abs(prev_net_savings) * 100) if prev_net_savings != 0 else 0
     
     # Category breakdown with trends
     current_categories = {}
@@ -646,15 +676,17 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     return {
         "current_month": {
             "income": round(current_income, 2),
-            "expenses": round(current_expenses, 2),
-            "savings": round(current_savings, 2),
+            "expenses": round(current_spending, 2), # Net spending (excluding savings)
+            "total_expenses_with_savings": round(current_expenses_all, 2),
+            "savings": round(current_net_savings, 2), # Net savings (Income - Actual Spending)
+            "savings_from_transactions": round(current_savings_from_tx, 2), # The 'Savings' category amount
             "savings_rate": round(current_savings_rate, 1),
             "transaction_count": len(current_month_tx)
         },
         "previous_month": {
             "income": round(prev_income, 2),
-            "expenses": round(prev_expenses, 2),
-            "savings": round(prev_savings, 2)
+            "expenses": round(prev_spending, 2),
+            "savings": round(prev_net_savings, 2)
         },
         "trends": {
             "income_change": round(income_change, 1),
@@ -662,7 +694,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
             "savings_change": round(savings_change, 1)
         },
         "category_breakdown": sorted(
-            [{"name": k, "amount": round(v, 2), "percent": round(v/current_expenses*100, 1) if current_expenses > 0 else 0} 
+            [{"name": k, "amount": round(v, 2), "percent": round(v/current_expenses_all*100, 1) if current_expenses_all > 0 else 0} 
              for k, v in current_categories.items()],
             key=lambda x: x["amount"],
             reverse=True
