@@ -1892,15 +1892,15 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     
     header_data = [
         [
-            Paragraph("Moataz Finance", styles["MainTitle"]), 
-            Paragraph(f"<b>Financial Intelligence</b>", styles["RightSubtitle"])
+            Paragraph("AI Finance Advisor", styles["MainTitle"]), 
+            Paragraph(f"<b>Financial Intelligence Report</b>", styles["RightSubtitle"])
         ],
         [
             Paragraph(f"Client: {user.first_name or ''} {user.last_name or ''}", styles["Subtitle"]), 
             Paragraph(f"Period: {period_label}", styles["RightSubtitle"])
         ],
         [
-            Paragraph(f"{user.email}", styles["Subtitle"]),
+            Paragraph(f"Email: {user.email}", styles["Subtitle"]),
             Paragraph(f"Generated: {gen_date}", styles["RightSubtitle"])
         ]
     ]
