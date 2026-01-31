@@ -280,10 +280,17 @@ function Dashboard() {
           .reduce((sum, t) => sum + t.amount, 0)
       );
 
-      // Total dedicated savings (transactions with 'Savings' category)
+      // Total dedicated savings (transactions with 'Savings' category) - PERIOD
       const totalSavingsTx = Math.abs(
         periodTransactions
-          .filter(t => t.amount < 0 && t.category_name === 'Savings')
+          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase() === 'savings')
+          .reduce((sum, t) => sum + t.amount, 0)
+      );
+
+      // Total dedicated savings (transactions with 'Savings' category) - OVERALL (Lifetime)
+      const totalSavingsOverall = Math.abs(
+        txns
+          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase() === 'savings')
           .reduce((sum, t) => sum + t.amount, 0)
       );
 
@@ -310,8 +317,8 @@ function Dashboard() {
       setTransactions(txns);
       setAnalytics({
         total_income: totalIncome,
-        total_expenses: actualSpending, // Show actual spending as expenses
-        total_savings: totalSavingsTx, // New field for total savings transactions
+        total_expenses: totalOutflow, // Show total outflow (including savings) as expenses
+        total_savings: totalSavingsOverall, // Show lifetime total savings in the card
         net_savings: netSavings,
         savings_rate: savingsRateValue,
         category_breakdown: categoryBreakdownArray

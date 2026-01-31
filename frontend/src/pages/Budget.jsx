@@ -226,13 +226,10 @@ function BudgetPlanning() {
         periodEnd = new Date(selectedMonth.year, 11, 31);
       }
 
-      const filteredTransactions = transactionsData.filter(txn => {
-        const txnDate = new Date(txn.date);
-        return txnDate >= periodStart && txnDate <= periodEnd;
-      });
+      const allTransactions = transactionsData;
 
       setAnalytics(analyticsData);
-      setTransactions(filteredTransactions);
+      setTransactions(allTransactions); // Keep all for total savings calculation
       setBudgets(budgetsData);
       setCategories(categoriesData);
 

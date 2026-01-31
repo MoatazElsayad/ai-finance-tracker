@@ -320,7 +320,7 @@ def create_transaction(
     
     # 1. Verify if this is a 'Savings' transaction and handle type mismatch
     category = db.query(Category).filter(Category.id == data.category_id).first()
-    if category and category.name == 'Savings':
+    if category and category.name.lower() == 'savings':
         # Ensure the amount is treated as an expense (negative) if it's the Savings category
         # even if the frontend sends a positive number (common for 'deposit' UI)
         if category.type == 'expense' and data.amount > 0:
@@ -347,7 +347,7 @@ def create_transaction(
     for goal in linked_goals:
         # If it's a Savings category, we treat the absolute value as progress 
         # (since savings is an expense but increases the goal balance)
-        if category and category.name == 'Savings':
+        if category and category.name.lower() == 'savings':
             goal.current_amount += abs(transaction.amount)
         else:
             # amount is positive for income, negative for expense
@@ -387,7 +387,7 @@ def delete_transaction(
     
     for goal in linked_goals:
         # Reverse the effect based on category type
-        if transaction.category and transaction.category.name == 'Savings':
+        if transaction.category and transaction.category.name.lower() == 'savings':
             goal.current_amount -= abs(transaction.amount)
         else:
             # Subtract the amount we previously added (this correctly handles both income and expense)

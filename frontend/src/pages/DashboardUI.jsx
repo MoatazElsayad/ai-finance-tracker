@@ -172,7 +172,7 @@ export const SectionHeaderAndSummary = ({
           />
 
           <StatCard
-            label="Actual Spending"
+            label="Total Expenses"
             value={analytics?.total_expenses ?? '—'}
             icon={<TrendingDown className="w-6 h-6" />}
             className="text-rose-600 dark:text-rose-400"

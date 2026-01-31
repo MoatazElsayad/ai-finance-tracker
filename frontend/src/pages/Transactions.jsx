@@ -671,17 +671,18 @@ function Transactions() {
                     const isNote = txn.description.includes('||notes||');
                     const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
                     const isExpanded = expanded.has(txn.id);
+                    const isSavings = txn.category_name && txn.category_name.toLowerCase() === 'savings';
                     
                     return (
                       <tr 
                         key={txn.id} 
                         onClick={() => toggleExpand(txn.id)}
-                        className={`${theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50/50'} transition-all group border-b border-slate-800/5 cursor-pointer ${isExpanded ? (theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/50') : ''}`}
+                        className={`${theme === 'dark' ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50/50'} transition-all group border-b border-slate-800/5 cursor-pointer ${isExpanded ? (theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/50') : ''} ${isSavings ? (theme === 'dark' ? 'bg-blue-500/5 border-l-4 border-l-blue-500' : 'bg-blue-50/50 border-l-4 border-l-blue-500') : ''}`}
                       >
                         <td className="px-10 py-8">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-3">
-                              <span className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors duration-300`}>{desc}</span>
+                              <span className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'} group-hover:text-amber-500 transition-colors duration-300 ${isSavings ? '!text-blue-500' : ''}`}>{desc}</span>
                               {note && (
                                 <div className={`p-1 rounded-md ${isExpanded ? 'bg-amber-500 text-white' : 'bg-slate-500/10 text-slate-500'} transition-all`}>
                                   <FileText className="w-3.5 h-3.5" />
@@ -701,8 +702,10 @@ function Transactions() {
                         </td>
                         <td className="px-10 py-8">
                           <span className={`inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl text-sm font-black ${
-                            theme === 'dark' ? 'bg-slate-800/50 text-slate-300' : 'bg-white text-slate-600'
-                          } border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-100'} shadow-sm group-hover:border-amber-500/30 transition-all duration-300`}>
+                            isSavings 
+                              ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-blue-500/10 text-blue-600 border-blue-500/20')
+                              : (theme === 'dark' ? 'bg-slate-800/50 text-slate-300 border-slate-700/50' : 'bg-white text-slate-600 border-slate-100')
+                          } border-2 shadow-sm group-hover:border-amber-500/30 transition-all duration-300`}>
                             <span className="text-xl">{txn.category_icon}</span>
                             <span className="uppercase tracking-[0.1em]">{txn.category_name}</span>
                           </span>
