@@ -1,5 +1,5 @@
 import React from 'react';
-import { GitHub, Linkedin, Twitter, Rocket } from 'lucide-react';
+import { Github, Linkedin, Twitter, Rocket } from 'lucide-react';
 
 const Footer = () => {
   const year = new Date().getFullYear();
@@ -42,7 +42,7 @@ const Footer = () => {
               className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-[1.25rem] flex items-center justify-center hover:bg-white/20 hover:scale-110 hover:-translate-y-1 transition-all duration-300 border border-white/20 shadow-xl group"
               title="GitHub"
             >
-              <GitHub className="w-6 h-6 text-white group-hover:rotate-6 transition-transform" />
+              <Github className="w-6 h-6 text-white group-hover:rotate-6 transition-transform" />
             </a>
             <a 
               href="https://linkedin.com" 
