@@ -590,7 +590,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     # Calculate current month stats
     current_income = sum(t.amount for t in current_month_tx if t.amount > 0)
     current_expenses_all = abs(sum(t.amount for t in current_month_tx if t.amount < 0))
-    current_savings_from_tx = abs(sum(t.amount for t in current_month_tx if t.amount < 0 and t.category and t.category.name == 'Savings'))
+    current_savings_from_tx = abs(sum(t.amount for t in current_month_tx if t.amount < 0 and t.category and 'savings' in t.category.name.lower()))
     current_spending = current_expenses_all - current_savings_from_tx
     current_net_savings = current_income - current_spending
     current_savings_rate = (current_net_savings / current_income * 100) if current_income > 0 else 0
@@ -598,7 +598,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     # Calculate previous month stats
     prev_income = sum(t.amount for t in prev_month_tx if t.amount > 0)
     prev_expenses_all = abs(sum(t.amount for t in prev_month_tx if t.amount < 0))
-    prev_savings_from_tx = abs(sum(t.amount for t in prev_month_tx if t.amount < 0 and t.category and t.category.name == 'Savings'))
+    prev_savings_from_tx = abs(sum(t.amount for t in prev_month_tx if t.amount < 0 and t.category and 'savings' in t.category.name.lower()))
     prev_spending = prev_expenses_all - prev_savings_from_tx
     prev_net_savings = prev_income - prev_spending
     
@@ -613,12 +613,14 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     
     for t in current_month_tx:
         if t.amount < 0:
-            cat_name = t.category.name if t.category else "Uncategorized"
+            is_savings = t.category and 'savings' in t.category.name.lower()
+            cat_name = "Savings" if is_savings else (t.category.name if t.category else "Uncategorized")
             current_categories[cat_name] = current_categories.get(cat_name, 0) + abs(t.amount)
     
     for t in prev_month_tx:
         if t.amount < 0:
-            cat_name = t.category.name if t.category else "Uncategorized"
+            is_savings = t.category and 'savings' in t.category.name.lower()
+            cat_name = "Savings" if is_savings else (t.category.name if t.category else "Uncategorized")
             prev_categories[cat_name] = prev_categories.get(cat_name, 0) + abs(t.amount)
     
     # Find biggest changes

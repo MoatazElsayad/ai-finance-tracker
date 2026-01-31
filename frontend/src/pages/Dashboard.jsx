@@ -268,7 +268,7 @@ function Dashboard() {
         return txnDate >= periodStart && txnDate <= periodEnd;
       });
 
-      // Separation of regular expenses and special savings
+      // separation of regular expenses and special savings
       const totalIncome = periodTransactions
         .filter(t => t.amount > 0)
         .reduce((sum, t) => sum + t.amount, 0);
@@ -283,14 +283,14 @@ function Dashboard() {
       // Total dedicated savings (transactions with 'Savings' category) - PERIOD
       const totalSavingsTx = Math.abs(
         periodTransactions
-          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase() === 'savings')
+          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
           .reduce((sum, t) => sum + t.amount, 0)
       );
 
       // Total dedicated savings (transactions with 'Savings' category) - OVERALL (Lifetime)
       const totalSavingsOverall = Math.abs(
         txns
-          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase() === 'savings')
+          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
           .reduce((sum, t) => sum + t.amount, 0)
       );
 
@@ -306,7 +306,8 @@ function Dashboard() {
       periodTransactions
         .filter(t => t.amount < 0)
         .forEach(t => {
-          const category = t.category_name || 'Uncategorized';
+          const isSavings = t.category_name && t.category_name.toLowerCase().includes('savings');
+          const category = isSavings ? 'Savings' : (t.category_name || 'Uncategorized');
           categoryBreakdown[category] = (categoryBreakdown[category] || 0) + Math.abs(t.amount);
         });
 

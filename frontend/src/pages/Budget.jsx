@@ -638,7 +638,7 @@ function BudgetPlanning() {
 
   const savingsTransactions = transactions.filter(t => {
     const cat = categories.find(c => Number(c.id) === Number(t.category_id));
-    return cat && cat.name && cat.name.toLowerCase() === 'savings';
+    return cat && cat.name && cat.name.toLowerCase().includes('savings');
   });
 
   const totalSavings = savingsTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);

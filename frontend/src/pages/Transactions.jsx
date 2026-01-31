@@ -671,7 +671,7 @@ function Transactions() {
                     const isNote = txn.description.includes('||notes||');
                     const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
                     const isExpanded = expanded.has(txn.id);
-                    const isSavings = txn.category_name && txn.category_name.toLowerCase() === 'savings';
+                    const isSavings = txn.category_name && txn.category_name.toLowerCase().includes('savings');
                     
                     return (
                       <tr 
