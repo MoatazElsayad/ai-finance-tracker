@@ -232,7 +232,7 @@ function Transactions() {
 
   // Filter categories by type
   const filteredCategories = categories.filter(
-    cat => cat.type === (isExpense ? 'expense' : 'income')
+    cat => cat.type === (isExpense ? 'expense' : 'income') || (cat.name === 'Savings')
   );
 
   // Get recent categories (last 5 used)

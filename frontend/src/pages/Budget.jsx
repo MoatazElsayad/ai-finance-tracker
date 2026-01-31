@@ -236,12 +236,6 @@ function BudgetPlanning() {
       setBudgets(budgetsData);
       setCategories(categoriesData);
 
-      // Debug logging
-      console.log('🔍 Budget Connection Debug:');
-      console.log('📊 Transactions loaded:', filteredTransactions.length);
-      console.log('💰 Budgets loaded:', budgetsData.length);
-      console.log('📂 Categories loaded:', categoriesData.length);
-
       // Show sample data
       if (filteredTransactions.length > 0) {
         console.log('📋 Sample transaction:', filteredTransactions[0]);
@@ -609,9 +603,14 @@ function BudgetPlanning() {
   const handleAddSavings = async () => {
     if (!savingsAmount || isAddingSavings) return;
 
-    const savingsCategory = categories.find(c => c.name === 'Savings' && c.type === 'expense');
+    const savingsCategory = categories.find(c => 
+      (c.name && c.name.toLowerCase() === 'savings') || 
+      (Number(c.id) === 10)
+    );
+    
     if (!savingsCategory) {
-      alert('Savings category not found. Please create one or wait for it to be seeded.');
+      console.error('Categories available:', categories);
+      alert('Savings category not found. Please refresh the page or wait for it to be seeded.');
       return;
     }
 
@@ -641,8 +640,8 @@ function BudgetPlanning() {
   };
 
   const savingsTransactions = transactions.filter(t => {
-    const cat = categories.find(c => c.id === t.category_id);
-    return cat && cat.name === 'Savings' && cat.type === 'expense';
+    const cat = categories.find(c => Number(c.id) === Number(t.category_id));
+    return cat && cat.name && cat.name.toLowerCase() === 'savings';
   });
 
   const totalSavings = savingsTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
