@@ -16,7 +16,7 @@ function Transactions() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showCustomCategoryCreator, setShowCustomCategoryCreator] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showAllTransactions, setShowAllTransactions] = useState(true);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -205,14 +205,10 @@ function Transactions() {
   }, [filteredTransactions]);
 
 
-  // Filter to last 3 days if not showing all
+  // Filter to first 5 if not showing all
   const displayTransactions = useMemo(() => {
     if (showAllTransactions) return filteredTransactions;
-    
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    
-    return filteredTransactions.filter(txn => new Date(txn.date) >= threeDaysAgo);
+    return filteredTransactions.slice(0, 5);
   }, [filteredTransactions, showAllTransactions]);
 
   // Group transactions by date
@@ -643,11 +639,11 @@ function Transactions() {
       </div>
 
       {/* Transactions Table/List */}
-      <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500 shadow-2xl`}>
-        <div className="overflow-x-auto">
+      <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500 shadow-2xl relative`}>
+        <div className={`overflow-x-auto transition-all duration-700 ${!showAllTransactions ? 'max-h-[600px]' : 'max-h-[1200px]'} overflow-y-auto custom-scrollbar`}>
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className={`${theme === 'dark' ? 'bg-slate-800/40' : 'bg-slate-50'} border-b-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
+              <tr className={`${theme === 'dark' ? 'bg-slate-800/40' : 'bg-slate-50'} border-b-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'} sticky top-0 z-20 backdrop-blur-md`}>
                 <th className="px-10 py-8 text-xs font-black uppercase tracking-[0.2em] text-slate-500">Transaction</th>
                 <th className="px-10 py-8 text-xs font-black uppercase tracking-[0.2em] text-slate-500">Category</th>
                 <th className="px-10 py-8 text-xs font-black uppercase tracking-[0.2em] text-slate-500">Date</th>
@@ -658,7 +654,7 @@ function Transactions() {
             <tbody className="divide-y-2 divide-slate-800/5">
               {Object.entries(groupedTransactions).map(([dateLabel, txns]) => (
                 <React.Fragment key={dateLabel}>
-                  <tr className={`${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/30'} backdrop-blur-sm sticky top-0 z-10`}>
+                  <tr className={`${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/30'} backdrop-blur-sm sticky top-[84px] z-10`}>
                     <td colSpan="5" className="px-10 py-4 border-y border-slate-800/10">
                       <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
@@ -748,15 +744,33 @@ function Transactions() {
           </table>
         </div>
         
-        {filteredTransactions.length > displayTransactions.length && (
-          <div className="p-10 border-t-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'} text-center bg-slate-800/10">
+        {!showAllTransactions && filteredTransactions.length > displayTransactions.length && (
+          <div className={`absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t ${theme === 'dark' ? 'from-[#0a0e27] via-[#0a0e27]/80' : 'from-slate-50 via-slate-50/80'} to-transparent z-20 flex items-end justify-center pb-10`}>
             <button
               onClick={() => setShowAllTransactions(true)}
-              className={`px-12 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 ${
-                theme === 'dark' ? 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 shadow-xl shadow-black/20' : 'bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200'
+              className={`px-12 py-5 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-4 ${
+                theme === 'dark' 
+                  ? 'bg-amber-500 text-white shadow-[0_20px_50px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95' 
+                  : 'bg-amber-500 text-white shadow-[0_20px_50px_rgba(245,158,11,0.2)] hover:scale-105 active:scale-95'
               }`}
             >
-              Load {filteredTransactions.length - displayTransactions.length} More Transactions
+              <span>View All History</span>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Plus className="w-4 h-4" strokeWidth={3} />
+              </div>
+            </button>
+          </div>
+        )}
+
+        {showAllTransactions && filteredTransactions.length > 5 && (
+          <div className={`p-10 border-t-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'} text-center ${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-50/50'}`}>
+            <button
+              onClick={() => setShowAllTransactions(false)}
+              className={`px-10 py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${
+                theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Minimize History
             </button>
           </div>
         )}
