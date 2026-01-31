@@ -42,15 +42,15 @@ def init_database():
     # Add default categories if they don't exist
     db = SessionLocal()
     try:
-        # Check if categories already exist
-        existing = db.query(Category).first()
-        if not existing:
-            # Add default categories
-            for cat_data in DEFAULT_CATEGORIES:
+        # Check for missing default categories and add them
+        for cat_data in DEFAULT_CATEGORIES:
+            exists = db.query(Category).filter(Category.id == cat_data["id"]).first()
+            if not exists:
                 category = Category(**cat_data)
                 db.add(category)
-            db.commit()
-            print("✅ Default categories added!")
+                print(f"Adding missing default category: {cat_data['name']}")
+        
+        db.commit()
     finally:
         db.close()
 
