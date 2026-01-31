@@ -1,4 +1,5 @@
 import { useTheme } from '../context/ThemeContext';
+import FloatingIcons from '../components/FloatingIcons';
 import { 
   Info, 
   Code2, 
@@ -90,7 +91,8 @@ function About() {
   ];
 
   return (
-    <div className={`transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+    <div className={`transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} relative`}>
+      <FloatingIcons isDark={isDark} />
       
       {/* 1. OVERVIEW SECTION */}
       <section className="min-h-screen flex flex-col justify-center px-6 py-12">

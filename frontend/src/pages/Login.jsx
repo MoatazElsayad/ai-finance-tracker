@@ -18,6 +18,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Footer from '../components/Footer';
+import FloatingIcons from '../components/FloatingIcons';
 
 function Login() {
   const { theme } = useTheme();
@@ -58,8 +59,9 @@ function Login() {
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} flex flex-col transition-colors duration-500`}>
-      <div className="flex-grow flex items-center justify-center px-6 py-20">
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} flex flex-col transition-colors duration-500 relative`}>
+      <FloatingIcons isDark={isDark} />
+      <div className="flex-grow flex items-center justify-center px-6 py-20 relative z-10">
         <div className="max-w-xl w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
           {/* Logo & Header */}
           <div className="text-center mb-10">

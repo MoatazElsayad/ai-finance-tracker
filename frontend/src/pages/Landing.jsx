@@ -19,6 +19,7 @@ import {
   Globe
 } from 'lucide-react';
 import Footer from '../components/Footer';
+import FloatingIcons from '../components/FloatingIcons';
 
 export default function Landing() {
   const { theme } = useTheme();
@@ -26,7 +27,8 @@ export default function Landing() {
   const year = new Date().getFullYear();
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} antialiased font-sans transition-colors duration-500`}>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} antialiased font-sans transition-colors duration-500 relative`}>
+      <FloatingIcons isDark={isDark} />
 
       {/* Navigation */}
       <nav className={`${isDark ? 'bg-[#0a0e27]/80' : 'bg-white/80'} backdrop-blur-md border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} sticky top-0 z-50 shadow-sm`}>
