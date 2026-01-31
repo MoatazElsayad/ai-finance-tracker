@@ -21,6 +21,7 @@ import ReceiptUpload from './pages/ReceiptUpload';
 import About from './pages/About';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
 function AppContent() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Public routes – redirect to dashboard if already logged in */}
         <Route
