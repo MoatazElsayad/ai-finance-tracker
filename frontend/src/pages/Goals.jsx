@@ -136,7 +136,7 @@ const Goals = () => {
     }`}>
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div>
             <h1 className="text-4xl md:text-5xl font-black flex items-center gap-4 tracking-tight">
               <div className="p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-xl shadow-amber-500/20">
@@ -144,9 +144,15 @@ const Goals = () => {
               </div>
               Savings Goals
             </h1>
-            <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium`}>
-              Track long-term savings targets. Income increases progress, expenses decrease it.
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center gap-4 mt-3">
+              <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} text-lg font-medium`}>
+                Track long-term savings targets. Income increases progress, expenses decrease it.
+              </p>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-amber-50 border-amber-100 text-amber-600'} animate-pulse`}>
+                <Info className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Tip: Link goals to the "Savings" category!</span>
+              </div>
+            </div>
           </div>
           
           <button

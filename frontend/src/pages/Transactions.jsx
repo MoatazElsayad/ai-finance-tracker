@@ -289,9 +289,15 @@ function Transactions() {
             Transactions
           </h1>
         </div>
-        <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} tracking-tight max-w-2xl`}>
-          Manage your income and expenses with AI-powered insights and professional tracking.
-        </p>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} tracking-tight max-w-2xl`}>
+            Manage your income and expenses with AI-powered insights and professional tracking.
+          </p>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${theme === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'} animate-pulse`}>
+            <Wallet className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider">Tip: Use "Savings" category for transfers!</span>
+          </div>
+        </div>
       </div>
 
       {/* View Mode Toggle */}
