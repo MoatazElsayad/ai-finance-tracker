@@ -41,6 +41,15 @@ function Sidebar({ user }) {
     return user?.first_name || user?.username || 'User';
   };
 
+  // Format currency helper
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      maximumFractionDigits: 0
+    }).format(amount || 0);
+  };
+
   return (
     <>
       {/* Mobile Menu Toggle Button */}
@@ -117,6 +126,19 @@ function Sidebar({ user }) {
               <p className={`font-black text-lg tracking-tight leading-none mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {getUserName()}
               </p>
+              
+              {/* Available Balance Section */}
+              <div className={`mt-3 mb-2 py-2 px-4 rounded-2xl inline-block ${
+                isDark ? 'bg-amber-500/5 border border-amber-500/10' : 'bg-amber-50/50 border border-amber-100'
+              }`}>
+                <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 ${isDark ? 'text-amber-500/50' : 'text-amber-600/50'}`}>
+                  Available Balance
+                </p>
+                <p className={`text-base font-black tracking-tight ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                  {formatCurrency(user?.available_balance)}
+                </p>
+              </div>
+
               <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 {user?.email?.split('@')[0]}
               </p>
@@ -126,8 +148,11 @@ function Sidebar({ user }) {
 
         {/* Collapsed User Avatar */}
         {isCollapsed && user && (
-          <div className={`p-6 flex justify-center border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+          <div className={`p-6 flex flex-col items-center border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
             <UserAvatar user={user} size="w-12 h-12 ring-2 ring-amber-500/10" />
+            <div className={`mt-2 text-[10px] font-black ${isDark ? 'text-amber-400' : 'text-amber-600'} text-center truncate w-full`}>
+              {formatCurrency(user?.available_balance)}
+            </div>
           </div>
         )}
 

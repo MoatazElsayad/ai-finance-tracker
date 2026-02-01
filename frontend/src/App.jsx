@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, Outlet, useLocation } from 'react-router-dom';
-import { isAuthenticated, logout, getCurrentUser } from './api';
+import { isAuthenticated, logout, getCurrentUser, getTransactions } from './api';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { SidebarProvider, useSidebarCollapsed } from './context/SidebarContext';
 import UserAvatar from './components/UserAvatar';
@@ -89,11 +89,46 @@ function Layout() {
   const location = useLocation();
 
   useEffect(() => {
-    // Get current user info
-    getCurrentUser()
-      .then(setUser)
-      .catch(console.error);
-  }, []);
+    // Get current user info and calculate balance
+    const loadUserData = async () => {
+      try {
+        const [userData, transactionsData] = await Promise.all([
+          getCurrentUser(),
+          getTransactions()
+        ]);
+
+        if (userData && transactionsData) {
+          // Calculate Available Balance (Net Savings)
+          const totalIncome = transactionsData
+            .filter(t => t.amount > 0)
+            .reduce((sum, t) => sum + t.amount, 0);
+          const totalOutflow = Math.abs(
+            transactionsData
+              .filter(t => t.amount < 0)
+              .reduce((sum, t) => sum + t.amount, 0)
+          );
+          const totalSavingsTx = transactionsData
+              .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
+              .reduce((sum, t) => sum + (-t.amount), 0);
+          const actualSpending = totalOutflow - totalSavingsTx;
+          const netSavings = totalIncome - actualSpending;
+
+          setUser({
+            ...userData,
+            available_balance: netSavings
+          });
+        } else if (userData) {
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Failed to load user data in layout:', error);
+      }
+    };
+
+    if (isAuthenticated()) {
+      loadUserData();
+    }
+  }, [location.pathname]); // Re-calculate on route change to keep it fresh
 
   const isDark = theme === 'dark';
 
@@ -209,9 +244,14 @@ function Layout() {
                     <span className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {user?.first_name || user?.username || 'User'}
                     </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {user?.email?.split('@')[0]}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {user?.email?.split('@')[0]}
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'} border border-amber-500/20`}>
+                        £{(user?.available_balance || 0).toLocaleString('en-GB', { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

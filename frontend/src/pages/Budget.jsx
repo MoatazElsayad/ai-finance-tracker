@@ -148,6 +148,7 @@ function BudgetPlanning() {
   const [analytics, setAnalytics] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -166,7 +167,17 @@ function BudgetPlanning() {
   const [savingsAmount, setSavingsAmount] = useState('');
   const [showSavingsHistory, setShowSavingsHistory] = useState(false);
   const [isAddingSavings, setIsAddingSavings] = useState(false);
+  const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
+  const [isInitializingSavings, setIsInitializingSavings] = useState(false);
   const { theme } = useTheme();
+
+  // Check if savings category exists
+  useEffect(() => {
+    if (categories.length > 0) {
+      const savingsCat = categories.find(c => c.name && c.name.toLowerCase().includes('savings'));
+      setHasSavingsAccount(!!savingsCat);
+    }
+  }, [categories]);
 
 
   useEffect(() => {
@@ -208,30 +219,45 @@ function BudgetPlanning() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [analyticsData, transactionsData, budgetsData, categoriesData] = await Promise.all([
+      const [analyticsData, transactionsData, budgetsData, categoriesData, userData] = await Promise.all([
         getMonthlyAnalytics(selectedMonth.year, selectedMonth.month),
         getTransactions(),
         getBudgets(selectedMonth.year, selectedMonth.month),
-        getCategories()
+        getCategories(),
+        getCurrentUser()
       ]);
 
-      // Filter transactions based on view mode
-      let periodStart, periodEnd;
-      if (viewMode === 'monthly') {
-        periodStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
-        periodEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
-      } else {
-        // Yearly view
-        periodStart = new Date(selectedMonth.year, 0, 1);
-        periodEnd = new Date(selectedMonth.year, 11, 31);
-      }
+      // ... existing filtering logic ...
 
       const allTransactions = transactionsData;
+
+      // Calculate Available Balance (Net Savings) for Sidebar
+      const totalIncome = allTransactions
+        .filter(t => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
+      const totalOutflow = Math.abs(
+        allTransactions
+          .filter(t => t.amount < 0)
+          .reduce((sum, t) => sum + t.amount, 0)
+      );
+      const totalSavingsTx = allTransactions
+          .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
+          .reduce((sum, t) => sum + (-t.amount), 0);
+      const actualSpending = totalOutflow - totalSavingsTx;
+      const netSavings = totalIncome - actualSpending;
 
       setAnalytics(analyticsData);
       setTransactions(allTransactions); // Keep all for total savings calculation
       setBudgets(budgetsData);
       setCategories(categoriesData);
+      
+      // Update local user state for sidebar
+      if (userData) {
+        setUser({
+          ...userData,
+          available_balance: netSavings
+        });
+      }
 
       // Show sample data
       if (filteredTransactions.length > 0) {
@@ -246,6 +272,31 @@ function BudgetPlanning() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenSavingsBank = async () => {
+    setIsInitializingSavings(true);
+    try {
+      await initSavingsCategory();
+      await loadData(); // Reload to reflect changes
+      setToastMessage('Savings Bank opened successfully!');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } catch (error) {
+      console.error('Failed to initialize savings:', error);
+      alert('Failed to open savings bank. Please try again.');
+    } finally {
+      setIsInitializingSavings(false);
+    }
+  };
+
+  // Add function to get currency symbol (already defined in some pages, making it explicit here)
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   const generateBudgetInsights = async () => {
@@ -819,6 +870,42 @@ function BudgetPlanning() {
                 </div>
               ))}
             </div>
+
+            {/* Savings Bank Button - Shown only when no savings account exists */}
+            {!hasSavingsAccount && (
+              <div className="mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700" style={{ animationDelay: '400ms' }}>
+                <button
+                  onClick={handleOpenSavingsBank}
+                  disabled={isInitializingSavings}
+                  className={`w-full relative overflow-hidden group p-10 rounded-[3rem] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center gap-6 ${
+                    theme === 'dark' 
+                      ? 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/10' 
+                      : 'bg-blue-50/50 border-blue-200 hover:border-blue-300 hover:bg-blue-50'
+                  }`}
+                >
+                  <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-100'} text-blue-500 group-hover:scale-110 transition-transform duration-500 shadow-2xl shadow-blue-500/20`}>
+                    {isInitializingSavings ? (
+                      <RefreshCw className="w-10 h-10 animate-spin" />
+                    ) : (
+                      <Landmark className="w-10 h-10" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <span className={`block text-xs font-black uppercase tracking-[0.4em] mb-3 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
+                      Time to save fella?
+                    </span>
+                    <h3 className={`text-3xl font-black tracking-tight mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                      {isInitializingSavings ? 'Opening Your Vault...' : 'Open Your Savings Bank'}
+                    </h3>
+                    <p className={`text-lg font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-md mx-auto`}>
+                      Create a dedicated space for your savings and start building your financial future today.
+                    </p>
+                  </div>
+                  {/* Hover Shine Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+                </button>
+              </div>
+            )}
 
             {/* AI Budget Insights - Smart Caching */}
             <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden`} style={{ animationDelay: '400ms' }}>

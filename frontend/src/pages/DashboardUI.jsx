@@ -34,10 +34,7 @@ export const SectionHeaderAndSummary = ({
   setViewMode,
   changeMonth,
   changeYear,
-  analytics,
-  hasSavingsAccount,
-  onOpenSavingsBank,
-  isInitializingSavings
+  analytics
 }) => {
   const isDark = theme === 'dark';
 
@@ -164,7 +161,7 @@ export const SectionHeaderAndSummary = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <StatCard
             label="Total Income"
             value={analytics?.total_income ?? '—'}
@@ -183,47 +180,8 @@ export const SectionHeaderAndSummary = ({
             isDark={isDark}
           />
 
-          {!hasSavingsAccount ? (
-            <button
-              onClick={onOpenSavingsBank}
-              disabled={isInitializingSavings}
-              className={`relative overflow-hidden group p-6 rounded-[2rem] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center gap-3 h-full min-h-[180px] ${
-                isDark 
-                  ? 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40' 
-                  : 'bg-blue-50/50 border-blue-200 hover:border-blue-300'
-              }`}
-            >
-              <div className={`p-4 rounded-2xl ${isDark ? 'bg-blue-500/10' : 'bg-blue-100'} text-blue-500 group-hover:scale-110 transition-transform duration-500`}>
-                {isInitializingSavings ? (
-                  <RefreshCw className="w-6 h-6 animate-spin" />
-                ) : (
-                  <Landmark className="w-6 h-6" />
-                )}
-              </div>
-              <div className="text-center">
-                <span className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                  Time to save fella?
-                </span>
-                <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {isInitializingSavings ? 'Opening Bank...' : 'Open Savings Bank'}
-                </span>
-              </div>
-              <div className="absolute inset-0 bg-blue-500/5 translate-y-full group-hover:translate-y-0 transition-transform duration-700 pointer-events-none" />
-            </button>
-          ) : (
-            <StatCard
-              label="Total Savings"
-              value={analytics?.total_savings ?? '—'}
-              icon={<Landmark className="w-6 h-6" />}
-              className="text-blue-500"
-              color="blue"
-              isDark={isDark}
-              history={analytics?.recent_savings}
-            />
-          )}
-
           <StatCard
-            label="Net Savings"
+            label="Available Balance"
             value={analytics?.net_savings ?? '—'}
             icon={<Wallet className="w-6 h-6" />}
             className="text-amber-500"

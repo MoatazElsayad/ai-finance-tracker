@@ -48,8 +48,6 @@ function Dashboard() {
   const [chatWidgetTryingModel, setChatWidgetTryingModel] = useState(null);
   const [chatWidgetModelUsed, setChatWidgetModelUsed] = useState(null);
   const [user, setUser] = useState(null);
-  const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
-  const [isInitializingSavings, setIsInitializingSavings] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -254,14 +252,13 @@ function Dashboard() {
   const loadDashboard = async () => {
     setLoading(true);
     try {
-      const [txns, categories] = await Promise.all([
+      const [txns, categories, userData] = await Promise.all([
         getTransactions(),
-        getCategories()
+        getCategories(),
+        getCurrentUser()
       ]);
 
-      // Check if savings category exists
-      const savingsCat = categories.find(c => c.name.toLowerCase().includes('savings'));
-      setHasSavingsAccount(!!savingsCat);
+      setUser(userData);
 
       let periodStart, periodEnd;
       if (viewMode === 'monthly') {
@@ -338,6 +335,14 @@ function Dashboard() {
         category_breakdown: categoryBreakdownArray,
         recent_savings: recentSavings
       });
+
+      // Update global user state with net savings as available balance
+      if (userData) {
+        setUser({
+          ...userData,
+          available_balance: netSavings
+        });
+      }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {
@@ -345,23 +350,10 @@ function Dashboard() {
     }
   };
 
-  const handleOpenSavingsBank = async () => {
-    setIsInitializingSavings(true);
-    try {
-      await initSavingsCategory();
-      await loadDashboard(); // Reload to reflect changes
-    } catch (error) {
-      console.error('Failed to initialize savings:', error);
-      alert('Failed to open savings bank. Please try again.');
-    } finally {
-      setIsInitializingSavings(false);
-    }
-  };
-
   const handleGenerateAI = async () => {
+    setAiLoading(true);
     setAiSummary('');
     setAiModelUsed(null);
-    setAiLoading(true);
     setCurrentTryingModel(null);
 
     try {
@@ -649,9 +641,6 @@ function Dashboard() {
         changeMonth={changeMonth}
         changeYear={changeYear}
         analytics={analytics}
-        hasSavingsAccount={hasSavingsAccount}
-        onOpenSavingsBank={handleOpenSavingsBank}
-        isInitializingSavings={isInitializingSavings}
       />
 
       <ReportsSection 
