@@ -739,25 +739,39 @@ function BudgetPlanning() {
     
     if (!savingsCategory) {
       console.error('Categories available:', categories);
-      alert('Savings account not found. Please go to Dashboard and click "Open Savings Bank" first.');
+      alert('Savings account not found. Please click "Open Your Savings Bank" first.');
       return;
     }
 
     setIsAddingSavings(true);
     try {
-      await createTransaction(
+      const amountValue = Math.abs(parseFloat(savingsAmount));
+      const today = new Date().toISOString().split('T')[0];
+      
+      const newTx = await createTransaction(
         savingsCategory.id,
-        -Math.abs(parseFloat(savingsAmount)), // Count as expense
-        'Monthly Savings Contribution',
-        new Date().toISOString().split('T')[0]
+        -amountValue, // Count as expense/outflow from main balance
+        'Savings Deposit',
+        today
       );
 
+      // Create a transaction object that matches the structure returned by the API
+      // but ensure it has the category_name for the filter to work immediately
+      const optimizedTx = {
+        ...newTx,
+        category_name: savingsCategory.name,
+        category_id: savingsCategory.id
+      };
+
+      // Proactively update transactions list for immediate UI feedback
+      setTransactions(prev => [optimizedTx, ...prev]);
+      
       setSavingsAmount('');
-      setToastMessage('Savings added successfully!');
+      setToastMessage('Deposit added to Vault!');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
 
-      // Reload data
+      // Reload all data in background to sync everything (analytics, balance, etc)
       loadData();
       clearInsightsCache();
     } catch (error) {
@@ -769,6 +783,10 @@ function BudgetPlanning() {
   };
 
   const savingsTransactions = transactions.filter(t => {
+    // Check by name first (more reliable if state just updated)
+    if (t.category_name && t.category_name.toLowerCase().includes('savings')) return true;
+    
+    // Fallback to category lookup
     const cat = categories.find(c => Number(c.id) === Number(t.category_id));
     return cat && cat.name && cat.name.toLowerCase().includes('savings');
   });
