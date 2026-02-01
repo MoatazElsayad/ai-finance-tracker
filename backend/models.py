@@ -131,7 +131,4 @@ DEFAULT_CATEGORIES = [
     {"id": 6, "name": "Salary", "type": "income", "icon": "💰"},
     {"id": 7, "name": "Freelance", "type": "income", "icon": "💼"},
     {"id": 8, "name": "Other Income", "type": "income", "icon": "💵"},
-    
-    # Savings (Special)
-    {"id": 10, "name": "Savings", "type": "expense", "icon": "🏦"},
 ]

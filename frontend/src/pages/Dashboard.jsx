@@ -9,7 +9,9 @@ import {
   generateAISummary, 
   getCurrentUser, 
   askAIQuestion, 
-  generateReport 
+  generateReport,
+  getCategories,
+  initSavingsCategory 
 } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { CHART_COLORS } from './DashboardUtils';
@@ -46,6 +48,8 @@ function Dashboard() {
   const [chatWidgetTryingModel, setChatWidgetTryingModel] = useState(null);
   const [chatWidgetModelUsed, setChatWidgetModelUsed] = useState(null);
   const [user, setUser] = useState(null);
+  const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
+  const [isInitializingSavings, setIsInitializingSavings] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -250,7 +254,15 @@ function Dashboard() {
   const loadDashboard = async () => {
     setLoading(true);
     try {
-      const txns = await getTransactions();
+      const [txns, categories] = await Promise.all([
+        getTransactions(),
+        getCategories()
+      ]);
+
+      // Check if savings category exists
+      const savingsCat = categories.find(c => c.name.toLowerCase().includes('savings'));
+      setHasSavingsAccount(!!savingsCat);
+
       let periodStart, periodEnd;
       if (viewMode === 'monthly') {
         periodStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
@@ -330,6 +342,19 @@ function Dashboard() {
       console.error('Failed to load dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenSavingsBank = async () => {
+    setIsInitializingSavings(true);
+    try {
+      await initSavingsCategory();
+      await loadDashboard(); // Reload to reflect changes
+    } catch (error) {
+      console.error('Failed to initialize savings:', error);
+      alert('Failed to open savings bank. Please try again.');
+    } finally {
+      setIsInitializingSavings(false);
     }
   };
 
@@ -624,6 +649,9 @@ function Dashboard() {
         changeMonth={changeMonth}
         changeYear={changeYear}
         analytics={analytics}
+        hasSavingsAccount={hasSavingsAccount}
+        onOpenSavingsBank={handleOpenSavingsBank}
+        isInitializingSavings={isInitializingSavings}
       />
 
       <ReportsSection 

@@ -164,6 +164,15 @@ export const deleteCategory = async (categoryId) => {
   return handleResponse(response);
 };
 
+export const initSavingsCategory = async () => {
+  const token = getToken();
+  const response = await authFetch(`/categories/init-savings?token=${token}`, {
+    method: 'POST',
+  });
+
+  return handleResponse(response);
+};
+
 // ============================================
 // ANALYTICS
 // ============================================

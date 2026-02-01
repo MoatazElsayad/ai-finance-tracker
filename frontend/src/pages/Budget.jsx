@@ -601,13 +601,12 @@ function BudgetPlanning() {
     if (!savingsAmount || isAddingSavings) return;
 
     const savingsCategory = categories.find(c => 
-      (c.name && c.name.toLowerCase() === 'savings') || 
-      (Number(c.id) === 10)
+      c.name && c.name.toLowerCase().includes('savings')
     );
     
     if (!savingsCategory) {
       console.error('Categories available:', categories);
-      alert('Savings category not found. Please refresh the page or wait for it to be seeded.');
+      alert('Savings account not found. Please go to Dashboard and click "Open Savings Bank" first.');
       return;
     }
 
