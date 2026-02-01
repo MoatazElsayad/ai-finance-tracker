@@ -799,7 +799,8 @@ function Transactions() {
         )}
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 export default Transactions;
