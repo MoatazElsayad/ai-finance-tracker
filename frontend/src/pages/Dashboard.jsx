@@ -288,7 +288,7 @@ function Dashboard() {
 
       // separation of regular expenses and special savings
       const totalIncome = periodTransactions
-        .filter(t => t.amount > 0)
+        .filter(t => t.amount > 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
         .reduce((sum, t) => sum + t.amount, 0);
 
       // Total of all negative amounts (Expenses + Savings)
@@ -313,10 +313,20 @@ function Dashboard() {
         .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-      // Net Savings = Income - Actual Spending (this is what's left over for potential savings)
-      const netSavings = totalIncome - actualSpending;
+      // Total lifetime balance calculation
+      const lifetimeIncome = txns
+        .filter(t => t.amount > 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+        .reduce((sum, t) => sum + t.amount, 0);
+      const lifetimeSpending = txns
+        .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
       
-      const savingsRateValue = totalIncome > 0 ? ((netSavings / totalIncome) * 100) : 0;
+      const lifetimeAvailableBalance = lifetimeIncome - lifetimeSpending - totalSavingsOverall;
+
+      // Net Savings = Income - Actual Spending (this is what's left over for potential savings in THIS period)
+      const periodNetSavings = totalIncome - actualSpending;
+      
+      const savingsRateValue = totalIncome > 0 ? ((periodNetSavings / totalIncome) * 100) : 0;
 
       const categoryBreakdown = {};
       periodTransactions
@@ -341,18 +351,25 @@ function Dashboard() {
         total_income: totalIncome,
         total_expenses: actualSpending, // Show only regular expenses
         total_savings: totalSavingsOverall, // Show lifetime total savings in the card
-        net_savings: netSavings,
+        net_savings: lifetimeAvailableBalance, // This is the "Available Balance" card
+        period_net_savings: periodNetSavings, // Use this for internal logic if needed
         savings_rate: savingsRateValue,
         category_breakdown: categoryBreakdownArray,
         recent_savings: recentSavings
       });
 
-      // Update global user state with net savings as available balance
+      // Update global user state with lifetime available balance
       if (userData) {
-        setUser({
+        const updatedUser = {
           ...userData,
-          available_balance: netSavings
-        });
+          available_balance: lifetimeAvailableBalance
+        };
+        setUser(updatedUser);
+        
+        // Sync with sidebar
+        if (window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('user-updated', { detail: updatedUser }));
+        }
       }
     } catch (error) {
       console.error('Failed to load dashboard:', error);

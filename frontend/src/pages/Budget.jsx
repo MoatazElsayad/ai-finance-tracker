@@ -7,7 +7,7 @@ import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateB
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
-import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy, History, Landmark, ArrowUpRight, TrendingUp, AlertCircle } from 'lucide-react';
+import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy, History, Landmark, ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
@@ -259,18 +259,16 @@ function BudgetPlanning() {
 
       // Calculate Available Balance (Net Savings) for Sidebar
       const totalIncome = allTransactions
-        .filter(t => t.amount > 0)
+        .filter(t => t.amount > 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
         .reduce((sum, t) => sum + t.amount, 0);
-      const totalOutflow = Math.abs(
-        allTransactions
-          .filter(t => t.amount < 0)
-          .reduce((sum, t) => sum + t.amount, 0)
-      );
-      const totalSavingsTx = allTransactions
+      const actualSpending = allTransactions
+        .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const currentVaultBalance = allTransactions
           .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
           .reduce((sum, t) => sum + (-t.amount), 0);
-      const actualSpending = totalOutflow - totalSavingsTx;
-      const netSavings = totalIncome - actualSpending;
+      
+      const netSavings = totalIncome - actualSpending - currentVaultBalance;
 
       setAnalytics(analyticsData);
       setTransactions(allTransactions); // Keep all for total savings calculation

@@ -548,18 +548,6 @@ function Transactions() {
               <span className="text-xl font-black tracking-[0.1em] uppercase">Complete Transaction</span>
             </button>
           </form>
-
-          {showCustomCategoryCreator && (
-            <div className={`mt-12 pt-10 border-t-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
-              <CustomCategoryCreator
-                onCategoryCreated={(newCat) => {
-                  setCategories([...categories, newCat]);
-                  setCategoryId(newCat.id);
-                  setShowCustomCategoryCreator(false);
-                }}
-              />
-            </div>
-          )}
         </div>
       )}
 

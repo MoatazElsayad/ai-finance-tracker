@@ -165,6 +165,7 @@ export const SectionHeaderAndSummary = ({
             className="text-emerald-600 dark:text-emerald-400"
             color="green"
             isDark={isDark}
+            analytics={analytics}
           />
 
           <StatCard
@@ -174,6 +175,7 @@ export const SectionHeaderAndSummary = ({
             className="text-rose-600 dark:text-rose-400"
             color="red"
             isDark={isDark}
+            analytics={analytics}
           />
 
           <StatCard
@@ -184,6 +186,7 @@ export const SectionHeaderAndSummary = ({
             color="amber"
             isDark={isDark}
             isCurrency={true}
+            analytics={analytics}
           />
 
           {hasSavingsAccount && (
@@ -195,6 +198,7 @@ export const SectionHeaderAndSummary = ({
               color="indigo"
               isDark={isDark}
               isPercent={true}
+              analytics={analytics}
             />
           )}
         </div>
@@ -203,7 +207,7 @@ export const SectionHeaderAndSummary = ({
   );
 };
 
-const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history }) => {
+const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history, analytics }) => {
   const colors = {
     green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
     red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',

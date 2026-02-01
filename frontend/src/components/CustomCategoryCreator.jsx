@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, RefreshCw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { createCategory, askAIQuestion } from '../api';
 
 function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' }) {
   const { theme } = useTheme();
@@ -53,7 +54,6 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
     setLoading(true);
 
     try {
-      const { createCategory } = await import('../api');
       const chosenIcon = icon || localSuggestEmoji(name);
       await createCategory(name.trim(), type, chosenIcon);
       
@@ -93,12 +93,11 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
           return;
         }
         if (token) {
-          const { askAIQuestion } = await import('../api');
           const now = new Date();
           const { answer } = await askAIQuestion(
             now.getFullYear(),
             now.getMonth() + 1,
-            `Return a single emoji that best represents the category "${text}". Only respond with the emoji, nothing else.`
+            `What is a single emoji that best represents the financial category: "${text}"? Return ONLY the emoji and nothing else.`
           );
           const emoji = (answer || '').trim();
           if (emoji && emoji.length <= 2) {
