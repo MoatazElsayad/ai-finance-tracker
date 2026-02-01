@@ -34,7 +34,8 @@ export const SectionHeaderAndSummary = ({
   setViewMode,
   changeMonth,
   changeYear,
-  analytics
+  analytics,
+  hasSavingsAccount
 }) => {
   const isDark = theme === 'dark';
 
@@ -190,15 +191,17 @@ export const SectionHeaderAndSummary = ({
             isCurrency={true}
           />
 
-          <StatCard
-            label="Savings Rate"
-            value={analytics?.savings_rate ?? '—'}
-            icon={<Percent className="w-6 h-6" />}
-            className="text-indigo-600 dark:text-indigo-400"
-            color="indigo"
-            isDark={isDark}
-            isPercent={true}
-          />
+          {hasSavingsAccount && (
+            <StatCard
+              label="Savings Rate"
+              value={analytics?.savings_rate ?? '—'}
+              icon={<Percent className="w-6 h-6" />}
+              className="text-indigo-600 dark:text-indigo-400"
+              color="indigo"
+              isDark={isDark}
+              isPercent={true}
+            />
+          )}
         </div>
       </div>
     </section>
@@ -604,7 +607,7 @@ export const SpendingTrendsSection = ({ theme, dailySpendingData, avgDailySpendi
   );
 };
 
-export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthlyComparisonData }) => {
+export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthlyComparisonData, hasSavingsAccount }) => {
   const isDark = theme === 'dark';
   return (
     <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
@@ -623,7 +626,7 @@ export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthl
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className={`grid grid-cols-1 ${hasSavingsAccount ? 'lg:grid-cols-2' : ''} gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700`}>
           <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
             <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
@@ -646,42 +649,44 @@ export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthl
             </div>
           </div>
 
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
-            <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <span className="uppercase tracking-[0.2em]">Cumulative Savings</span>
-            </h3>
-            <div className="h-[300px] w-full">
-              {cumulativeSavingsData.length === 0 ? (
-                <div className={`flex items-center justify-center h-[300px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  <div className="text-center">
-                    <div className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'} rounded-full flex items-center justify-center text-2xl`}>
-                      💰
-                    </div>
-                    <p className="text-lg font-medium">No savings data yet</p>
-                  </div>
+          {hasSavingsAccount && (
+            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+              <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                  <Sparkles className="w-5 h-5" />
                 </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={cumulativeSavingsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} syncId="dashboardSync">
-                    <defs>
-                      <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} vertical={false} />
-                    <XAxis dataKey="date" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} dy={10} />
-                    <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} />
-                    <Tooltip content={<CustomTooltip theme={theme} />} />
-                    <Area type="monotone" dataKey="savings" stroke="#f59e0b" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={4} dot={{ fill: '#f59e0b', r: 4, strokeWidth: 2, stroke: isDark ? '#1e293b' : '#fff' }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
+                <span className="uppercase tracking-[0.2em]">Cumulative Savings</span>
+              </h3>
+              <div className="h-[300px] w-full">
+                {cumulativeSavingsData.length === 0 ? (
+                  <div className={`flex items-center justify-center h-[300px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <div className="text-center">
+                      <div className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'} rounded-full flex items-center justify-center text-2xl`}>
+                        💰
+                      </div>
+                      <p className="text-lg font-medium">No savings data yet</p>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={cumulativeSavingsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} syncId="dashboardSync">
+                      <defs>
+                        <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} vertical={false} />
+                      <XAxis dataKey="date" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} />
+                      <Tooltip content={<CustomTooltip theme={theme} />} />
+                      <Area type="monotone" dataKey="savings" stroke="#f59e0b" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={4} dot={{ fill: '#f59e0b', r: 4, strokeWidth: 2, stroke: isDark ? '#1e293b' : '#fff' }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

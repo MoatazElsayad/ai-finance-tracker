@@ -48,6 +48,7 @@ function Dashboard() {
   const [chatWidgetTryingModel, setChatWidgetTryingModel] = useState(null);
   const [chatWidgetModelUsed, setChatWidgetModelUsed] = useState(null);
   const [user, setUser] = useState(null);
+  const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -259,6 +260,8 @@ function Dashboard() {
       ]);
 
       setUser(userData);
+      const savingsCat = categories.find(c => c.name && c.name.toLowerCase().includes('savings'));
+      setHasSavingsAccount(!!savingsCat);
 
       let periodStart, periodEnd;
       if (viewMode === 'monthly') {
@@ -641,6 +644,7 @@ function Dashboard() {
         changeMonth={changeMonth}
         changeYear={changeYear}
         analytics={analytics}
+        hasSavingsAccount={hasSavingsAccount}
       />
 
       <ReportsSection 
@@ -669,6 +673,7 @@ function Dashboard() {
         theme={theme}
         cumulativeSavingsData={cumulativeSavingsData}
         monthlyComparisonData={monthlyComparisonData}
+        hasSavingsAccount={hasSavingsAccount}
       />
 
       <AIInsightsSection 

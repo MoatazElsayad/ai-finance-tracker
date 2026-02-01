@@ -1,7 +1,7 @@
 /**
  * Sidebar Component - Navigation with user profile and theme toggle
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info, Target } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -9,9 +9,25 @@ import { useSidebarCollapsed } from '../context/SidebarContext';
 import { logout } from '../api';
 import UserAvatar from './UserAvatar';
 
-function Sidebar({ user }) {
+function Sidebar({ user: initialUser }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState(initialUser);
   const { isCollapsed, setIsCollapsed } = useSidebarCollapsed();
+
+  useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
+
+  useEffect(() => {
+    const handleUserUpdate = (event) => {
+      if (event.detail) {
+        setUser(event.detail);
+      }
+    };
+
+    window.addEventListener('user-updated', handleUserUpdate);
+    return () => window.removeEventListener('user-updated', handleUserUpdate);
+  }, []);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const isDark = theme === 'dark';
