@@ -3,7 +3,7 @@
  * Dark Mode Finance Tracker - Professional budget management with AI insights
  */
 import { useState, useEffect } from 'react';
-import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction, initSavingsCategory } from '../api';
+import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction, initSavingsCategory, getCurrentUser } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
@@ -173,11 +173,28 @@ function BudgetPlanning() {
 
   // Check if savings category exists
   useEffect(() => {
-    if (categories.length > 0) {
+    console.log('🔄 Categories updated, checking for savings category...');
+    if (categories && categories.length > 0) {
       const savingsCat = categories.find(c => c.name && c.name.toLowerCase().includes('savings'));
-      setHasSavingsAccount(!!savingsCat);
+      console.log('🔍 Savings category check:', savingsCat ? `FOUND: ${savingsCat.name}` : 'NOT FOUND');
+      
+      if (savingsCat) {
+        setHasSavingsAccount(true);
+      } else if (!isInitializingSavings) {
+        // Only set to false if we are not currently initializing one
+        console.log('⚠️ No savings category in current categories list and not initializing');
+        setHasSavingsAccount(false);
+      }
+    } else if (categories && !isInitializingSavings) {
+      console.log('📁 Categories list is empty and not initializing');
+      setHasSavingsAccount(false);
     }
-  }, [categories]);
+  }, [categories, isInitializingSavings]);
+
+  // Log state changes for debugging
+  useEffect(() => {
+    console.log('💎 hasSavingsAccount state changed to:', hasSavingsAccount);
+  }, [hasSavingsAccount]);
 
 
   useEffect(() => {
@@ -227,9 +244,16 @@ function BudgetPlanning() {
         getCurrentUser()
       ]);
 
-      // ... existing filtering logic ...
-
       const allTransactions = transactionsData;
+      
+      // Calculate filtered transactions for current view period
+      const { startDate, endDate } = getDateRange();
+      const filteredTransactions = allTransactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= startDate && d <= endDate;
+      });
+      
+      console.log(`🔍 Data loaded. Total transactions: ${allTransactions.length}, Period transactions: ${filteredTransactions.length}`);
 
       // Calculate Available Balance (Net Savings) for Sidebar
       const totalIncome = allTransactions
@@ -249,7 +273,16 @@ function BudgetPlanning() {
       setAnalytics(analyticsData);
       setTransactions(allTransactions); // Keep all for total savings calculation
       setBudgets(budgetsData);
+      
+      // Check for savings category right here in loadData to be absolutely sure
+      const savingsCat = categoriesData.find(c => c.name && c.name.toLowerCase().includes('savings'));
+      console.log('🔍 loadData: checking for savings category in fresh data:', savingsCat ? `${savingsCat.name} (ID: ${savingsCat.id})` : 'NO');
+      if (savingsCat) {
+        setHasSavingsAccount(true);
+      }
+
       setCategories(categoriesData);
+      console.log('📊 Loaded data successfully. Categories count:', categoriesData.length);
       
       // Update local user state for sidebar
       if (userData) {
@@ -265,16 +298,9 @@ function BudgetPlanning() {
         }
       }
 
-      // Show sample data
-      if (filteredTransactions.length > 0) {
-        console.log('📋 Sample transaction:', filteredTransactions[0]);
-      }
-      if (budgetsData.length > 0) {
-        console.log('🎯 Sample budget:', budgetsData[0]);
-      }
-
     } catch (error) {
       console.error('Failed to load data:', error);
+      throw error; // Rethrow so callers know it failed
     } finally {
       setLoading(false);
     }
@@ -290,7 +316,38 @@ function BudgetPlanning() {
       const result = await initSavingsCategory();
       console.log('✅ Savings category initialization result:', result);
       
-      await loadData(); // Reload to reflect changes
+      // Update categories state immediately with the new category
+      if (result && result.id) {
+        console.log('✨ Adding new savings category to state');
+        const newCategory = {
+          id: result.id,
+          name: result.name || 'Savings',
+          type: result.type || 'expense',
+          icon: result.icon || '🏦',
+          is_custom: true
+        };
+        
+        setCategories(prev => {
+          if (prev.some(c => c.id === newCategory.id)) return prev;
+          return [...prev, newCategory];
+        });
+        
+        // Explicitly set this to true before calling loadData
+        setHasSavingsAccount(true);
+      }
+      
+      console.log('🔄 Calling loadData() to refresh everything...');
+      await loadData(); 
+      
+      // Force set it to true again after loadData just in case loadData set it to false
+      const checkAgain = await getCategories();
+      if (checkAgain.some(c => c.name && c.name.toLowerCase().includes('savings'))) {
+        setHasSavingsAccount(true);
+      }
+      
+      console.log('✅ Savings initialization and refresh complete');
+      console.log('✅ loadData() completed successfully');
+      
       setToastMessage('Savings Bank opened successfully!');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
@@ -756,6 +813,8 @@ function BudgetPlanning() {
     );
   }
 
+  console.log('🎨 Rendering BudgetPlanning. hasSavingsAccount:', hasSavingsAccount, 'categories count:', categories.length);
+
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27] text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-500 overflow-x-hidden selection:bg-amber-500/30`}>
       {/* Global Background Gradients */}
@@ -897,7 +956,7 @@ function BudgetPlanning() {
             </div>
 
             {/* Savings Bank Button OR Savings Vault - Shown only when no savings account exists, replaced by vault after */}
-            <div className="mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700" style={{ animationDelay: '400ms' }}>
+            <div className="mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700">
               {!hasSavingsAccount ? (
                 <button
                   onClick={handleOpenSavingsBank}

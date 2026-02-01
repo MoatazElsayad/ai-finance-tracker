@@ -260,8 +260,14 @@ function Dashboard() {
       ]);
 
       setUser(userData);
+      console.log('🔄 Dashboard categories updated, checking for savings category...');
+      console.log('📁 Categories list:', categories.map(c => c.name));
       const savingsCat = categories.find(c => c.name && c.name.toLowerCase().includes('savings'));
+      console.log('🔍 Savings category found in Dashboard:', savingsCat ? `${savingsCat.name} (ID: ${savingsCat.id})` : 'NO');
       setHasSavingsAccount(!!savingsCat);
+
+      // Log state changes for debugging
+      console.log('💎 Dashboard hasSavingsAccount state set to:', !!savingsCat);
 
       let periodStart, periodEnd;
       if (viewMode === 'monthly') {
