@@ -46,11 +46,11 @@ export const SectionHeaderAndSummary = ({
 
   return (
     <section
-      className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${
+      className={`py-16 px-6 md:px-12 transition-colors duration-500 ${
         isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'
       }`}
     >
-      <div className="max-w-7xl mx-auto w-full">
+      <div className="max-w-[1400px] mx-auto w-full">
         {user && (
           <div className="mb-8 animate-in fade-in duration-700">
             <h2
@@ -162,7 +162,7 @@ export const SectionHeaderAndSummary = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <StatCard
             label="Total Income"
             value={analytics?.total_income ?? '—'}
@@ -282,8 +282,8 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
 export const ReportsSection = ({ theme, reportLoading, reportProgress, reportStatus, handleDownloadReport }) => {
   const isDark = theme === 'dark';
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      <div className="max-w-7xl mx-auto w-full">
+    <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
             <h2 className="text-header-unified flex items-center gap-4">
@@ -363,8 +363,8 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
 export const MainChartsSection = ({ theme, barData, pieData }) => {
   const isDark = theme === 'dark';
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      <div className="max-w-7xl mx-auto w-full">
+    <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
             <h2 className="text-header-unified flex items-center gap-4">
@@ -486,8 +486,8 @@ export const MainChartsSection = ({ theme, barData, pieData }) => {
 export const SpendingTrendsSection = ({ theme, dailySpendingData, avgDailySpending, dailySpendingChartData, weeklyPatternData }) => {
   const isDark = theme === 'dark';
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      <div className="max-w-7xl mx-auto w-full">
+    <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
             <h2 className="text-header-unified flex items-center gap-4">
@@ -610,8 +610,8 @@ export const SpendingTrendsSection = ({ theme, dailySpendingData, avgDailySpendi
 export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthlyComparisonData, hasSavingsAccount }) => {
   const isDark = theme === 'dark';
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      <div className="max-w-7xl mx-auto w-full">
+    <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
             <h2 className="text-header-unified flex items-center gap-4">
@@ -712,8 +712,8 @@ export const AIInsightsSection = ({
 }) => {
   const isDark = theme === 'dark';
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      <div className="max-w-7xl mx-auto w-full">
+    <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
             <h2 className="text-header-unified flex items-center gap-4">
@@ -972,8 +972,8 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
   };
 
   return (
-    <section className={`min-h-screen flex flex-col justify-center px-6 py-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      <div className="max-w-7xl mx-auto w-full">
+    <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
             <h2 className="text-header-unified flex items-center gap-4">

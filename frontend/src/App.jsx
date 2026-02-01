@@ -147,8 +147,8 @@ function Layout() {
 
       {/* Navigation Bar */}
       <nav className={`${isDark ? 'bg-[#0a0e27]/80' : 'bg-white/80'} backdrop-blur-md shadow-2xl shadow-black/5 ${isDark ? 'border-slate-800' : 'border-slate-200'} border-b sticky top-0 z-40 transition-all duration-500 ${
-        isCollapsed ? 'md:ml-20' : 'md:ml-64'
-      }`}>
+      isCollapsed ? 'md:ml-24' : 'md:ml-72'
+    }`}>
         <div className="px-4 md:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
@@ -261,7 +261,7 @@ function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className={`transition-all duration-500 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'} min-h-screen flex flex-col ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <main className={`transition-all duration-500 ${isCollapsed ? 'md:ml-24' : 'md:ml-72'} min-h-screen flex flex-col ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
         <div className="animate-in fade-in duration-700 flex-grow">
           <Outlet />
         </div>

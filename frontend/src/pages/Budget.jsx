@@ -233,8 +233,8 @@ function BudgetPlanning() {
     }
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [analyticsData, transactionsData, budgetsData, categoriesData, userData] = await Promise.all([
         getMonthlyAnalytics(selectedMonth.year, selectedMonth.month),
@@ -337,7 +337,7 @@ function BudgetPlanning() {
       }
       
       console.log('🔄 Calling loadData() to refresh everything...');
-      await loadData(); 
+      await loadData(false); 
       
       // Force set it to true again after loadData just in case loadData set it to false
       const checkAgain = await getCategories();
@@ -770,11 +770,11 @@ function BudgetPlanning() {
       setToastMessage('Deposit added to Vault!');
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
-
-      // Reload all data in background to sync everything (analytics, balance, etc)
-      loadData();
-      clearInsightsCache();
-    } catch (error) {
+  
+        // Reload all data in background to sync everything (analytics, balance, etc)
+        loadData(false);
+        clearInsightsCache();
+      } catch (error) {
       console.error('Failed to add savings:', error);
       alert(error.message);
     } finally {
@@ -855,7 +855,7 @@ function BudgetPlanning() {
         )}
 
         {/* Section 1: Header and Overview */}
-        <section className="relative pt-32 pb-20 px-6">
+        <section className="relative py-16 px-6 md:px-12">
           <div className="max-w-[1400px] mx-auto w-full">
             <div className="text-center mb-20 animate-in fade-in slide-in-from-top-10 duration-700">
               <div className="flex flex-col items-center gap-6 mb-8">
@@ -1117,7 +1117,7 @@ function BudgetPlanning() {
             </div>
 
             {/* AI Budget Insights - Smart Caching */}
-            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden`} style={{ animationDelay: '400ms' }}>
+            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden mb-16`} style={{ animationDelay: '400ms' }}>
               {/* Model Badge */}
               {budgetModelUsed && (
                 <div className="absolute top-8 right-8 z-10">
@@ -1255,7 +1255,7 @@ function BudgetPlanning() {
         </section>
 
         {/* Section 2: Budget vs Actual Analysis */}
-        <section className={`py-32 px-6 relative overflow-hidden ${theme === 'dark' ? 'bg-slate-900/40' : 'bg-white shadow-inner shadow-slate-100'}`}>
+        <section className={`py-16 px-6 md:px-12 relative overflow-hidden ${theme === 'dark' ? 'bg-slate-900/40' : 'bg-white shadow-inner shadow-slate-100'}`}>
           <div className="max-w-[1400px] mx-auto w-full">
             <div className="text-center mb-20 animate-in fade-in slide-in-from-bottom-10 duration-700">
               <h2 className={`text-header-unified mb-6 ${theme === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center justify-center gap-6`}>
@@ -1269,7 +1269,7 @@ function BudgetPlanning() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-16">
               {/* Budget vs Actual Bar Chart */}
               <div className={`lg:col-span-8 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
                 <div className="flex items-center justify-between mb-10">
@@ -1384,7 +1384,7 @@ function BudgetPlanning() {
 
             {/* Create/Edit Budget Form */}
             {showBudgetForm && (
-              <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 mb-12 animate-in slide-in-from-top-10 duration-500 relative overflow-hidden`}>
+              <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 mb-16 animate-in slide-in-from-top-10 duration-500 relative overflow-hidden`}>
                 <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-8`}>
                   {editingBudget ? 'Update Budget Plan' : 'New Budget Strategy'}
                 </h3>

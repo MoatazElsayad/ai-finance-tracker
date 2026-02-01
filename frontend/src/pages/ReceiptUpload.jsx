@@ -186,14 +186,14 @@ export default function ReceiptUpload() {
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} px-6 py-12 transition-colors duration-500 relative overflow-hidden`}>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} px-6 py-16 transition-colors duration-500 relative overflow-hidden`}>
       {/* Global Background Accents */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-amber-500/5 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-amber-600/5 rounded-full blur-[120px] animate-pulse delay-700" />
       </div>
 
-      <div className="max-w-6xl mx-auto animate-in fade-in duration-700 relative z-10">
+      <div className="max-w-[1400px] mx-auto animate-in fade-in duration-700 relative z-10">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="animate-in slide-in-from-left-8 duration-700">

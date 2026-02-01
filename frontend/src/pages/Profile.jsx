@@ -144,23 +144,24 @@ function Profile() {
   }
 
   return (
-    <div className={`min-h-screen px-6 py-8 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-10 duration-700">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-black flex items-center gap-4 tracking-tight">
-            <div className="p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-xl shadow-amber-500/20">
-              <User className="w-8 h-8 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="uppercase tracking-[0.2em]">Profile</span>
-          </h1>
-          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium max-w-2xl`}>
-            Manage your account information and preferences with professional precision.
-          </p>
+    <div className={`min-h-screen px-6 md:px-12 py-16 transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
+      <div className="max-w-[1400px] mx-auto w-full">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 animate-in fade-in slide-in-from-top-10 duration-700">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black flex items-center gap-4 tracking-tight">
+              <div className="p-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-xl shadow-amber-500/20">
+                <User className="w-8 h-8 text-white" strokeWidth={2.5} />
+              </div>
+              <span className="uppercase tracking-[0.2em]">Profile</span>
+            </h1>
+            <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mt-3 text-lg font-medium max-w-2xl`}>
+              Manage your account information and preferences with professional precision.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <main className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-700 delay-200">
+        <main className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-700 delay-200">
         {/* Main Profile Card */}
         <div className={`p-8 md:p-12 rounded-[2.5rem] transition-all border-2 duration-500 relative overflow-hidden ${
           theme === 'dark' 
@@ -477,7 +478,8 @@ function Profile() {
         </div>
       </main>
     </div>
-  );
+  </div>
+);
 }
 
 export default Profile;

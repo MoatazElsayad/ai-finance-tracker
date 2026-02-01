@@ -32,7 +32,7 @@ export default function Landing() {
 
       {/* Navigation */}
       <nav className={`${isDark ? 'bg-[#0a0e27]/80' : 'bg-white/80'} backdrop-blur-md border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} sticky top-0 z-50 shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center gap-4">
               <div className="p-2.5 bg-amber-500 rounded-xl shadow-lg shadow-amber-500/20 rotate-3">
@@ -64,7 +64,7 @@ export default function Landing() {
       <section className="relative overflow-hidden min-h-[calc(100vh-80px)] flex items-center py-20">
         <div className={`absolute inset-0 z-0 opacity-30 ${isDark ? 'bg-[radial-gradient(circle_at_top_right,#fbbf24_0%,transparent_40%)]' : 'bg-[radial-gradient(circle_at_top_right,#fbbf24_0%,transparent_50%)]'}`}></div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div className="space-y-10 text-center lg:text-left animate-in fade-in slide-in-from-left-8 duration-1000">
               <div className={`inline-flex items-center gap-3 px-5 py-2.5 ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'} backdrop-blur rounded-2xl shadow-xl border-2`}>
@@ -184,7 +184,7 @@ export default function Landing() {
 
       {/* Features Grid */}
       <section id="features" className={`py-32 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} relative overflow-hidden`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <h2 className={`text-5xl md:text-6xl font-black ${isDark ? 'text-white' : 'text-slate-900'} tracking-tighter mb-6`}>
               Everything You <span className="text-amber-500">Need</span>
@@ -219,7 +219,7 @@ export default function Landing() {
 
       {/* AI Engine Section */}
       <section id="ai" className={`py-32 ${isDark ? 'bg-slate-900/50' : 'bg-white'} border-y ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-amber-500/10 rounded-2xl mb-8">
             <Cpu className="w-5 h-5 text-amber-500" />
             <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">Multimodal Engine</span>

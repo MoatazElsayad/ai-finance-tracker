@@ -131,10 +131,10 @@ const Goals = () => {
   };
 
   return (
-    <div className={`p-4 md:p-8 min-h-screen transition-colors duration-300 ${
+    <div className={`py-16 px-6 md:px-12 transition-colors duration-300 ${
       isDark ? 'text-white bg-[#0a0e27]' : 'text-slate-900 bg-slate-50'
     }`}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div>

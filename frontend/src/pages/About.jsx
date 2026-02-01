@@ -95,8 +95,8 @@ function About() {
       <FloatingIcons isDark={isDark} />
       
       {/* 1. OVERVIEW SECTION */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12">
-        <div className="max-w-7xl mx-auto w-full">
+      <section className="py-16 px-6 md:px-12">
+        <div className="max-w-[1400px] mx-auto w-full">
           <SectionTitle 
             icon={Info} 
             title="Project Overview" 
@@ -104,7 +104,7 @@ function About() {
             isDark={isDark}
           />
           
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} grid lg:grid-cols-2 gap-12 items-center`}>
+          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} grid lg:grid-cols-2 gap-12 items-center mb-16`}>
             <div className="relative z-10">
               <h3 className={`text-3xl font-black mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 <span className="uppercase tracking-[0.15em]">Unified Intelligence</span>
@@ -145,8 +145,8 @@ function About() {
       </section>
 
       {/* 2. CAPABILITIES SECTION */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12">
-        <div className="max-w-7xl mx-auto w-full">
+      <section className="py-16 px-6 md:px-12">
+        <div className="max-w-[1400px] mx-auto w-full">
           <SectionTitle 
             icon={Layers} 
             title="Core Capabilities" 
@@ -154,7 +154,7 @@ function About() {
             isDark={isDark}
           />
           
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 mb-16">
             {features.map((feature, i) => (
               <div key={i} className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} group hover:-translate-y-2 transition-all duration-500`}>
                 <div className={`w-16 h-16 rounded-2xl ${feature.bgColor} ${feature.borderColor} border-2 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
@@ -169,8 +169,8 @@ function About() {
       </section>
 
       {/* 3. SYSTEM ARCHITECTURE SECTION */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12">
-        <div className="max-w-7xl mx-auto w-full">
+      <section className="py-16 px-6 md:px-12">
+        <div className="max-w-[1400px] mx-auto w-full">
           <SectionTitle 
             icon={Code2} 
             title="System Architecture" 
@@ -178,7 +178,7 @@ function About() {
             isDark={isDark}
           />
           
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-8 mb-16">
             {/* Engineering Bar Card */}
             <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} lg:col-span-2`}>
               <h3 className={`text-xs font-black uppercase tracking-[0.25em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-10`}>Development Distribution</h3>
@@ -238,8 +238,8 @@ function About() {
       </section>
 
       {/* 4. REPOSITORY & CONNECT SECTION */}
-      <section className="min-h-screen flex flex-col justify-center px-6 py-12">
-        <div className="max-w-7xl mx-auto w-full">
+      <section className="py-16 px-6 md:px-12">
+        <div className="max-w-[1400px] mx-auto w-full">
           <SectionTitle 
             icon={Cpu} 
             title="Open Source" 
@@ -247,7 +247,7 @@ function About() {
             isDark={isDark}
           />
           
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-8 mb-16">
             <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-12 group overflow-hidden relative flex flex-col justify-center items-center text-center`}>
               <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 group-hover:scale-110">
                 <Github className="w-64 h-64" />

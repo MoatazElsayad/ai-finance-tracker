@@ -262,7 +262,8 @@ function Transactions() {
   }
 
   return (
-    <div className={`min-h-screen px-6 py-8 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'} transition-colors duration-500`}>
+    <div className={`min-h-screen py-16 px-6 md:px-12 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'} transition-colors duration-500`}>
+      <div className="max-w-[1400px] mx-auto w-full">
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-20 right-4 z-50 animate-in fade-in slide-in-from-right-10 duration-500">
