@@ -298,20 +298,22 @@ function Dashboard() {
           .reduce((sum, t) => sum + t.amount, 0)
       );
 
-      // Total dedicated savings (transactions with 'Savings' category) - PERIOD
+      // Total dedicated savings (deposits minus withdrawals) - PERIOD
       const totalSavingsTx = periodTransactions
           .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
           .reduce((sum, t) => sum + (-t.amount), 0);
 
-      // Total dedicated savings (transactions with 'Savings' category) - OVERALL (Lifetime)
+      // Total dedicated savings (deposits minus withdrawals) - OVERALL (Lifetime)
       const totalSavingsOverall = txns
           .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
           .reduce((sum, t) => sum + (-t.amount), 0);
 
-      // Actual spending (regular expenses only, excluding savings)
-      const actualSpending = totalOutflow - totalSavingsTx;
+      // Actual spending (regular expenses only, excluding ALL savings-related transactions)
+      const actualSpending = periodTransactions
+        .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-      // Net Savings = Income - Actual Spending (this is what's left over)
+      // Net Savings = Income - Actual Spending (this is what's left over for potential savings)
       const netSavings = totalIncome - actualSpending;
       
       const savingsRateValue = totalIncome > 0 ? ((netSavings / totalIncome) * 100) : 0;
@@ -337,7 +339,7 @@ function Dashboard() {
       setTransactions(txns);
       setAnalytics({
         total_income: totalIncome,
-        total_expenses: totalOutflow, // Show total outflow (including savings) as expenses
+        total_expenses: actualSpending, // Show only regular expenses
         total_savings: totalSavingsOverall, // Show lifetime total savings in the card
         net_savings: netSavings,
         savings_rate: savingsRateValue,
@@ -589,10 +591,12 @@ function Dashboard() {
   const weeklyPatternData = useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const pattern = days.map(day => ({ day, amount: 0 }));
-    transactions.filter(t => t.amount < 0).forEach(t => {
-      const dayIndex = new Date(t.date).getDay();
-      pattern[dayIndex].amount += Math.abs(t.amount);
-    });
+    transactions
+      .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+      .forEach(t => {
+        const dayIndex = new Date(t.date).getDay();
+        pattern[dayIndex].amount += Math.abs(t.amount);
+      });
     return pattern;
   }, [transactions]);
 
@@ -602,8 +606,16 @@ function Dashboard() {
       const d = new Date(t.date);
       const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
       if (!monthly[key]) monthly[key] = { month: d.toLocaleDateString('en-US', { month: 'short' }), income: 0, expenses: 0 };
-      if (t.amount > 0) monthly[key].income += t.amount;
-      else monthly[key].expenses += Math.abs(t.amount);
+      
+      if (t.amount > 0) {
+        monthly[key].income += t.amount;
+      } else {
+        // Only include in expenses if NOT a savings transaction
+        const isSavings = t.category_name && t.category_name.toLowerCase().includes('savings');
+        if (!isSavings) {
+          monthly[key].expenses += Math.abs(t.amount);
+        }
+      }
     });
     return Object.entries(monthly).sort((a, b) => a[0].localeCompare(b[0])).map(e => e[1]).slice(-6);
   }, [transactions]);
@@ -611,15 +623,29 @@ function Dashboard() {
   const cumulativeSavingsData = useMemo(() => {
     const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
     let cumulative = 0;
-    const result = [];
     const dateGroups = {};
+    
     sorted.forEach(t => {
       const dateStr = new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      cumulative += t.amount;
-      dateGroups[dateStr] = cumulative;
+      
+      if (hasSavingsAccount) {
+        // If they have a savings account, track specifically the vault growth
+        // Deposits are negative (outflow from main, but increase vault)
+        // Withdrawals are positive (inflow to main, but decrease vault)
+        if (t.category_name && t.category_name.toLowerCase().includes('savings')) {
+          cumulative += (-t.amount); // Flip the sign: deposit (-100) becomes +100 in vault
+          dateGroups[dateStr] = cumulative;
+        }
+      } else {
+        // Default: track overall net balance (income - expenses)
+        cumulative += t.amount;
+        dateGroups[dateStr] = cumulative;
+      }
     });
-    return Object.entries(dateGroups).map(([date, savings]) => ({ date, savings })).slice(-15);
-  }, [transactions]);
+    
+    const data = Object.entries(dateGroups).map(([date, savings]) => ({ date, savings }));
+    return data.slice(-15);
+  }, [transactions, hasSavingsAccount]);
 
   const recentTransactions = useMemo(() => [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5), [transactions]);
 

@@ -167,6 +167,8 @@ function BudgetPlanning() {
   const [savingsAmount, setSavingsAmount] = useState('');
   const [showSavingsHistory, setShowSavingsHistory] = useState(false);
   const [isAddingSavings, setIsAddingSavings] = useState(false);
+  const [isWithdrawingSavings, setIsWithdrawingSavings] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
   const [isInitializingSavings, setIsInitializingSavings] = useState(false);
   const { theme } = useTheme();
@@ -782,6 +784,55 @@ function BudgetPlanning() {
     }
   };
 
+  const handleWithdrawSavings = async () => {
+    if (!withdrawAmount || isWithdrawingSavings) return;
+
+    const savingsCategory = categories.find(c => 
+      c.name && c.name.toLowerCase().includes('savings')
+    );
+    
+    if (!savingsCategory) {
+      alert('Savings account not found.');
+      return;
+    }
+
+    setIsWithdrawingSavings(true);
+    try {
+      const amountValue = Math.abs(parseFloat(withdrawAmount));
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Record as a positive transaction in savings category
+      // This increases "Available Balance" and decreases "Savings Vault"
+      const newTx = await createTransaction(
+        savingsCategory.id,
+        amountValue, // Positive = Withdrawal from vault to available balance
+        'Savings Withdrawal/Spend',
+        today
+      );
+
+      const optimizedTx = {
+        ...newTx,
+        category_name: savingsCategory.name,
+        category_id: savingsCategory.id
+      };
+
+      setTransactions(prev => [optimizedTx, ...prev]);
+      
+      setWithdrawAmount('');
+      setToastMessage('Withdrawn from Vault!');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+  
+      loadData(false);
+      clearInsightsCache();
+    } catch (error) {
+      console.error('Failed to withdraw savings:', error);
+      alert(error.message);
+    } finally {
+      setIsWithdrawingSavings(false);
+    }
+  };
+
   const savingsTransactions = transactions.filter(t => {
     // Check by name first (more reliable if state just updated)
     if (t.category_name && t.category_name.toLowerCase().includes('savings')) return true;
@@ -791,7 +842,8 @@ function BudgetPlanning() {
     return cat && cat.name && cat.name.toLowerCase().includes('savings');
   });
 
-  const totalSavings = savingsTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    // Total dedicated savings (deposits minus withdrawals)
+    const totalSavings = savingsTransactions.reduce((sum, t) => sum + (-t.amount), 0);
 
   const changeMonth = (offset) => {
     let newMonth = selectedMonth.month + offset;
@@ -1012,105 +1064,141 @@ function BudgetPlanning() {
                   {/* Decorative Bank Background */}
                   <Landmark className={`absolute -right-12 -bottom-12 w-64 h-64 ${theme === 'dark' ? 'text-blue-500/5' : 'text-blue-500/10'} -rotate-12 group-hover:rotate-0 transition-all duration-1000`} />
                   
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
                     {/* Left side: Info and Total */}
-                    <div className="lg:col-span-4 space-y-6">
-                      <div className="flex items-center gap-6">
-                        <div className="p-5 bg-blue-600 rounded-[2rem] shadow-2xl shadow-blue-500/40 rotate-3 group-hover:rotate-0 transition-all duration-500">
-                          <Landmark className="w-10 h-10 text-white" strokeWidth={2.5} />
+                    <div className="lg:col-span-3 space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/40 rotate-3 group-hover:rotate-0 transition-all duration-500">
+                          <Landmark className="w-8 h-8 text-white" strokeWidth={2.5} />
                         </div>
                         <div>
-                          <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} uppercase`}>
+                          <h3 className={`text-xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} uppercase`}>
                             Savings <span className="text-blue-500">Vault</span>
                           </h3>
-                          <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Track and grow your wealth automatically.</p>
                         </div>
                       </div>
 
-                      <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-blue-500/20' : 'border-blue-100'} shadow-inner`}>
-                        <p className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Total Savings Balance</p>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-5xl font-black text-blue-500">£{totalSavings.toLocaleString()}</span>
-                          <TrendingUp className="w-6 h-6 text-emerald-500" />
+                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-blue-500/20' : 'border-blue-100'} shadow-inner`}>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Total Balance</p>
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="text-3xl font-black text-blue-500">£{totalSavings.toLocaleString()}</span>
+                          <TrendingUp className="w-5 h-5 text-emerald-500" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Middle: Add Savings Form */}
-                    <div className="lg:col-span-5">
-                      <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl`}>
-                        <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Quick Savings Deposit</label>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="relative flex-1">
-                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-blue-500">£</span>
+                    {/* Middle: Deposit & Withdraw Forms */}
+                    <div className="lg:col-span-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Deposit Section */}
+                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl relative overflow-hidden group/deposit`}>
+                        <div className="absolute inset-0 bg-emerald-500/5 translate-y-full group-hover/deposit:translate-y-0 transition-transform duration-700" />
+                        <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Deposit Funds</label>
+                        <div className="flex flex-col gap-3 relative z-10">
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-emerald-500">£</span>
                             <input
                               type="number"
                               value={savingsAmount}
                               onChange={(e) => setSavingsAmount(e.target.value)}
-                              placeholder="Amount to save"
-                              className="input-unified w-full !pl-12 !py-5 !rounded-[1.5rem]"
+                              placeholder="Amount"
+                              className="input-unified w-full !pl-10 !py-4 !rounded-xl text-sm"
                             />
                           </div>
                           <button
                             onClick={handleAddSavings}
                             disabled={!savingsAmount || isAddingSavings}
-                            className={`btn-primary-unified !bg-blue-600 hover:!bg-blue-700 !rounded-[1.5rem] !px-10 shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50`}
+                            className={`btn-primary-unified !bg-emerald-600 hover:!bg-emerald-700 !rounded-xl !py-4 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
                           >
                             {isAddingSavings ? (
-                              <RefreshCw className="w-6 h-6 animate-spin" />
+                              <RefreshCw className="w-5 h-5 animate-spin" />
                             ) : (
-                              <ArrowUpRight className="w-6 h-6" strokeWidth={3} />
+                              <ArrowUpRight className="w-5 h-5" strokeWidth={3} />
                             )}
-                            <span className="font-black uppercase tracking-[0.1em]">Deposit</span>
+                            <span className="font-black uppercase tracking-[0.1em] text-xs">Deposit</span>
                           </button>
                         </div>
-                        <p className="text-[10px] font-bold text-slate-500 mt-4 uppercase tracking-widest text-center italic">
-                          This will be recorded as a special savings transaction.
-                        </p>
+                      </div>
+
+                      {/* Withdraw Section */}
+                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl relative overflow-hidden group/withdraw`}>
+                        <div className="absolute inset-0 bg-rose-500/5 translate-y-full group-hover/withdraw:translate-y-0 transition-transform duration-700" />
+                        <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Withdraw / Spend</label>
+                        <div className="flex flex-col gap-3 relative z-10">
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-rose-500">£</span>
+                            <input
+                              type="number"
+                              value={withdrawAmount}
+                              onChange={(e) => setWithdrawAmount(e.target.value)}
+                              placeholder="Amount"
+                              className="input-unified w-full !pl-10 !py-4 !rounded-xl text-sm"
+                            />
+                          </div>
+                          <button
+                            onClick={handleWithdrawSavings}
+                            disabled={!withdrawAmount || isWithdrawingSavings}
+                            className={`btn-primary-unified !bg-rose-600 hover:!bg-rose-700 !rounded-xl !py-4 shadow-lg shadow-rose-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
+                          >
+                            {isWithdrawingSavings ? (
+                              <RefreshCw className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <ArrowDownLeft className="w-5 h-5" strokeWidth={3} />
+                            )}
+                            <span className="font-black uppercase tracking-[0.1em] text-xs">Withdraw</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Right: Actions and Mini-History */}
+                    {/* Right side: History */}
                     <div className="lg:col-span-3 flex flex-col gap-4">
                       <button
                         onClick={() => setShowSavingsHistory(!showSavingsHistory)}
-                        className={`flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all duration-500 ${
+                        className={`flex items-center justify-between p-5 rounded-[1.5rem] border-2 transition-all duration-500 ${
                           showSavingsHistory 
                             ? 'bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/20' 
                             : `${theme === 'dark' ? 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-blue-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-blue-600'}`
                         }`}
                       >
-                        <div className="flex items-center gap-4">
-                          <History className="w-6 h-6" />
-                          <span className="font-black uppercase tracking-[0.1em]">History</span>
+                        <div className="flex items-center gap-3">
+                          <History className="w-5 h-5" />
+                          <span className="font-black uppercase tracking-[0.1em] text-xs">History</span>
                         </div>
-                        <span className={`text-xs font-black px-3 py-1 rounded-full ${showSavingsHistory ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'}`}>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${showSavingsHistory ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'}`}>
                           {savingsTransactions.length}
                         </span>
                       </button>
 
                       {showSavingsHistory && (
-                        <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white'} border-2 border-blue-500/20 max-h-[200px] overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500`}>
-                          <div className="space-y-4">
+                        <div className={`p-5 rounded-[1.5rem] ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white'} border-2 border-blue-500/20 max-h-[180px] overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500`}>
+                          <div className="space-y-3">
                             {savingsTransactions.length > 0 ? (
                               [...savingsTransactions].reverse().map((t, i) => (
                                 <div key={i} className="flex items-center justify-between border-b border-slate-700/10 pb-2 last:border-0">
                                   <div>
-                                    <p className={`text-xs font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                    <p className={`text-[10px] font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                                       {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                                     </p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Contribution</p>
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase">{t.amount < 0 ? 'Deposit' : 'Withdrawal'}</p>
                                   </div>
-                                  <span className="text-sm font-black text-blue-500">£{Math.abs(t.amount).toLocaleString()}</span>
+                                  <span className={`text-xs font-black ${t.amount < 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {t.amount < 0 ? '+' : '-'}£{Math.abs(t.amount).toLocaleString()}
+                                  </span>
                                 </div>
                               ))
                             ) : (
-                              <p className="text-xs font-bold text-slate-500 text-center py-4">No savings history yet.</p>
+                              <p className="text-[10px] font-bold text-slate-500 text-center py-4 uppercase">Empty Vault</p>
                             )}
                           </div>
                         </div>
                       )}
                     </div>
+                  </div>
+                  
+                  <div className="mt-8 flex justify-center">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] text-center max-w-lg leading-relaxed opacity-60">
+                      Spending from the vault decreases your savings balance but doesn't affect your monthly expense budget tracking.
+                    </p>
                   </div>
                 </div>
               )}

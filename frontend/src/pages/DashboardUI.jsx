@@ -39,11 +39,6 @@ export const SectionHeaderAndSummary = ({
 }) => {
   const isDark = theme === 'dark';
 
-  const savingsRate =
-    analytics?.total_income > 0
-      ? ((analytics.net_savings / analytics.total_income) * 100).toFixed(1)
-      : '0';
-
   return (
     <section
       className={`py-16 px-6 md:px-12 transition-colors duration-500 ${
@@ -226,26 +221,61 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
   };
 
   const formatValue = (v) => {
-    if (isPercent) return `${v}%`;
+    if (v === '—' || v === null || v === undefined) return '—';
+    if (isPercent) {
+      const num = typeof v === 'number' ? v : parseFloat(v);
+      return isNaN(num) ? '—' : `${num.toFixed(1)}%`;
+    }
     const formatted = Math.abs(v || 0)?.toLocaleString('en-GB', { 
       maximumFractionDigits: 0 
     }) || '0';
     return `£${formatted}`;
   };
 
+  const getTopUpSuggestion = () => {
+    if (!isPercent || label !== 'Savings Rate' || value === '—') return null;
+    const rate = typeof value === 'number' ? value : parseFloat(value);
+    const availableBalance = analytics?.net_savings || 0;
+    
+    if (rate < 20 && availableBalance > 100) {
+      const suggestedAmount = Math.min(availableBalance * 0.3, 500);
+      return {
+        message: `Boost your rate! Move £${Math.round(suggestedAmount)} to your vault.`,
+        type: 'boost'
+      };
+    }
+    return null;
+  };
+
+  const suggestion = getTopUpSuggestion();
+
   return (
-    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} flex flex-col`}>
+    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} flex flex-col relative group overflow-hidden`}>
       <div className="flex items-center justify-between mb-6">
         <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {label}
         </span>
-        <div className={`p-3 rounded-2xl ${colors[color]} border shadow-sm`}>
+        <div className={`p-3 rounded-2xl ${colors[color]} border shadow-sm group-hover:scale-110 transition-transform duration-500`}>
           {icon}
         </div>
       </div>
-      <p className={`text-3xl font-black tracking-tight ${className || textColors[color]}`}>
-        {formatValue(value)}
-      </p>
+      
+      <div className="flex flex-col gap-1">
+        <p className={`text-3xl font-black tracking-tight ${className || textColors[color]}`}>
+          {formatValue(value)}
+        </p>
+        
+        {suggestion && (
+          <div className="animate-in fade-in slide-in-from-left-4 duration-700 delay-300">
+            <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+              isDark ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'
+            }`}>
+              <Sparkles className="w-3 h-3" />
+              <span className="text-[10px] font-bold leading-tight">{suggestion.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {history && history.length > 0 && (
         <div className="mt-6 pt-6 border-t border-slate-500/10">
