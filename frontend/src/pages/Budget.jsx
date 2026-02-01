@@ -284,6 +284,9 @@ function BudgetPlanning() {
     setIsInitializingSavings(true);
     try {
       console.log('🚀 Attempting to initialize savings category...');
+      const token = localStorage.getItem('token');
+      console.log('🔑 Current token exists:', !!token);
+      
       const result = await initSavingsCategory();
       console.log('✅ Savings category initialization result:', result);
       
@@ -297,7 +300,16 @@ function BudgetPlanning() {
       if (error.message) {
         console.error('Error message:', error.message);
       }
-      alert(`Failed to open savings bank: ${error.message || 'Unknown error'}. Please try again.`);
+      
+      // Check for specific error types
+      let errorMsg = error.message || 'Unknown error';
+      if (errorMsg.includes('Unexpected end of JSON input')) {
+        errorMsg = 'Server returned an empty or invalid response. Please check if the backend is running correctly.';
+      } else if (errorMsg.includes('404')) {
+        errorMsg = 'API endpoint not found. Please ensure the backend is up to date.';
+      }
+      
+      alert(`Failed to open savings bank: ${errorMsg}. Please try again.`);
     } finally {
       setIsInitializingSavings(false);
     }
@@ -884,9 +896,9 @@ function BudgetPlanning() {
               ))}
             </div>
 
-            {/* Savings Bank Button - Shown only when no savings account exists */}
-            {!hasSavingsAccount && (
-              <div className="mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700" style={{ animationDelay: '400ms' }}>
+            {/* Savings Bank Button OR Savings Vault - Shown only when no savings account exists, replaced by vault after */}
+            <div className="mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700" style={{ animationDelay: '400ms' }}>
+              {!hasSavingsAccount ? (
                 <button
                   onClick={handleOpenSavingsBank}
                   disabled={isInitializingSavings}
@@ -917,8 +929,115 @@ function BudgetPlanning() {
                   {/* Hover Shine Effect */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
                 </button>
-              </div>
-            )}
+              ) : (
+                /* Savings Vault Card - Replaces the button once bank is opened */
+                <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark border-blue-500/20' : 'card-unified-light border-blue-200'} p-10 relative overflow-hidden group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-700`}>
+                  {/* Decorative Bank Background */}
+                  <Landmark className={`absolute -right-12 -bottom-12 w-64 h-64 ${theme === 'dark' ? 'text-blue-500/5' : 'text-blue-500/10'} -rotate-12 group-hover:rotate-0 transition-all duration-1000`} />
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+                    {/* Left side: Info and Total */}
+                    <div className="lg:col-span-4 space-y-6">
+                      <div className="flex items-center gap-6">
+                        <div className="p-5 bg-blue-600 rounded-[2rem] shadow-2xl shadow-blue-500/40 rotate-3 group-hover:rotate-0 transition-all duration-500">
+                          <Landmark className="w-10 h-10 text-white" strokeWidth={2.5} />
+                        </div>
+                        <div>
+                          <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} uppercase`}>
+                            Savings <span className="text-blue-500">Vault</span>
+                          </h3>
+                          <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Track and grow your wealth automatically.</p>
+                        </div>
+                      </div>
+
+                      <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-blue-500/20' : 'border-blue-100'} shadow-inner`}>
+                        <p className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Total Savings Balance</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-5xl font-black text-blue-500">£{totalSavings.toLocaleString()}</span>
+                          <TrendingUp className="w-6 h-6 text-emerald-500" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Middle: Add Savings Form */}
+                    <div className="lg:col-span-5">
+                      <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl`}>
+                        <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Quick Savings Deposit</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="relative flex-1">
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-blue-500">£</span>
+                            <input
+                              type="number"
+                              value={savingsAmount}
+                              onChange={(e) => setSavingsAmount(e.target.value)}
+                              placeholder="Amount to save"
+                              className="input-unified w-full !pl-12 !py-5 !rounded-[1.5rem]"
+                            />
+                          </div>
+                          <button
+                            onClick={handleAddSavings}
+                            disabled={!savingsAmount || isAddingSavings}
+                            className={`btn-primary-unified !bg-blue-600 hover:!bg-blue-700 !rounded-[1.5rem] !px-10 shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50`}
+                          >
+                            {isAddingSavings ? (
+                              <RefreshCw className="w-6 h-6 animate-spin" />
+                            ) : (
+                              <ArrowUpRight className="w-6 h-6" strokeWidth={3} />
+                            )}
+                            <span className="font-black uppercase tracking-[0.1em]">Deposit</span>
+                          </button>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-500 mt-4 uppercase tracking-widest text-center italic">
+                          This will be recorded as a special savings transaction.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Actions and Mini-History */}
+                    <div className="lg:col-span-3 flex flex-col gap-4">
+                      <button
+                        onClick={() => setShowSavingsHistory(!showSavingsHistory)}
+                        className={`flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all duration-500 ${
+                          showSavingsHistory 
+                            ? 'bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/20' 
+                            : `${theme === 'dark' ? 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-blue-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-blue-600'}`
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <History className="w-6 h-6" />
+                          <span className="font-black uppercase tracking-[0.1em]">History</span>
+                        </div>
+                        <span className={`text-xs font-black px-3 py-1 rounded-full ${showSavingsHistory ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'}`}>
+                          {savingsTransactions.length}
+                        </span>
+                      </button>
+
+                      {showSavingsHistory && (
+                        <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white'} border-2 border-blue-500/20 max-h-[200px] overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500`}>
+                          <div className="space-y-4">
+                            {savingsTransactions.length > 0 ? (
+                              [...savingsTransactions].reverse().map((t, i) => (
+                                <div key={i} className="flex items-center justify-between border-b border-slate-700/10 pb-2 last:border-0">
+                                  <div>
+                                    <p className={`text-xs font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                      {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Contribution</p>
+                                  </div>
+                                  <span className="text-sm font-black text-blue-500">£{Math.abs(t.amount).toLocaleString()}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs font-bold text-slate-500 text-center py-4">No savings history yet.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* AI Budget Insights - Smart Caching */}
             <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden`} style={{ animationDelay: '400ms' }}>
@@ -1381,118 +1500,6 @@ function BudgetPlanning() {
           </div>
         </section>
 
-        {/* Section 3: Special Savings Management - Only show if user has opened a savings bank */}
-        {hasSavingsAccount && (
-          <section className="pb-32 px-6">
-            <div className="max-w-[1400px] mx-auto w-full">
-              <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark border-blue-500/20' : 'card-unified-light border-blue-200'} p-10 relative overflow-hidden group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-700`}>
-                {/* Decorative Bank Background */}
-                <Landmark className={`absolute -right-12 -bottom-12 w-64 h-64 ${theme === 'dark' ? 'text-blue-500/5' : 'text-blue-500/10'} -rotate-12 group-hover:rotate-0 transition-all duration-1000`} />
-                
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-                  {/* Left side: Info and Total */}
-                  <div className="lg:col-span-4 space-y-6">
-                    <div className="flex items-center gap-6">
-                      <div className="p-5 bg-blue-600 rounded-[2rem] shadow-2xl shadow-blue-500/40 rotate-3 group-hover:rotate-0 transition-all duration-500">
-                        <Landmark className="w-10 h-10 text-white" strokeWidth={2.5} />
-                      </div>
-                      <div>
-                        <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} uppercase`}>
-                          Savings <span className="text-blue-500">Vault</span>
-                        </h3>
-                        <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Track and grow your wealth automatically.</p>
-                      </div>
-                    </div>
-
-                    <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-blue-500/20' : 'border-blue-100'} shadow-inner`}>
-                      <p className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Total Savings Balance</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black text-blue-500">£{totalSavings.toLocaleString()}</span>
-                        <TrendingUp className="w-6 h-6 text-emerald-500" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Middle: Add Savings Form */}
-                  <div className="lg:col-span-5">
-                    <div className={`p-8 rounded-[2.5rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl`}>
-                      <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Quick Savings Deposit</label>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-blue-500">£</span>
-                          <input
-                            type="number"
-                            value={savingsAmount}
-                            onChange={(e) => setSavingsAmount(e.target.value)}
-                            placeholder="Amount to save"
-                            className="input-unified w-full !pl-12 !py-5 !rounded-[1.5rem]"
-                          />
-                        </div>
-                        <button
-                          onClick={handleAddSavings}
-                          disabled={!savingsAmount || isAddingSavings}
-                          className={`btn-primary-unified !bg-blue-600 hover:!bg-blue-700 !rounded-[1.5rem] !px-10 shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50`}
-                        >
-                          {isAddingSavings ? (
-                            <RefreshCw className="w-6 h-6 animate-spin" />
-                          ) : (
-                            <ArrowUpRight className="w-6 h-6" strokeWidth={3} />
-                          )}
-                          <span className="font-black uppercase tracking-[0.1em]">Deposit</span>
-                        </button>
-                      </div>
-                      <p className="text-[10px] font-bold text-slate-500 mt-4 uppercase tracking-widest text-center italic">
-                        This will be recorded as a special savings transaction.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right: Actions and Mini-History */}
-                  <div className="lg:col-span-3 flex flex-col gap-4">
-                    <button
-                      onClick={() => setShowSavingsHistory(!showSavingsHistory)}
-                      className={`flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all duration-500 ${
-                        showSavingsHistory 
-                          ? 'bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/20' 
-                          : `${theme === 'dark' ? 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-blue-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-blue-600'}`
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <History className="w-6 h-6" />
-                        <span className="font-black uppercase tracking-[0.1em]">History</span>
-                      </div>
-                      <span className={`text-xs font-black px-3 py-1 rounded-full ${showSavingsHistory ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'}`}>
-                        {savingsTransactions.length}
-                      </span>
-                    </button>
-
-                    {showSavingsHistory && (
-                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white'} border-2 border-blue-500/20 max-h-[200px] overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500`}>
-                        <div className="space-y-4">
-                          {savingsTransactions.length > 0 ? (
-                            [...savingsTransactions].reverse().map((t, i) => (
-                              <div key={i} className="flex items-center justify-between border-b border-slate-700/10 pb-2 last:border-0">
-                                <div>
-                                  <p className={`text-xs font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                    {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                  </p>
-                                  <p className="text-[10px] font-bold text-slate-500 uppercase">Contribution</p>
-                                </div>
-                                <span className="text-sm font-black text-blue-500">£{Math.abs(t.amount).toLocaleString()}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-xs font-bold text-slate-500 text-center py-4">No savings history yet.</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );

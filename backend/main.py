@@ -1146,49 +1146,53 @@ async def ai_chat(year: int, month: int, token: str, data: ChatRequest, db: Sess
     raise HTTPException(status_code=503, detail="All AI models are currently busy. Please try again in a minute.")
 
 @app.post("/categories/init-savings")
-def init_savings_category(token: str, db: Session = Depends(get_db)):
+async def init_savings_category(token: str, db: Session = Depends(get_db)):
     """
     Initialize a 'Savings' category for the current user.
     This is called when the user clicks 'Open Savings Bank'.
     """
-    user = get_current_user(token, db)
-    
-    # Check if a savings category already exists for this user (or globally)
-    existing = db.query(Category).filter(
-        (Category.user_id == user.id) | (Category.user_id == None),
-        Category.name.ilike("savings")
-    ).first()
-    
-    if existing:
+    try:
+        user = get_current_user(token, db)
+        
+        # Check if a savings category already exists for this user (or globally)
+        existing = db.query(Category).filter(
+            (Category.user_id == user.id) | (Category.user_id == None),
+            Category.name.ilike("savings")
+        ).first()
+        
+        if existing:
+            return {
+                "id": existing.id,
+                "name": existing.name,
+                "type": existing.type,
+                "icon": existing.icon,
+                "is_custom": existing.user_id is not None,
+                "message": "Savings category already exists"
+            }
+        
+        # Create new Savings category specifically for this user
+        category = Category(
+            user_id=user.id,
+            name="Savings",
+            type="expense",
+            icon="🏦"
+        )
+        
+        db.add(category)
+        db.commit()
+        db.refresh(category)
+        
         return {
-            "id": existing.id,
-            "name": existing.name,
-            "type": existing.type,
-            "icon": existing.icon,
-            "is_custom": existing.user_id is not None,
-            "message": "Savings category already exists"
+            "id": category.id,
+            "name": category.name,
+            "type": category.type,
+            "icon": category.icon,
+            "is_custom": True,
+            "message": "Savings category created successfully"
         }
-    
-    # Create new Savings category specifically for this user
-    category = Category(
-        user_id=user.id,
-        name="Savings",
-        type="expense",
-        icon="🏦"
-    )
-    
-    db.add(category)
-    db.commit()
-    db.refresh(category)
-    
-    return {
-        "id": category.id,
-        "name": category.name,
-        "type": category.type,
-        "icon": category.icon,
-        "is_custom": True,
-        "message": "Savings category created successfully"
-    }
+    except Exception as e:
+        print(f"ERROR in init_savings_category: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 # ============================================
 # BUDGET ROUTES (Add these to main.py)
