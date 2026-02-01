@@ -187,6 +187,7 @@ export const SectionHeaderAndSummary = ({
             className="text-blue-500"
             color="blue"
             isDark={isDark}
+            history={analytics?.recent_savings}
           />
 
           <StatCard
@@ -214,7 +215,7 @@ export const SectionHeaderAndSummary = ({
   );
 };
 
-const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className }) => {
+const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history }) => {
   const colors = {
     green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
     red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',
@@ -233,14 +234,14 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
 
   const formatValue = (v) => {
     if (isPercent) return `${v}%`;
-    const formatted = v?.toLocaleString('en-GB', { 
+    const formatted = Math.abs(v || 0)?.toLocaleString('en-GB', { 
       maximumFractionDigits: 0 
     }) || '0';
     return `£${formatted}`;
   };
 
   return (
-    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} flex flex-col`}>
       <div className="flex items-center justify-between mb-6">
         <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {label}
@@ -252,6 +253,32 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
       <p className={`text-3xl font-black tracking-tight ${className || textColors[color]}`}>
         {formatValue(value)}
       </p>
+
+      {history && history.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-slate-500/10">
+          <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            Recent Activity
+          </p>
+          <div className="space-y-3">
+            {history.map((txn, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} line-clamp-1`}>
+                    {txn.description.split('||notes||')[0]}
+                  </span>
+                  <span className={`text-[9px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {new Date(txn.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+                <span className={`text-xs font-black ${txn.amount > 0 ? 'text-emerald-500' : 'text-blue-400'}`}>
+                  {txn.amount > 0 ? '+' : ''}{formatValue(txn.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
         color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
       }`} />

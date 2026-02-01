@@ -590,16 +590,16 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     # Calculate current month stats
     current_income = sum(t.amount for t in current_month_tx if t.amount > 0)
     current_expenses_all = abs(sum(t.amount for t in current_month_tx if t.amount < 0))
-    current_savings_from_tx = abs(sum(t.amount for t in current_month_tx if t.amount < 0 and t.category and 'savings' in t.category.name.lower()))
-    current_spending = current_expenses_all - current_savings_from_tx
+    current_savings_from_tx = sum(-t.amount for t in current_month_tx if t.category and 'savings' in t.category.name.lower())
+    current_spending = current_expenses_all - max(0, current_savings_from_tx) # Only subtract positive savings (deposits)
     current_net_savings = current_income - current_spending
     current_savings_rate = (current_net_savings / current_income * 100) if current_income > 0 else 0
     
     # Calculate previous month stats
     prev_income = sum(t.amount for t in prev_month_tx if t.amount > 0)
     prev_expenses_all = abs(sum(t.amount for t in prev_month_tx if t.amount < 0))
-    prev_savings_from_tx = abs(sum(t.amount for t in prev_month_tx if t.amount < 0 and t.category and 'savings' in t.category.name.lower()))
-    prev_spending = prev_expenses_all - prev_savings_from_tx
+    prev_savings_from_tx = sum(-t.amount for t in prev_month_tx if t.category and 'savings' in t.category.name.lower())
+    prev_spending = prev_expenses_all - max(0, prev_savings_from_tx)
     prev_net_savings = prev_income - prev_spending
     
     # Calculate trends

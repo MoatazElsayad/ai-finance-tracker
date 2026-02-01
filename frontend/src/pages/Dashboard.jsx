@@ -281,18 +281,14 @@ function Dashboard() {
       );
 
       // Total dedicated savings (transactions with 'Savings' category) - PERIOD
-      const totalSavingsTx = Math.abs(
-        periodTransactions
-          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
-          .reduce((sum, t) => sum + t.amount, 0)
-      );
+      const totalSavingsTx = periodTransactions
+          .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
+          .reduce((sum, t) => sum + (-t.amount), 0);
 
       // Total dedicated savings (transactions with 'Savings' category) - OVERALL (Lifetime)
-      const totalSavingsOverall = Math.abs(
-        txns
-          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
-          .reduce((sum, t) => sum + t.amount, 0)
-      );
+      const totalSavingsOverall = txns
+          .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
+          .reduce((sum, t) => sum + (-t.amount), 0);
 
       // Actual spending (regular expenses only, excluding savings)
       const actualSpending = totalOutflow - totalSavingsTx;
@@ -315,6 +311,11 @@ function Dashboard() {
         .map(([name, amount]) => ({ name, amount }))
         .sort((a, b) => b.amount - a.amount);
 
+      const recentSavings = txns
+        .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 3);
+
       setTransactions(txns);
       setAnalytics({
         total_income: totalIncome,
@@ -322,7 +323,8 @@ function Dashboard() {
         total_savings: totalSavingsOverall, // Show lifetime total savings in the card
         net_savings: netSavings,
         savings_rate: savingsRateValue,
-        category_breakdown: categoryBreakdownArray
+        category_breakdown: categoryBreakdownArray,
+        recent_savings: recentSavings
       });
     } catch (error) {
       console.error('Failed to load dashboard:', error);

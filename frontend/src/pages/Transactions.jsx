@@ -291,7 +291,7 @@ function Transactions() {
           </p>
           <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${theme === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'} animate-pulse`}>
             <Wallet className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">Tip: Use "Savings" category for transfers!</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Tip: Record savings as an "Expense" to grow your balance!</span>
           </div>
         </div>
       </div>
@@ -473,7 +473,14 @@ function Transactions() {
                   <select
                     required
                     value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setCategoryId(id);
+                      const selectedCat = categories.find(c => c.id === parseInt(id));
+                      if (selectedCat && selectedCat.name.toLowerCase().includes('savings')) {
+                        setIsExpense(true);
+                      }
+                    }}
                     className="input-unified flex-1"
                   >
                     <option value="">Select category</option>
