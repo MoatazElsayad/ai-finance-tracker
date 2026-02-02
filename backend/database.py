@@ -21,7 +21,7 @@ def init_database():
     # Create all tables
     Base.metadata.create_all(bind=engine)
     
-    # Ensure 'gender' and 'avatar_seed' columns exist in users table
+    # Ensure necessary columns exist in users table
     with engine.begin() as conn:
         try:
             # PRAGMA doesn't work well with text() in some cases, use exec_driver_sql
@@ -35,6 +35,10 @@ def init_database():
             if "avatar_seed" not in col_names:
                 print("Adding 'avatar_seed' column to users table...")
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN avatar_seed TEXT")
+                
+            if "monthly_savings_goal" not in col_names:
+                print("Adding 'monthly_savings_goal' column to users table...")
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN monthly_savings_goal FLOAT DEFAULT 0.0")
                 
         except Exception as e:
             print(f"Migration error: {e}")
