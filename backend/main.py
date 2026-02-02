@@ -1213,11 +1213,15 @@ RATES_CACHE = {
     "timestamp": None
 }
 
+METALS_API_KEY = os.getenv("METALS_API_KEY")
+EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
+
 async def fetch_real_time_rates():
-    """Fetch gold, silver, and currency rates in EGP"""
+    """Fetch gold, silver, and currency rates in EGP using provided API keys"""
     now = datetime.utcnow()
+    # Cache for 1 hour
     if RATES_CACHE["data"] and RATES_CACHE["timestamp"] and (now - RATES_CACHE["timestamp"]).total_seconds() < 3600:
-        return RATES_CACHE["data"]
+        return {**RATES_CACHE["data"], "last_updated": RATES_CACHE["timestamp"].isoformat()}
     
     # Default fallback rates if API fails
     rates = {
@@ -1228,29 +1232,56 @@ async def fetch_real_time_rates():
         "gbp": 62.1,
         "egp": 1.0,
         "changes": {
-            "gold": 1.2, "silver": -0.5, "usd": 0.1, "eur": 0.3, "gbp": -0.2
+            "gold": 0.0, "silver": 0.0, "usd": 0.0, "eur": 0.0, "gbp": 0.0
         }
     }
     
     try:
+        if not METALS_API_KEY or not EXCHANGE_RATE_API_KEY:
+            print("API Keys missing in environment!")
+            if RATES_CACHE["data"]: return {**RATES_CACHE["data"], "last_updated": RATES_CACHE["timestamp"].isoformat()}
+            return {**rates, "last_updated": now.isoformat()}
+
         async with httpx.AsyncClient() as client:
-            # 1. Currencies (ExchangeRate-API free tier)
-            resp = await client.get("https://open.er-api.com/v6/latest/USD")
-            if resp.status_code == 200:
-                data = resp.json()
-                usd_to_egp = data["rates"].get("EGP", 48.9)
-                eur_to_egp = usd_to_egp / data["rates"].get("EUR", 0.92)
-                gbp_to_egp = usd_to_egp / data["rates"].get("GBP", 0.78)
-                rates["usd"] = round(usd_to_egp, 2)
-                rates["eur"] = round(eur_to_egp, 2)
-                rates["gbp"] = round(gbp_to_egp, 2)
+            # 1. Gold & Silver (Metals-API)
+            metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=EGP&symbols=XAU,XAG"
+            metals_resp = await client.get(metals_url, timeout=10.0)
+            if metals_resp.status_code == 200:
+                metals_data = metals_resp.json()
+                if metals_data.get("success"):
+                    ounce_to_gram = 31.1035
+                    gold_ounce = metals_data["rates"].get("XAU")
+                    silver_ounce = metals_data["rates"].get("XAG")
+                    
+                    if gold_ounce:
+                        rates["gold"] = round(gold_ounce / ounce_to_gram, 2)
+                    if silver_ounce:
+                        rates["silver"] = round(silver_ounce / ounce_to_gram, 2)
+
+            # 2. Currencies (ExchangeRate-API)
+            currency_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/EGP"
+            currency_resp = await client.get(currency_url, timeout=10.0)
+            if currency_resp.status_code == 200:
+                currency_data = currency_resp.json()
+                if currency_data.get("result") == "success":
+                    conv = currency_data.get("conversion_rates", {})
+                    if conv.get("USD"): rates["usd"] = round(1 / conv["USD"], 2)
+                    if conv.get("EUR"): rates["eur"] = round(1 / conv["EUR"], 2)
+                    if conv.get("GBP"): rates["gbp"] = round(1 / conv["GBP"], 2)
             
         RATES_CACHE["data"] = rates
         RATES_CACHE["timestamp"] = now
     except Exception as e:
-        print(f"Error fetching rates: {e}")
+        print(f"Error fetching real-time rates: {e}")
+        if RATES_CACHE["data"]:
+            return {**RATES_CACHE["data"], "last_updated": RATES_CACHE["timestamp"].isoformat()}
         
-    return rates
+    return {**rates, "last_updated": now.isoformat()}
+
+@app.get("/savings/rates")
+async def get_savings_rates():
+    """Public endpoint for rates (cached)"""
+    return await fetch_real_time_rates()
 
 @app.get("/savings")
 async def get_savings(token: str, db: Session = Depends(get_db)):

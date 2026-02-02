@@ -215,7 +215,10 @@ const Savings = () => {
   const isDark = theme === 'dark';
   
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [ratesOutdated, setRatesOutdated] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [savingsData, setSavingsData] = useState(null);
   const [categories, setCategories] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
@@ -234,24 +237,39 @@ const Savings = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const loadAllData = async () => {
-    setLoading(true);
+  const loadAllData = async (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    else if (!savingsData) setLoading(true);
+    
     setError(null);
     try {
-      const [cats, data, txns] = await Promise.all([
+      // Fetch rates first or in parallel
+      const [cats, data, txns, ratesResp] = await Promise.all([
         getCategories(),
         getSavingsData(),
-        getTransactions()
+        getTransactions(),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/savings/rates`).then(r => r.json())
       ]);
+      
       setCategories(cats);
-      setSavingsData(data);
+      setSavingsData({ ...data, rates: ratesResp });
       setAllTransactions(txns || []);
+      
+      if (ratesResp.last_updated) {
+        const updateTime = new Date(ratesResp.last_updated);
+        setLastUpdated(updateTime);
+        // If rates are older than 1.5 hours, mark as outdated
+        const diffHours = (new Date() - updateTime) / (1000 * 60 * 60);
+        setRatesOutdated(diffHours > 1.5);
+      }
+      
       if (data.monthly_goal) setMonthlyGoalInput(data.monthly_goal.toString());
     } catch (err) {
       console.error("Failed to load savings data", err);
       setError("Unable to connect to your vault. Please try again.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -409,16 +427,45 @@ const Savings = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-12">
             <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
-              <p className="text-blue-400 font-black uppercase tracking-[0.4em] text-[10px] mb-4">Portfolio Overview</p>
+              <div className="flex items-center gap-4 mb-4">
+                <p className="text-blue-400 font-black uppercase tracking-[0.4em] text-[10px]">Portfolio Overview</p>
+                {ratesOutdated && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-pulse">
+                    <AlertCircle className="w-3 h-3 text-amber-500" />
+                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">
+                      Rates Outdated ({lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                    </span>
+                  </div>
+                )}
+              </div>
+              
               <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter mb-6">
                 Total <span className="text-amber-400">Wealth</span>
               </h1>
-              <div className="flex items-baseline gap-4">
-                <span className="text-7xl md:text-9xl font-black text-white drop-shadow-2xl">
-                  {displaySavings.toLocaleString()}
-                </span>
-                <span className="text-3xl md:text-4xl font-black text-blue-400/80">EGP</span>
+              
+              <div className="flex items-center gap-6">
+                <div className="flex items-baseline gap-4">
+                  <span className="text-7xl md:text-9xl font-black text-white drop-shadow-2xl">
+                    {displaySavings.toLocaleString()}
+                  </span>
+                  <span className="text-3xl md:text-4xl font-black text-blue-400/80">EGP</span>
+                </div>
+                
+                <button 
+                  onClick={() => loadAllData(true)}
+                  disabled={refreshing}
+                  className={`p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all active:scale-95 group ${refreshing ? 'cursor-not-allowed opacity-50' : ''}`}
+                  title="Refresh Market Rates"
+                >
+                  <RefreshCw className={`w-8 h-8 text-amber-400 ${refreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'}`} />
+                </button>
               </div>
+              
+              {refreshing && (
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500 mt-4 animate-pulse">
+                  Syncing with Global Markets...
+                </p>
+              )}
             </div>
             
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
@@ -643,7 +690,17 @@ const Savings = () => {
                       {(rates[activeTab === 'currencies' ? 'usd' : activeTab] || 0).toLocaleString()} 
                       <span className="text-sm font-bold text-slate-500 ml-3">EGP / {activeTab === 'currencies' ? 'USD' : 'g'}</span>
                     </h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Market Price Refreshed Recently</p>
+                    {activeTab === 'currencies' && (
+                      <div className="flex gap-4 mt-4">
+                        {['EUR', 'GBP'].map(sym => (
+                          <div key={sym} className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase text-slate-500">{sym}</span>
+                            <span className="text-sm font-black text-amber-500">{(rates[sym.toLowerCase()] || 0).toLocaleString()} EGP</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500 mt-4">Market Price Refreshed Recently</p>
                   </div>
                 )}
 
@@ -716,22 +773,35 @@ const Savings = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="flex items-center justify-end gap-3 mb-1">
-                              {isProfit ? <TrendingUp className="w-5 h-5 text-emerald-500" /> : <TrendingDown className="w-5 h-5 text-rose-500" />}
-                              <p className={`text-2xl font-black ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                {isProfit ? '+' : ''}{profit.toLocaleString()} EGP
+                          
+                          <div className="flex flex-col md:flex-row md:items-center gap-12">
+                            <div className="text-right">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Live Value</p>
+                              <p className="text-2xl font-black text-white">
+                                {inv.current_value.toLocaleString()} <span className="text-xs text-slate-500">EGP</span>
                               </p>
                             </div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Value: {inv.current_value.toLocaleString()} EGP</p>
+                            
+                            <div className="text-right min-w-[140px]">
+                              <div className="flex items-center justify-end gap-3 mb-1">
+                                {isProfit ? <TrendingUp className="w-5 h-5 text-emerald-500" /> : <TrendingDown className="w-5 h-5 text-rose-500" />}
+                                <p className={`text-2xl font-black ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {isProfit ? '+' : ''}{profit.toLocaleString()} <span className="text-xs">EGP</span>
+                                </p>
+                              </div>
+                              <p className={`text-[10px] font-black uppercase tracking-widest ${isProfit ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
+                                {isProfit ? 'Profit' : 'Loss'}: {((profit / (inv.buy_price * inv.amount)) * 100).toFixed(2)}%
+                              </p>
+                            </div>
+
+                            <button 
+                              onClick={() => handleDeleteInvestment(inv.id)}
+                              className="p-3 rounded-xl bg-rose-500/10 text-rose-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white"
+                              title="Delete Investment"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
                           </div>
-                          <button 
-                            onClick={() => handleDeleteInvestment(inv.id)}
-                            className="mt-4 md:mt-0 md:ml-6 p-3 rounded-xl bg-rose-500/10 text-rose-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white"
-                            title="Delete Investment"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
                         </div>
                       );
                     })}
