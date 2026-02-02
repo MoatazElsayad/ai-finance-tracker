@@ -342,7 +342,7 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000",
+        "HTTP-Referer": "http://localhost:8001",
         "X-Title": "Finance Tracker AI",
     }
     
@@ -449,7 +449,7 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000",
+        "HTTP-Referer": "http://localhost:8001",
         "X-Title": "Finance Tracker AI",
     }
     

@@ -3,7 +3,7 @@
  */
 
 // Change this line in your api.js
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8001' : '/api');
 
 // Helper function to get auth token from localStorage
 const getToken = () => localStorage.getItem('token');

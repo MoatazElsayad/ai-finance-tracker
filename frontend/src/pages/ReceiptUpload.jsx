@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Upload, Camera, Check, AlertTriangle, Loader, ArrowRight, RefreshCw, ScanLine, Calendar, Tag, FileText, X } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 export default function ReceiptUpload() {
   const { theme } = useTheme();
