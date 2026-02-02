@@ -137,6 +137,21 @@ class Goal(Base):
     categories = relationship("Category", secondary=goal_categories)
 
 
+class MarketRatesCache(Base):
+    """
+    Cache for gold, silver, and currency rates in EGP
+    """
+    __tablename__ = "market_rates_cache"
+
+    id = Column(Integer, primary_key=True)
+    gold_egp_per_gram = Column(Float, nullable=False)
+    silver_egp_per_gram = Column(Float, nullable=False)
+    usd_to_egp = Column(Float, nullable=False)
+    gbp_to_egp = Column(Float, nullable=False)
+    eur_to_egp = Column(Float, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
 # Pre-defined categories to insert when app starts
 DEFAULT_CATEGORIES = [
     # Expenses

@@ -245,11 +245,12 @@ const Savings = () => {
     setError(null);
     try {
       // Fetch rates first or in parallel
+      // For manual refresh, we force the backend to bypass its 8-hour cache
       const [cats, data, txns, ratesResp] = await Promise.all([
         getCategories(),
         getSavingsData(),
         getTransactions(),
-        getSavingsRates()
+        getSavingsRates(isManual) // isManual true adds ?force=true
       ]);
       
       setCategories(cats);
@@ -259,9 +260,9 @@ const Savings = () => {
       if (ratesResp.last_updated) {
         const updateTime = new Date(ratesResp.last_updated);
         setLastUpdated(updateTime);
-        // If rates are older than 1.5 hours, mark as outdated
+        // If rates are older than 8.5 hours (cached logic is 8h), mark as outdated
         const diffHours = (new Date() - updateTime) / (1000 * 60 * 60);
-        setRatesOutdated(diffHours > 1.5);
+        setRatesOutdated(diffHours > 8.5);
       }
       
       if (data.monthly_goal) setMonthlyGoalInput(data.monthly_goal.toString());
@@ -430,11 +431,13 @@ const Savings = () => {
             <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
               <div className="flex items-center gap-4 mb-4">
                 <p className="text-blue-400 font-black uppercase tracking-[0.4em] text-[10px]">Portfolio Overview</p>
-                {ratesOutdated && (
+                {lastUpdated && (
                   <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-pulse">
                     <AlertCircle className="w-3 h-3 text-amber-500" />
                     <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">
-                      Rates Outdated ({lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                      {ratesOutdated 
+                        ? `Rates from ${Math.floor((new Date() - lastUpdated) / (1000 * 60 * 60))}h ago` 
+                        : `Rates updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                     </span>
                   </div>
                 )}

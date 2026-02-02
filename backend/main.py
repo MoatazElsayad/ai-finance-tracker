@@ -16,7 +16,7 @@ from sqlalchemy import func
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import httpx
 import random
 import json
@@ -24,7 +24,7 @@ import asyncio
 
 # Import local modules
 from database import get_db, init_database
-from models import User, Transaction, Category, Budget, Goal, Investment
+from models import User, Transaction, Category, Budget, Goal, Investment, MarketRatesCache
 from dotenv import load_dotenv
 from ocr_utils import parse_receipt
 from fastapi import File, UploadFile
@@ -1216,31 +1216,76 @@ RATES_CACHE = {
 METALS_API_KEY = os.getenv("METALS_API_KEY")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
-async def fetch_real_time_rates():
-    """Fetch gold, silver, and currency rates in EGP using provided API keys"""
-    now = datetime.utcnow()
-    # Cache for 1 hour
-    if RATES_CACHE["data"] and RATES_CACHE["timestamp"] and (now - RATES_CACHE["timestamp"]).total_seconds() < 3600:
-        return {**RATES_CACHE["data"], "last_updated": RATES_CACHE["timestamp"].isoformat()}
+async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
+    """
+    Fetch gold, silver, and currency rates in EGP.
+    Uses database cache if available and not expired (8 hours).
+    Scheduled updates: 8 AM, 2 PM, 8 PM EET (UTC+2)
+    """
+    # EET is UTC+2
+    now_utc = datetime.utcnow()
+    now_eet = now_utc + timedelta(hours=2)
     
-    # Default fallback rates if API fails
-    rates = {
+    # 1. Try to get from database cache first
+    cached_record = db.query(MarketRatesCache).order_by(MarketRatesCache.updated_at.desc()).first()
+    
+    should_refresh = force_refresh
+    
+    if not should_refresh and cached_record:
+        cache_age_hours = (now_utc - cached_record.updated_at).total_seconds() / 3600
+        
+        # Check if cache is older than 8 hours
+        if cache_age_hours >= 8:
+            should_refresh = True
+        else:
+            # Check if we passed a scheduled update time since last update
+            # Schedules: 8:00, 14:00, 20:00 EET
+            last_update_eet = cached_record.updated_at + timedelta(hours=2)
+            schedules = [time(8, 0), time(14, 0), time(20, 0)]
+            
+            for sched_time in schedules:
+                sched_dt = datetime.combine(now_eet.date(), sched_time)
+                # If a schedule happened between last update and now
+                if last_update_eet < sched_dt <= now_eet:
+                    should_refresh = True
+                    break
+
+    if not should_refresh and cached_record:
+        return {
+            "gold": cached_record.gold_egp_per_gram,
+            "silver": cached_record.silver_egp_per_gram,
+            "usd": cached_record.usd_to_egp,
+            "gbp": cached_record.gbp_to_egp,
+            "eur": cached_record.eur_to_egp,
+            "egp": 1.0,
+            "last_updated": cached_record.updated_at.isoformat(),
+            "is_cached": True
+        }
+
+    # Default fallback rates if API fails and no cache exists
+    rates_data = {
         "gold": 3850.0,
         "silver": 45.0,
         "usd": 48.9,
         "eur": 52.8,
         "gbp": 62.1,
-        "egp": 1.0,
-        "changes": {
-            "gold": 0.0, "silver": 0.0, "usd": 0.0, "eur": 0.0, "gbp": 0.0
-        }
+        "egp": 1.0
     }
     
+    # If we have a cached record, use its values as fallback instead of hardcoded ones
+    if cached_record:
+        rates_data.update({
+            "gold": cached_record.gold_egp_per_gram,
+            "silver": cached_record.silver_egp_per_gram,
+            "usd": cached_record.usd_to_egp,
+            "gbp": cached_record.gbp_to_egp,
+            "eur": cached_record.eur_to_egp
+        })
+
     try:
         if not METALS_API_KEY or not EXCHANGE_RATE_API_KEY:
             print("API Keys missing in environment!")
-            if RATES_CACHE["data"]: return {**RATES_CACHE["data"], "last_updated": RATES_CACHE["timestamp"].isoformat()}
-            return {**rates, "last_updated": now.isoformat()}
+            return {**rates_data, "last_updated": cached_record.updated_at.isoformat() if cached_record else now_utc.isoformat(), "is_cached": True}
 
         async with httpx.AsyncClient() as client:
             # 1. Gold & Silver (Metals-API)
@@ -1248,16 +1293,13 @@ async def fetch_real_time_rates():
             metals_resp = await client.get(metals_url, timeout=10.0)
             if metals_resp.status_code == 200:
                 try:
-                    metals_data = metals_resp.json()
-                    if metals_data.get("success") and "rates" in metals_data:
+                    metals_json = metals_resp.json()
+                    if metals_json.get("success") and "rates" in metals_json:
                         ounce_to_gram = 31.1035
-                        gold_ounce = metals_data["rates"].get("XAU")
-                        silver_ounce = metals_data["rates"].get("XAG")
-                        
-                        if gold_ounce:
-                            rates["gold"] = round(gold_ounce / ounce_to_gram, 2)
-                        if silver_ounce:
-                            rates["silver"] = round(silver_ounce / ounce_to_gram, 2)
+                        gold_ounce = metals_json["rates"].get("XAU")
+                        silver_ounce = metals_json["rates"].get("XAG")
+                        if gold_ounce: rates_data["gold"] = round(gold_ounce / ounce_to_gram, 2)
+                        if silver_ounce: rates_data["silver"] = round(silver_ounce / ounce_to_gram, 2)
                 except Exception as je:
                     print(f"Error parsing metals data: {je}")
 
@@ -1266,51 +1308,79 @@ async def fetch_real_time_rates():
             currency_resp = await client.get(currency_url, timeout=10.0)
             if currency_resp.status_code == 200:
                 try:
-                    currency_data = currency_resp.json()
-                    if currency_data.get("result") == "success" and "conversion_rates" in currency_data:
-                        conv = currency_data.get("conversion_rates", {})
-                        if conv.get("USD"): rates["usd"] = round(1 / conv["USD"], 2)
-                        if conv.get("EUR"): rates["eur"] = round(1 / conv["EUR"], 2)
-                        if conv.get("GBP"): rates["gbp"] = round(1 / conv["GBP"], 2)
+                    currency_json = currency_resp.json()
+                    if currency_json.get("result") == "success" and "conversion_rates" in currency_json:
+                        conv = currency_json.get("conversion_rates", {})
+                        if conv.get("USD"): rates_data["usd"] = round(1 / conv["USD"], 2)
+                        if conv.get("EUR"): rates_data["eur"] = round(1 / conv["EUR"], 2)
+                        if conv.get("GBP"): rates_data["gbp"] = round(1 / conv["GBP"], 2)
                 except Exception as je:
                     print(f"Error parsing currency data: {je}")
             
-        RATES_CACHE["data"] = rates
-        RATES_CACHE["timestamp"] = now
+        # Update database cache
+        new_cache = MarketRatesCache(
+            gold_egp_per_gram=rates_data["gold"],
+            silver_egp_per_gram=rates_data["silver"],
+            usd_to_egp=rates_data["usd"],
+            gbp_to_egp=rates_data["gbp"],
+            eur_to_egp=rates_data["eur"],
+            updated_at=now_utc
+        )
+        db.add(new_cache)
+        db.commit()
+        
+        return {**rates_data, "last_updated": now_utc.isoformat(), "is_cached": False}
+
     except Exception as e:
         print(f"Error fetching real-time rates: {e}")
-        if RATES_CACHE["data"]:
-            return {**RATES_CACHE["data"], "last_updated": RATES_CACHE["timestamp"].isoformat()}
-        
-    return {**rates, "last_updated": now.isoformat()}
+        # Return whatever we have (cache or defaults)
+        return {
+            **rates_data, 
+            "last_updated": cached_record.updated_at.isoformat() if cached_record else now_utc.isoformat(),
+            "is_cached": True,
+            "error": str(e)
+        }
 
 @app.get("/savings/rates")
-async def get_savings_rates():
-    """Public endpoint for rates (cached)"""
-    return await fetch_real_time_rates()
+async def get_savings_rates(force: bool = False, db: Session = Depends(get_db)):
+    """Public endpoint for rates (DB cached)"""
+    return await fetch_real_time_rates(db, force_refresh=force)
 
 @app.get("/savings")
 async def get_savings(token: str, db: Session = Depends(get_db)):
     user = get_current_user(token, db)
     
-    # 1. Calculate Cash Balance from Transactions
-    cash_balance = db.query(func.sum(Transaction.amount)).filter(Transaction.user_id == user.id).scalar() or 0.0
+    # 1. Get Real-time Rates
+    rates = await fetch_real_time_rates(db)
     
-    # 2. Get Investments
-    investments = db.query(Investment).filter(Investment.user_id == user.id).all()
-    
-    # 3. Get Real-time Rates
-    rates = await fetch_real_time_rates()
-    
-    # 4. Monthly Savings Allocation for current month
-    now = datetime.utcnow()
-    current_month_start = datetime(now.year, now.month, 1)
+    # 2. Calculate Cash Balance from Transactions
+    # IMPORTANT: We only want transactions that are NOT "Savings" allocations to get the "Available/Main" cash
+    # However, the user wants: total_wealth = cash_savings + live_investment_values
+    # "cash_savings" should be the sum of all transactions in the "Savings" category.
     
     # Find Savings Category
     savings_cat = db.query(Category).filter(
         Category.name.ilike("%savings%"),
         (Category.user_id == user.id) | (Category.user_id == None)
     ).first()
+    
+    cash_savings = 0.0
+    if savings_cat:
+        # Cash savings = sum of all absolute values of negative transactions in "Savings" category
+        # (Since we create an expense to track the flow, the negative amount represents the money "in" the savings pocket)
+        cash_savings = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == user.id,
+            Transaction.category_id == savings_cat.id,
+            Transaction.amount < 0
+        ).scalar() or 0.0
+        cash_savings = abs(cash_savings)
+
+    # 3. Get Investments
+    investments = db.query(Investment).filter(Investment.user_id == user.id).all()
+    
+    # 4. Monthly Savings Allocation for current month (for goal tracking)
+    now = datetime.utcnow()
+    current_month_start = datetime(now.year, now.month, 1)
     
     monthly_saved = 0.0
     if savings_cat:
@@ -1323,7 +1393,7 @@ async def get_savings(token: str, db: Session = Depends(get_db)):
         monthly_saved = abs(monthly_saved)
 
     return {
-        "cash_balance": cash_balance,
+        "cash_balance": cash_savings,  # This is the "cash_savings" part of total wealth
         "investments": [
             {
                 "id": i.id,

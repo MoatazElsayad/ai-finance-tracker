@@ -344,8 +344,8 @@ export const getSavingsData = async () => {
   return handleResponse(response);
 };
 
-export const getSavingsRates = async () => {
-  const response = await fetch(`${API_URL}/savings/rates`);
+export const getSavingsRates = async (force = false) => {
+  const response = await fetch(`${API_URL}/savings/rates${force ? '?force=true' : ''}`);
   return handleResponse(response);
 };
 
