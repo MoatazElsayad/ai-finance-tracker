@@ -335,6 +335,42 @@ export const askAIQuestion = async (year, month, question) => {
 };
 
 // ============================================
+// SAVINGS & INVESTMENTS
+// ============================================
+
+export const getSavingsData = async () => {
+  const token = getToken();
+  const response = await authFetch(`/savings?token=${token}`);
+  return handleResponse(response);
+};
+
+export const createInvestment = async (investmentData) => {
+  const token = getToken();
+  const response = await authFetch(`/investments?token=${token}`, {
+    method: 'POST',
+    body: JSON.stringify(investmentData),
+  });
+  return handleResponse(response);
+};
+
+export const deleteInvestment = async (investmentId) => {
+  const token = getToken();
+  const response = await authFetch(`/investments/${investmentId}?token=${token}`, {
+    method: 'DELETE',
+  });
+  return handleResponse(response);
+};
+
+export const updateSavingsGoal = async (monthlyGoal) => {
+  const token = getToken();
+  const response = await authFetch(`/users/me/savings-goal?token=${token}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ monthly_goal: parseFloat(monthlyGoal) }),
+  });
+  return handleResponse(response);
+};
+
+// ============================================
 // User Profile
 // ============================================
 

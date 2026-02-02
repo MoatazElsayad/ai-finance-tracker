@@ -24,7 +24,7 @@ import asyncio
 
 # Import local modules
 from database import get_db, init_database
-from models import User, Transaction, Category, Budget, Goal
+from models import User, Transaction, Category, Budget, Goal, Investment
 from dotenv import load_dotenv
 from ocr_utils import parse_receipt
 from fastapi import File, UploadFile
@@ -131,6 +131,15 @@ class CategoryCreate(BaseModel):
     name: str
     type: str  # "income" or "expense"
     icon: str  # emoji like 🍔
+
+class InvestmentCreate(BaseModel):
+    type: str  # "gold", "silver", "USD", "GBP", "EUR"
+    amount: float
+    buy_price: float
+    buy_date: str  # "2026-01-15"
+
+class SavingsGoalUpdate(BaseModel):
+    monthly_goal: float
 
 class ReportRequest(BaseModel):
     start_date: Optional[str] = None
@@ -1193,6 +1202,149 @@ async def init_savings_category(token: str, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"ERROR in init_savings_category: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+# ============================================
+# SAVINGS & INVESTMENT ROUTES
+# ============================================
+
+# Global cache for rates to avoid hitting API limits
+RATES_CACHE = {
+    "data": None,
+    "timestamp": None
+}
+
+async def fetch_real_time_rates():
+    """Fetch gold, silver, and currency rates in EGP"""
+    now = datetime.utcnow()
+    if RATES_CACHE["data"] and RATES_CACHE["timestamp"] and (now - RATES_CACHE["timestamp"]).total_seconds() < 3600:
+        return RATES_CACHE["data"]
+    
+    # Default fallback rates if API fails
+    rates = {
+        "gold": 3850.0,
+        "silver": 45.0,
+        "usd": 48.9,
+        "eur": 52.8,
+        "gbp": 62.1,
+        "egp": 1.0,
+        "changes": {
+            "gold": 1.2, "silver": -0.5, "usd": 0.1, "eur": 0.3, "gbp": -0.2
+        }
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            # 1. Currencies (ExchangeRate-API free tier)
+            resp = await client.get("https://open.er-api.com/v6/latest/USD")
+            if resp.status_code == 200:
+                data = resp.json()
+                usd_to_egp = data["rates"].get("EGP", 48.9)
+                eur_to_egp = usd_to_egp / data["rates"].get("EUR", 0.92)
+                gbp_to_egp = usd_to_egp / data["rates"].get("GBP", 0.78)
+                rates["usd"] = round(usd_to_egp, 2)
+                rates["eur"] = round(eur_to_egp, 2)
+                rates["gbp"] = round(gbp_to_egp, 2)
+            
+        RATES_CACHE["data"] = rates
+        RATES_CACHE["timestamp"] = now
+    except Exception as e:
+        print(f"Error fetching rates: {e}")
+        
+    return rates
+
+@app.get("/savings")
+async def get_savings(token: str, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    
+    # 1. Calculate Cash Balance from Transactions
+    cash_balance = db.query(func.sum(Transaction.amount)).filter(Transaction.user_id == user.id).scalar() or 0.0
+    
+    # 2. Get Investments
+    investments = db.query(Investment).filter(Investment.user_id == user.id).all()
+    
+    # 3. Get Real-time Rates
+    rates = await fetch_real_time_rates()
+    
+    # 4. Monthly Savings Allocation for current month
+    now = datetime.utcnow()
+    current_month_start = datetime(now.year, now.month, 1)
+    
+    # Find Savings Category
+    savings_cat = db.query(Category).filter(
+        Category.name.ilike("%savings%"),
+        (Category.user_id == user.id) | (Category.user_id == None)
+    ).first()
+    
+    monthly_saved = 0.0
+    if savings_cat:
+        monthly_saved = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == user.id,
+            Transaction.category_id == savings_cat.id,
+            Transaction.date >= current_month_start,
+            Transaction.amount < 0
+        ).scalar() or 0.0
+        monthly_saved = abs(monthly_saved)
+
+    return {
+        "cash_balance": cash_balance,
+        "investments": [
+            {
+                "id": i.id,
+                "type": i.type,
+                "amount": i.amount,
+                "buy_price": i.buy_price,
+                "buy_date": i.buy_date.isoformat(),
+                "current_rate": rates.get(i.type.lower(), 0),
+                "current_value": i.amount * rates.get(i.type.lower(), 0)
+            } for i in investments
+        ],
+        "monthly_goal": getattr(user, "monthly_savings_goal", 0.0),
+        "monthly_saved": monthly_saved,
+        "rates": rates
+    }
+
+@app.post("/investments")
+def add_investment(data: InvestmentCreate, token: str, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    
+    try:
+        buy_date = datetime.strptime(data.buy_date, "%Y-%m-%d")
+    except:
+        buy_date = datetime.utcnow()
+        
+    investment = Investment(
+        user_id=user.id,
+        type=data.type,
+        amount=data.amount,
+        buy_price=data.buy_price,
+        buy_date=buy_date
+    )
+    db.add(investment)
+    db.commit()
+    db.refresh(investment)
+    return investment
+
+@app.delete("/investments/{investment_id}")
+def delete_investment(investment_id: int, token: str, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    investment = db.query(Investment).filter(
+        Investment.id == investment_id,
+        Investment.user_id == user.id
+    ).first()
+    
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+        
+    db.delete(investment)
+    db.commit()
+    return {"message": "Investment deleted"}
+
+@app.patch("/users/me/savings-goal")
+def update_savings_goal(data: SavingsGoalUpdate, token: str, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    user.monthly_savings_goal = data.monthly_goal
+    db.commit()
+    return {"message": "Savings goal updated", "monthly_goal": user.monthly_savings_goal}
 
 # ============================================
 # BUDGET ROUTES (Add these to main.py)

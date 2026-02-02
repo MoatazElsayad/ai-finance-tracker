@@ -35,12 +35,31 @@ class User(Base):
     avatar_seed = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    monthly_savings_goal = Column(Float, default=0.0)
     
     # Relationship: one user has many transactions
     transactions = relationship("Transaction", back_populates="user")
-
     budgets = relationship("Budget", back_populates="user")
     goals = relationship("Goal", back_populates="user")
+    investments = relationship("Investment", back_populates="user")
+
+
+class Investment(Base):
+    """
+    User investments - Gold, Silver, Currencies
+    """
+    __tablename__ = "investments"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String, nullable=False)  # "gold", "silver", "USD", "GBP", "EUR"
+    amount = Column(Float, nullable=False)  # grams or currency amount
+    buy_price = Column(Float, nullable=False)  # in EGP at time of purchase
+    buy_date = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="investments")
 
 
 class Category(Base):
