@@ -40,6 +40,7 @@ import {
   initSavingsCategory,
   getCurrentUser,
   getSavingsData,
+  getSavingsRates,
   createInvestment,
   deleteInvestment,
   updateSavingsGoal
@@ -248,7 +249,7 @@ const Savings = () => {
         getCategories(),
         getSavingsData(),
         getTransactions(),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/savings/rates`).then(r => r.json())
+        getSavingsRates()
       ]);
       
       setCategories(cats);

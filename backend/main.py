@@ -1247,27 +1247,33 @@ async def fetch_real_time_rates():
             metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=EGP&symbols=XAU,XAG"
             metals_resp = await client.get(metals_url, timeout=10.0)
             if metals_resp.status_code == 200:
-                metals_data = metals_resp.json()
-                if metals_data.get("success"):
-                    ounce_to_gram = 31.1035
-                    gold_ounce = metals_data["rates"].get("XAU")
-                    silver_ounce = metals_data["rates"].get("XAG")
-                    
-                    if gold_ounce:
-                        rates["gold"] = round(gold_ounce / ounce_to_gram, 2)
-                    if silver_ounce:
-                        rates["silver"] = round(silver_ounce / ounce_to_gram, 2)
+                try:
+                    metals_data = metals_resp.json()
+                    if metals_data.get("success") and "rates" in metals_data:
+                        ounce_to_gram = 31.1035
+                        gold_ounce = metals_data["rates"].get("XAU")
+                        silver_ounce = metals_data["rates"].get("XAG")
+                        
+                        if gold_ounce:
+                            rates["gold"] = round(gold_ounce / ounce_to_gram, 2)
+                        if silver_ounce:
+                            rates["silver"] = round(silver_ounce / ounce_to_gram, 2)
+                except Exception as je:
+                    print(f"Error parsing metals data: {je}")
 
             # 2. Currencies (ExchangeRate-API)
             currency_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/EGP"
             currency_resp = await client.get(currency_url, timeout=10.0)
             if currency_resp.status_code == 200:
-                currency_data = currency_resp.json()
-                if currency_data.get("result") == "success":
-                    conv = currency_data.get("conversion_rates", {})
-                    if conv.get("USD"): rates["usd"] = round(1 / conv["USD"], 2)
-                    if conv.get("EUR"): rates["eur"] = round(1 / conv["EUR"], 2)
-                    if conv.get("GBP"): rates["gbp"] = round(1 / conv["GBP"], 2)
+                try:
+                    currency_data = currency_resp.json()
+                    if currency_data.get("result") == "success" and "conversion_rates" in currency_data:
+                        conv = currency_data.get("conversion_rates", {})
+                        if conv.get("USD"): rates["usd"] = round(1 / conv["USD"], 2)
+                        if conv.get("EUR"): rates["eur"] = round(1 / conv["EUR"], 2)
+                        if conv.get("GBP"): rates["gbp"] = round(1 / conv["GBP"], 2)
+                except Exception as je:
+                    print(f"Error parsing currency data: {je}")
             
         RATES_CACHE["data"] = rates
         RATES_CACHE["timestamp"] = now

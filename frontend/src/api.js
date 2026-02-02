@@ -344,6 +344,11 @@ export const getSavingsData = async () => {
   return handleResponse(response);
 };
 
+export const getSavingsRates = async () => {
+  const response = await fetch(`${API_URL}/savings/rates`);
+  return handleResponse(response);
+};
+
 export const createInvestment = async (investmentData) => {
   const token = getToken();
   const response = await authFetch(`/investments?token=${token}`, {
