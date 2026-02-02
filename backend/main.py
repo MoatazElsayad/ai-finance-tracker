@@ -1288,34 +1288,46 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
             return {**rates_data, "last_updated": cached_record.updated_at.isoformat() if cached_record else now_utc.isoformat(), "is_cached": True}
 
         async with httpx.AsyncClient() as client:
-            # 1. Gold & Silver (Metals-API)
-            metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=EGP&symbols=XAU,XAG"
+            # 1. Currencies (ExchangeRate-API) - Fetch first to get USD/EGP for metals conversion
+            currency_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/EGP"
+            currency_resp = await client.get(currency_url, timeout=10.0)
+            usd_to_egp = rates_data["usd"]
+            
+            if currency_resp.status_code == 200:
+                try:
+                    currency_json = currency_resp.json()
+                    if currency_json.get("result") == "success" and "conversion_rates" in currency_json:
+                        conv = currency_json.get("conversion_rates", {})
+                        if conv.get("USD"): 
+                            usd_to_egp = round(1 / conv["USD"], 2)
+                            rates_data["usd"] = usd_to_egp
+                        if conv.get("EUR"): rates_data["eur"] = round(1 / conv["EUR"], 2)
+                        if conv.get("GBP"): rates_data["gbp"] = round(1 / conv["GBP"], 2)
+                except Exception as je:
+                    print(f"Error parsing currency data: {je}")
+
+            # 2. Gold & Silver (Metals-API) - Fetch in USD as per requirement
+            # Most free tiers default to USD base anyway
+            metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=USD&symbols=XAU,XAG"
             metals_resp = await client.get(metals_url, timeout=10.0)
             if metals_resp.status_code == 200:
                 try:
                     metals_json = metals_resp.json()
                     if metals_json.get("success") and "rates" in metals_json:
                         ounce_to_gram = 31.1035
-                        gold_ounce = metals_json["rates"].get("XAU")
-                        silver_ounce = metals_json["rates"].get("XAG")
-                        if gold_ounce: rates_data["gold"] = round(gold_ounce / ounce_to_gram, 2)
-                        if silver_ounce: rates_data["silver"] = round(silver_ounce / ounce_to_gram, 2)
+                        # metals-api returns units of metal per 1 USD if base=USD? 
+                        # Actually, user says: "returns prices per troy ounce in USD by default"
+                        # This implies gold_usd = price of 1 ounce in USD.
+                        gold_usd = metals_json["rates"].get("XAU")
+                        silver_usd = metals_json["rates"].get("XAG")
+                        
+                        if gold_usd: 
+                            # Formula: (price_per_ounce_USD × usd_to_egp_rate) / 31.1035
+                            rates_data["gold"] = round((gold_usd * usd_to_egp) / ounce_to_gram, 2)
+                        if silver_usd: 
+                            rates_data["silver"] = round((silver_usd * usd_to_egp) / ounce_to_gram, 2)
                 except Exception as je:
                     print(f"Error parsing metals data: {je}")
-
-            # 2. Currencies (ExchangeRate-API)
-            currency_url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/EGP"
-            currency_resp = await client.get(currency_url, timeout=10.0)
-            if currency_resp.status_code == 200:
-                try:
-                    currency_json = currency_resp.json()
-                    if currency_json.get("result") == "success" and "conversion_rates" in currency_json:
-                        conv = currency_json.get("conversion_rates", {})
-                        if conv.get("USD"): rates_data["usd"] = round(1 / conv["USD"], 2)
-                        if conv.get("EUR"): rates_data["eur"] = round(1 / conv["EUR"], 2)
-                        if conv.get("GBP"): rates_data["gbp"] = round(1 / conv["GBP"], 2)
-                except Exception as je:
-                    print(f"Error parsing currency data: {je}")
             
         # Update database cache
         new_cache = MarketRatesCache(

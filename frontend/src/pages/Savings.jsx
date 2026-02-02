@@ -692,8 +692,20 @@ const Savings = () => {
                     </div>
                     <h3 className="text-5xl font-black mb-3">
                       {(rates[activeTab === 'currencies' ? 'usd' : activeTab] || 0).toLocaleString()} 
-                      <span className="text-sm font-bold text-slate-500 ml-3">EGP / {activeTab === 'currencies' ? 'USD' : 'g'}</span>
+                      <span className="text-sm font-bold text-slate-500 ml-3">
+                        EGP / {activeTab === 'currencies' ? 'USD' : 'g'}
+                      </span>
                     </h3>
+                    {activeTab === 'gold' && (
+                      <p className="text-xs font-black text-amber-500 uppercase tracking-widest mt-2">
+                        24K Gold: {(rates.gold || 0).toLocaleString()} EGP/g
+                      </p>
+                    )}
+                    {activeTab === 'silver' && (
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">
+                        Pure Silver: {(rates.silver || 0).toLocaleString()} EGP/g
+                      </p>
+                    )}
                     {activeTab === 'currencies' && (
                       <div className="flex gap-4 mt-4">
                         {['EUR', 'GBP'].map(sym => (
@@ -878,6 +890,16 @@ const Savings = () => {
           </div>
         </div>
       )}
+
+      {/* Market Rates Disclaimer */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 pb-12">
+        <div className="flex items-center justify-center gap-2 text-slate-500/60">
+          <AlertCircle className="w-4 h-4" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
+            Market rates are automatically synced 3 times daily (8AM, 2PM, 8PM EET)
+          </span>
+        </div>
+      </div>
     </div>
   );
 };
