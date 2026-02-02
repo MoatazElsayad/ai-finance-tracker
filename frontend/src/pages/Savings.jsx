@@ -12,7 +12,6 @@ import {
   RefreshCw,
   History,
   Info,
-  Gold,
   Wallet,
   Target,
   Trophy,
@@ -71,13 +70,13 @@ const Savings = () => {
     silver: 45,  // EGP per gram
     usd: 48.9,
     eur: 52.8,
-    gbp: 62.1,
+    egp: 1.0,
     changes: {
       gold: 1.2,
       silver: -0.5,
       usd: 0.1,
       eur: 0.3,
-      gbp: -0.2
+      egp: 0
     }
   });
 
