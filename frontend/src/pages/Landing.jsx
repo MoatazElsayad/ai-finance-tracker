@@ -116,15 +116,15 @@ export default function Landing() {
                 <div className="grid grid-cols-3 gap-6 mb-8">
                   <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-5 rounded-3xl border-2 transition-transform hover:scale-105 duration-300`}>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Income</p>
-                    <p className="text-2xl font-black text-emerald-500">£5,240</p>
+                    <p className="text-2xl font-black text-emerald-500">EGP 5,240</p>
                   </div>
                   <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-5 rounded-3xl border-2 transition-transform hover:scale-105 duration-300`}>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Expenses</p>
-                    <p className="text-2xl font-black text-rose-500">£3,180</p>
+                    <p className="text-2xl font-black text-rose-500">EGP 3,180</p>
                   </div>
                   <div className={`${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} p-5 rounded-3xl border-2 transition-transform hover:scale-105 duration-300`}>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Saved</p>
-                    <p className="text-2xl font-black text-amber-500">£2,060</p>
+                    <p className="text-2xl font-black text-amber-500">EGP 2,060</p>
                   </div>
                 </div>
 
@@ -136,7 +136,7 @@ export default function Landing() {
                     <p className={`font-black uppercase tracking-[0.2em] text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>AI Financial Insight</p>
                   </div>
                   <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'} leading-relaxed font-medium italic`}>
-                    "Excellent progress! Your savings rate is strong. The AI suggests reviewing your subscription costs for potential savings of £150/mo."
+                    "Excellent progress! Your savings rate is strong. The AI suggests reviewing your subscription costs for potential savings of EGP 150/mo."
                   </p>
                 </div>
 

@@ -576,7 +576,7 @@ function Dashboard() {
   })), [analytics]);
 
   const dailySpendingData = useMemo(() => {
-    const expenses = transactions.filter(t => t.amount < 0);
+    const expenses = transactions.filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')));
     const daily = {};
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
@@ -625,7 +625,10 @@ function Dashboard() {
       if (!monthly[key]) monthly[key] = { month: d.toLocaleDateString('en-US', { month: 'short' }), income: 0, expenses: 0 };
       
       if (t.amount > 0) {
-        monthly[key].income += t.amount;
+        const isSavings = t.category_name && t.category_name.toLowerCase().includes('savings');
+        if (!isSavings) {
+          monthly[key].income += t.amount;
+        }
       } else {
         // Only include in expenses if NOT a savings transaction
         const isSavings = t.category_name && t.category_name.toLowerCase().includes('savings');

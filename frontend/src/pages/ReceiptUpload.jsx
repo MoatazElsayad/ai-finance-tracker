@@ -394,8 +394,8 @@ export default function ReceiptUpload() {
                         Total Amount (EGP)
                       </label>
                       <div className="relative group">
-                        <span className={`absolute left-5 top-1/2 -translate-y-1/2 font-black text-lg ${isDark ? 'text-slate-500' : 'text-slate-400'} group-focus-within:text-amber-500 transition-colors`}>
-                          £
+                        <span className={`absolute left-5 top-1/2 -translate-y-1/2 font-black text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} group-focus-within:text-amber-500 transition-colors`}>
+                          EGP
                         </span>
                         <input
                           type="number"
@@ -403,7 +403,7 @@ export default function ReceiptUpload() {
                           value={editData.amount}
                           onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
                           placeholder="0.00"
-                          className="input-unified w-full pl-14 pr-6 py-5"
+                          className="input-unified w-full pl-16 pr-6 py-5"
                         />
                       </div>
                     </div>

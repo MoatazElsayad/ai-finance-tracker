@@ -16,7 +16,7 @@ export const CustomTooltip = ({ active, payload, label, theme }) => {
                 <span className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'} text-sm`}>{entry.name}:</span>
               </div>
               <span className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-medium text-sm`}>
-                £{typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+                EGP {typeof entry.value === 'number' ? entry.value.toLocaleString('en-EG', { maximumFractionDigits: 0 }) : entry.value}
               </span>
             </div>
           ))}
@@ -157,7 +157,7 @@ export const SectionHeaderAndSummary = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <StatCard
             label="Total Income"
             value={analytics?.total_income ?? '—'}
@@ -188,6 +188,20 @@ export const SectionHeaderAndSummary = ({
             isCurrency={true}
             analytics={analytics}
           />
+
+          {hasSavingsAccount && (
+            <StatCard
+              label="Savings Vault"
+              value={analytics?.total_savings ?? '—'}
+              icon={<Landmark className="w-6 h-6" />}
+              className="text-blue-600 dark:text-blue-400"
+              color="blue"
+              isDark={isDark}
+              isCurrency={true}
+              analytics={analytics}
+              history={analytics?.recent_savings}
+            />
+          )}
 
           {hasSavingsAccount && (
             <StatCard
@@ -230,10 +244,10 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
       const num = typeof v === 'number' ? v : parseFloat(v);
       return isNaN(num) ? '—' : `${num.toFixed(1)}%`;
     }
-    const formatted = Math.abs(v || 0)?.toLocaleString('en-GB', { 
+    const formatted = Math.abs(v || 0)?.toLocaleString('en-EG', { 
       maximumFractionDigits: 0 
     }) || '0';
-    return `£${formatted}`;
+    return `EGP ${formatted}`;
   };
 
   const getTopUpSuggestion = () => {
@@ -244,7 +258,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
     if (rate < 20 && availableBalance > 100) {
       const suggestedAmount = Math.min(availableBalance * 0.3, 500);
       return {
-        message: `Boost your rate! Move £${Math.round(suggestedAmount)} to your vault.`,
+        message: `Boost your rate! Move EGP ${Math.round(suggestedAmount)} to your vault.`,
         type: 'boost'
       };
     }
@@ -294,11 +308,18 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
                     {txn.description.split('||notes||')[0]}
                   </span>
                   <span className={`text-[9px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {new Date(txn.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    {new Date(txn.date).toLocaleDateString('en-EG', { day: 'numeric', month: 'short' })}
                   </span>
                 </div>
-                <span className={`text-xs font-black ${txn.amount > 0 ? 'text-emerald-500' : 'text-blue-400'}`}>
-                  {txn.amount > 0 ? '+' : ''}{formatValue(txn.amount)}
+                <span className={`text-xs font-black ${
+                  label === 'Savings Vault' 
+                    ? 'text-blue-500'
+                    : (txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500')
+                }`}>
+                  {label === 'Savings Vault'
+                    ? (txn.amount < 0 ? '+' : '-')
+                    : (txn.amount > 0 ? '+' : '-')
+                  }EGP {Math.abs(txn.amount).toLocaleString()}
                 </span>
               </div>
             ))}
@@ -450,7 +471,7 @@ export const MainChartsSection = ({ theme, barData, pieData }) => {
                     fontWeight="bold"
                     tickLine={false} 
                     axisLine={false} 
-                    tickFormatter={(value) => `£${value}`} 
+                    tickFormatter={(value) => `EGP ${value}`} 
                   />
                   <Tooltip content={<CustomTooltip theme={theme} />} cursor={{fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'}} />
                   <Bar dataKey="value" radius={[10, 10, 0, 0]} maxBarSize={60}>
@@ -579,7 +600,7 @@ export const SpendingTrendsSection = ({ theme, dailySpendingData, avgDailySpendi
                       fontWeight="bold"
                       tickLine={false} 
                       axisLine={false} 
-                      tickFormatter={(value) => `£${value}`} 
+                      tickFormatter={(value) => `EGP ${value}`} 
                     />
                     <Tooltip content={<CustomTooltip theme={theme} />} />
                     <Line 
@@ -623,7 +644,7 @@ export const SpendingTrendsSection = ({ theme, dailySpendingData, avgDailySpendi
                     fontWeight="bold"
                     tickLine={false} 
                     axisLine={false} 
-                    tickFormatter={(value) => `£${value}`} 
+                    tickFormatter={(value) => `EGP ${value}`} 
                   />
                   <Tooltip content={<CustomTooltip theme={theme} />} />
                   <Bar dataKey="amount" radius={[8, 8, 0, 0]} maxBarSize={40}>
@@ -673,7 +694,7 @@ export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthl
                 <BarChart data={monthlyComparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} syncId="dashboardSync">
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} vertical={false} />
                   <XAxis dataKey="month" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} dy={10} />
-                  <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} />
+                  <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} tickFormatter={(value) => `EGP ${value}`} />
                   <Tooltip content={<CustomTooltip theme={theme} />} />
                   <Legend verticalAlign="top" align="right" iconType="circle" />
                   <Bar dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} name="Income" maxBarSize={30} />
@@ -706,15 +727,15 @@ export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthl
                     <AreaChart data={cumulativeSavingsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} syncId="dashboardSync">
                       <defs>
                         <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} vertical={false} />
                       <XAxis dataKey="date" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} dy={10} />
-                      <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} />
+                      <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} tickFormatter={(value) => `EGP ${value}`} />
                       <Tooltip content={<CustomTooltip theme={theme} />} />
-                      <Area type="monotone" dataKey="savings" stroke="#f59e0b" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={4} dot={{ fill: '#f59e0b', r: 4, strokeWidth: 2, stroke: isDark ? '#1e293b' : '#fff' }} />
+                      <Area type="monotone" dataKey="savings" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={4} dot={{ fill: '#3b82f6', r: 4, strokeWidth: 2, stroke: isDark ? '#1e293b' : '#fff' }} />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -1094,9 +1115,29 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className={`text-xl font-black ${txn.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {txn.amount > 0 ? '+' : ''}{Math.abs(txn.amount).toLocaleString('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).replace('EGP', '£')}
-                          </p>
+                          {(() => {
+                            const isSavings = txn.category_name && txn.category_name.toLowerCase().includes('savings');
+                            const isPositive = txn.amount > 0;
+                            
+                            // For savings: negative amount = deposit (+ to vault), positive = withdrawal (- from vault)
+                            // But for the general activity list, we should probably stick to what it does to the MAIN balance
+                            // or make it clear. Let's use different colors for savings to distinguish them.
+                            
+                            let displayColor = isPositive ? 'text-emerald-400' : 'text-rose-400';
+                            let displaySign = isPositive ? '+' : '-';
+                            
+                            if (isSavings) {
+                              // If it's a savings transaction, let's make it blue to indicate a "transfer"
+                              // but keep the sign relative to the MAIN balance
+                              displayColor = 'text-blue-500';
+                            }
+
+                            return (
+                              <p className={`text-xl font-black ${displayColor}`}>
+                                {displaySign}{Math.abs(txn.amount).toLocaleString('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 })}
+                              </p>
+                            );
+                          })()}
                           <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-400'} mt-1`}>
                             {new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </p>

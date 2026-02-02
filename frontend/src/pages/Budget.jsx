@@ -3,18 +3,18 @@
  * Dark Mode Finance Tracker - Professional budget management with AI insights
  */
 import { useState, useEffect } from 'react';
-import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction, initSavingsCategory, getCurrentUser } from '../api';
+import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction, getCurrentUser } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
-import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy, History, Landmark, ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle } from 'lucide-react';
+import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy, History, ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle } from 'lucide-react';
 
 // Dark mode chart colors - professional finance palette with unified design
 const CHART_COLORS = {
   income: '#10b981', // emerald-500
   expense: '#ef4444', // red-500
-  savings: '#f59e0b', // amber-500
-  accent: '#f59e0b',  // amber-500
+  savings: '#3b82f6', // blue-500
+  accent: '#3b82f6',  // blue-500
   budget: '#6366f1',     // Indigo 500 for budget
   actual: '#f43f5e',     // Rose 500 for actual spending
   overBudget: '#f59e0b', // Amber 500 for over budget
@@ -53,7 +53,7 @@ const CustomTooltipComponent = (theme) => ({ active, payload, label }) => {
                 <span className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-sm font-bold`}>{entry.name}:</span>
               </div>
               <span className={`${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'} font-black text-sm`}>
-                  £{typeof entry.value === 'number' ? entry.value.toLocaleString('en-GB', { maximumFractionDigits: 0 }) : entry.value}
+                  {entry.value.toLocaleString('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 })}
                 </span>
             </div>
           ))}
@@ -63,8 +63,6 @@ const CustomTooltipComponent = (theme) => ({ active, payload, label }) => {
   }
   return null;
 };
-
-// Get model info (name and icon)
 const getModelInfo = (modelId) => {
   if (!modelId) return { name: 'AI Model', logo: '🤖', color: 'amber' };
 
@@ -164,39 +162,17 @@ function BudgetPlanning() {
   const [budgetModelUsed, setBudgetModelUsed] = useState(null);
   const [currentTryingBudgetModel, setCurrentTryingBudgetModel] = useState(null);
   const [budgetInsightsLoading, setBudgetInsightsLoading] = useState(false);
-  const [savingsAmount, setSavingsAmount] = useState('');
-  const [showSavingsHistory, setShowSavingsHistory] = useState(false);
-  const [isAddingSavings, setIsAddingSavings] = useState(false);
-  const [isWithdrawingSavings, setIsWithdrawingSavings] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
-  const [isInitializingSavings, setIsInitializingSavings] = useState(false);
   const { theme } = useTheme();
 
-  // Check if savings category exists
+  // Check if categories are loaded
   useEffect(() => {
-    console.log('🔄 Categories updated, checking for savings category...');
-    if (categories && categories.length > 0) {
-      const savingsCat = categories.find(c => c.name && c.name.toLowerCase().includes('savings'));
-      console.log('🔍 Savings category check:', savingsCat ? `FOUND: ${savingsCat.name}` : 'NOT FOUND');
-      
-      if (savingsCat) {
-        setHasSavingsAccount(true);
-      } else if (!isInitializingSavings) {
-        // Only set to false if we are not currently initializing one
-        console.log('⚠️ No savings category in current categories list and not initializing');
-        setHasSavingsAccount(false);
-      }
-    } else if (categories && !isInitializingSavings) {
-      console.log('📁 Categories list is empty and not initializing');
-      setHasSavingsAccount(false);
-    }
-  }, [categories, isInitializingSavings]);
+    console.log('🔄 Categories updated:', categories.length);
+  }, [categories]);
 
   // Log state changes for debugging
   useEffect(() => {
-    console.log('💎 hasSavingsAccount state changed to:', hasSavingsAccount);
-  }, [hasSavingsAccount]);
+    console.log('💎 Selected month changed to:', selectedMonth);
+  }, [selectedMonth]);
 
 
   useEffect(() => {
@@ -257,38 +233,26 @@ function BudgetPlanning() {
       
       console.log(`🔍 Data loaded. Total transactions: ${allTransactions.length}, Period transactions: ${filteredTransactions.length}`);
 
-      // Calculate Available Balance (Net Savings) for Sidebar
+  // Calculate Available Balance for Sidebar
       const totalIncome = allTransactions
-        .filter(t => t.amount > 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+        .filter(t => t.amount > 0)
         .reduce((sum, t) => sum + t.amount, 0);
       const actualSpending = allTransactions
-        .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
+        .filter(t => t.amount < 0)
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-      const currentVaultBalance = allTransactions
-          .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
-          .reduce((sum, t) => sum + (-t.amount), 0);
       
-      const netSavings = totalIncome - actualSpending - currentVaultBalance;
+      const availableBalance = totalIncome - actualSpending;
 
       setAnalytics(analyticsData);
-      setTransactions(allTransactions); // Keep all for total savings calculation
+      setTransactions(allTransactions); 
       setBudgets(budgetsData);
-      
-      // Check for savings category right here in loadData to be absolutely sure
-      const savingsCat = categoriesData.find(c => c.name && c.name.toLowerCase().includes('savings'));
-      console.log('🔍 loadData: checking for savings category in fresh data:', savingsCat ? `${savingsCat.name} (ID: ${savingsCat.id})` : 'NO');
-      if (savingsCat) {
-        setHasSavingsAccount(true);
-      }
-
       setCategories(categoriesData);
-      console.log('📊 Loaded data successfully. Categories count:', categoriesData.length);
       
       // Update local user state for sidebar
       if (userData) {
         const userWithBalance = {
           ...userData,
-          available_balance: netSavings
+          available_balance: availableBalance
         };
         setUser(userWithBalance);
         
@@ -306,77 +270,11 @@ function BudgetPlanning() {
     }
   };
 
-  const handleOpenSavingsBank = async () => {
-    setIsInitializingSavings(true);
-    try {
-      console.log('🚀 Attempting to initialize savings category...');
-      const token = localStorage.getItem('token');
-      console.log('🔑 Current token exists:', !!token);
-      
-      const result = await initSavingsCategory();
-      console.log('✅ Savings category initialization result:', result);
-      
-      // Update categories state immediately with the new category
-      if (result && result.id) {
-        console.log('✨ Adding new savings category to state');
-        const newCategory = {
-          id: result.id,
-          name: result.name || 'Savings',
-          type: result.type || 'expense',
-          icon: result.icon || '🏦',
-          is_custom: true
-        };
-        
-        setCategories(prev => {
-          if (prev.some(c => c.id === newCategory.id)) return prev;
-          return [...prev, newCategory];
-        });
-        
-        // Explicitly set this to true before calling loadData
-        setHasSavingsAccount(true);
-      }
-      
-      console.log('🔄 Calling loadData() to refresh everything...');
-      await loadData(false); 
-      
-      // Force set it to true again after loadData just in case loadData set it to false
-      const checkAgain = await getCategories();
-      if (checkAgain.some(c => c.name && c.name.toLowerCase().includes('savings'))) {
-        setHasSavingsAccount(true);
-      }
-      
-      console.log('✅ Savings initialization and refresh complete');
-      console.log('✅ loadData() completed successfully');
-      
-      setToastMessage('Savings Bank opened successfully!');
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-    } catch (error) {
-      console.error('❌ Failed to initialize savings:', error);
-      // Log more details about the error if available
-      if (error.message) {
-        console.error('Error message:', error.message);
-      }
-      
-      // Check for specific error types
-      let errorMsg = error.message || 'Unknown error';
-      if (errorMsg.includes('Unexpected end of JSON input')) {
-        errorMsg = 'Server returned an empty or invalid response. Please check if the backend is running correctly.';
-      } else if (errorMsg.includes('404')) {
-        errorMsg = 'API endpoint not found. Please ensure the backend is up to date.';
-      }
-      
-      alert(`Failed to open savings bank: ${errorMsg}. Please try again.`);
-    } finally {
-      setIsInitializingSavings(false);
-    }
-  };
-
-  // Add function to get currency symbol (already defined in some pages, making it explicit here)
+  // Add function to get currency symbol
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-GB', {
+    return new Intl.NumberFormat('en-EG', {
       style: 'currency',
-      currency: 'GBP',
+      currency: 'EGP',
       maximumFractionDigits: 0
     }).format(amount);
   };
@@ -730,119 +628,6 @@ function BudgetPlanning() {
     setNewBudget({ category_id: '', amount: '' });
   };
 
-  const handleAddSavings = async () => {
-    if (!savingsAmount || isAddingSavings) return;
-
-    const savingsCategory = categories.find(c => 
-      c.name && c.name.toLowerCase().includes('savings')
-    );
-    
-    if (!savingsCategory) {
-      console.error('Categories available:', categories);
-      alert('Savings account not found. Please click "Open Your Savings Bank" first.');
-      return;
-    }
-
-    setIsAddingSavings(true);
-    try {
-      const amountValue = Math.abs(parseFloat(savingsAmount));
-      const today = new Date().toISOString().split('T')[0];
-      
-      const newTx = await createTransaction(
-        savingsCategory.id,
-        -amountValue, // Count as expense/outflow from main balance
-        'Savings Deposit',
-        today
-      );
-
-      // Create a transaction object that matches the structure returned by the API
-      // but ensure it has the category_name for the filter to work immediately
-      const optimizedTx = {
-        ...newTx,
-        category_name: savingsCategory.name,
-        category_id: savingsCategory.id
-      };
-
-      // Proactively update transactions list for immediate UI feedback
-      setTransactions(prev => [optimizedTx, ...prev]);
-      
-      setSavingsAmount('');
-      setToastMessage('Deposit added to Vault!');
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-  
-        // Reload all data in background to sync everything (analytics, balance, etc)
-        loadData(false);
-        clearInsightsCache();
-      } catch (error) {
-      console.error('Failed to add savings:', error);
-      alert(error.message);
-    } finally {
-      setIsAddingSavings(false);
-    }
-  };
-
-  const handleWithdrawSavings = async () => {
-    if (!withdrawAmount || isWithdrawingSavings) return;
-
-    const savingsCategory = categories.find(c => 
-      c.name && c.name.toLowerCase().includes('savings')
-    );
-    
-    if (!savingsCategory) {
-      alert('Savings account not found.');
-      return;
-    }
-
-    setIsWithdrawingSavings(true);
-    try {
-      const amountValue = Math.abs(parseFloat(withdrawAmount));
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Record as a positive transaction in savings category
-      // This increases "Available Balance" and decreases "Savings Vault"
-      const newTx = await createTransaction(
-        savingsCategory.id,
-        amountValue, // Positive = Withdrawal from vault to available balance
-        'Savings Withdrawal/Spend',
-        today
-      );
-
-      const optimizedTx = {
-        ...newTx,
-        category_name: savingsCategory.name,
-        category_id: savingsCategory.id
-      };
-
-      setTransactions(prev => [optimizedTx, ...prev]);
-      
-      setWithdrawAmount('');
-      setToastMessage('Withdrawn from Vault!');
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-  
-      loadData(false);
-      clearInsightsCache();
-    } catch (error) {
-      console.error('Failed to withdraw savings:', error);
-      alert(error.message);
-    } finally {
-      setIsWithdrawingSavings(false);
-    }
-  };
-
-  const savingsTransactions = transactions.filter(t => {
-    // Check by name first (more reliable if state just updated)
-    if (t.category_name && t.category_name.toLowerCase().includes('savings')) return true;
-    
-    // Fallback to category lookup
-    const cat = categories.find(c => Number(c.id) === Number(t.category_id));
-    return cat && cat.name && cat.name.toLowerCase().includes('savings');
-  });
-
-    // Total dedicated savings (deposits minus withdrawals)
-    const totalSavings = savingsTransactions.reduce((sum, t) => sum + (-t.amount), 0);
-
   const changeMonth = (offset) => {
     let newMonth = selectedMonth.month + offset;
     let newYear = selectedMonth.year;
@@ -881,7 +666,7 @@ function BudgetPlanning() {
     );
   }
 
-  console.log('🎨 Rendering BudgetPlanning. hasSavingsAccount:', hasSavingsAccount, 'categories count:', categories.length);
+  console.log('🎨 Rendering BudgetPlanning. categories count:', categories.length);
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27] text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-500 overflow-x-hidden selection:bg-amber-500/30`}>
@@ -1008,7 +793,7 @@ function BudgetPlanning() {
                     >
                       {card.isPercent 
                         ? `${card.value.toFixed(0)}%` 
-                        : `£${card.value.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`}
+                        : `EGP ${card.value.toLocaleString('en-EG', { maximumFractionDigits: 0 })}`}
                     </p>
                     <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
                       {card.desc}
@@ -1021,185 +806,6 @@ function BudgetPlanning() {
                   />
                 </div>
               ))}
-            </div>
-
-            {/* Savings Bank Button OR Savings Vault - Shown only when no savings account exists, replaced by vault after */}
-            <div className="mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700">
-              {!hasSavingsAccount ? (
-                <button
-                  onClick={handleOpenSavingsBank}
-                  disabled={isInitializingSavings}
-                  className={`w-full relative overflow-hidden group p-10 rounded-[3rem] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center gap-6 ${
-                    theme === 'dark' 
-                      ? 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/10' 
-                      : 'bg-blue-50/50 border-blue-200 hover:border-blue-300 hover:bg-blue-50'
-                  }`}
-                >
-                  <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-100'} text-blue-500 group-hover:scale-110 transition-transform duration-500 shadow-2xl shadow-blue-500/20`}>
-                    {isInitializingSavings ? (
-                      <RefreshCw className="w-10 h-10 animate-spin" />
-                    ) : (
-                      <Landmark className="w-10 h-10" />
-                    )}
-                  </div>
-                  <div className="text-center">
-                    <span className={`block text-xs font-black uppercase tracking-[0.4em] mb-3 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
-                      Time to save fella?
-                    </span>
-                    <h3 className={`text-3xl font-black tracking-tight mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                      {isInitializingSavings ? 'Opening Your Vault...' : 'Open Your Savings Bank'}
-                    </h3>
-                    <p className={`text-lg font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-md mx-auto`}>
-                      Create a dedicated space for your savings and start building your financial future today.
-                    </p>
-                  </div>
-                  {/* Hover Shine Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-                </button>
-              ) : (
-                /* Savings Vault Card - Replaces the button once bank is opened */
-                <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark border-blue-500/20' : 'card-unified-light border-blue-200'} p-10 relative overflow-hidden group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-700`}>
-                  {/* Decorative Bank Background */}
-                  <Landmark className={`absolute -right-12 -bottom-12 w-64 h-64 ${theme === 'dark' ? 'text-blue-500/5' : 'text-blue-500/10'} -rotate-12 group-hover:rotate-0 transition-all duration-1000`} />
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
-                    {/* Left side: Info and Total */}
-                    <div className="lg:col-span-3 space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/40 rotate-3 group-hover:rotate-0 transition-all duration-500">
-                          <Landmark className="w-8 h-8 text-white" strokeWidth={2.5} />
-                        </div>
-                        <div>
-                          <h3 className={`text-xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'} uppercase`}>
-                            Savings <span className="text-blue-500">Vault</span>
-                          </h3>
-                        </div>
-                      </div>
-
-                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-blue-500/20' : 'border-blue-100'} shadow-inner`}>
-                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Total Balance</p>
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="text-3xl font-black text-blue-500">£{totalSavings.toLocaleString()}</span>
-                          <TrendingUp className="w-5 h-5 text-emerald-500" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Middle: Deposit & Withdraw Forms */}
-                    <div className="lg:col-span-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Deposit Section */}
-                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl relative overflow-hidden group/deposit`}>
-                        <div className="absolute inset-0 bg-emerald-500/5 translate-y-full group-hover/deposit:translate-y-0 transition-transform duration-700" />
-                        <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Deposit Funds</label>
-                        <div className="flex flex-col gap-3 relative z-10">
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-emerald-500">£</span>
-                            <input
-                              type="number"
-                              value={savingsAmount}
-                              onChange={(e) => setSavingsAmount(e.target.value)}
-                              placeholder="Amount"
-                              className="input-unified w-full !pl-10 !py-4 !rounded-xl text-sm"
-                            />
-                          </div>
-                          <button
-                            onClick={handleAddSavings}
-                            disabled={!savingsAmount || isAddingSavings}
-                            className={`btn-primary-unified !bg-emerald-600 hover:!bg-emerald-700 !rounded-xl !py-4 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
-                          >
-                            {isAddingSavings ? (
-                              <RefreshCw className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <ArrowUpRight className="w-5 h-5" strokeWidth={3} />
-                            )}
-                            <span className="font-black uppercase tracking-[0.1em] text-xs">Deposit</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Withdraw Section */}
-                      <div className={`p-6 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} shadow-xl relative overflow-hidden group/withdraw`}>
-                        <div className="absolute inset-0 bg-rose-500/5 translate-y-full group-hover/withdraw:translate-y-0 transition-transform duration-700" />
-                        <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Withdraw / Spend</label>
-                        <div className="flex flex-col gap-3 relative z-10">
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-rose-500">£</span>
-                            <input
-                              type="number"
-                              value={withdrawAmount}
-                              onChange={(e) => setWithdrawAmount(e.target.value)}
-                              placeholder="Amount"
-                              className="input-unified w-full !pl-10 !py-4 !rounded-xl text-sm"
-                            />
-                          </div>
-                          <button
-                            onClick={handleWithdrawSavings}
-                            disabled={!withdrawAmount || isWithdrawingSavings}
-                            className={`btn-primary-unified !bg-rose-600 hover:!bg-rose-700 !rounded-xl !py-4 shadow-lg shadow-rose-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
-                          >
-                            {isWithdrawingSavings ? (
-                              <RefreshCw className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <ArrowDownLeft className="w-5 h-5" strokeWidth={3} />
-                            )}
-                            <span className="font-black uppercase tracking-[0.1em] text-xs">Withdraw</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right side: History */}
-                    <div className="lg:col-span-3 flex flex-col gap-4">
-                      <button
-                        onClick={() => setShowSavingsHistory(!showSavingsHistory)}
-                        className={`flex items-center justify-between p-5 rounded-[1.5rem] border-2 transition-all duration-500 ${
-                          showSavingsHistory 
-                            ? 'bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/20' 
-                            : `${theme === 'dark' ? 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-blue-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-blue-600'}`
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <History className="w-5 h-5" />
-                          <span className="font-black uppercase tracking-[0.1em] text-xs">History</span>
-                        </div>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${showSavingsHistory ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'}`}>
-                          {savingsTransactions.length}
-                        </span>
-                      </button>
-
-                      {showSavingsHistory && (
-                        <div className={`p-5 rounded-[1.5rem] ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white'} border-2 border-blue-500/20 max-h-[180px] overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500`}>
-                          <div className="space-y-3">
-                            {savingsTransactions.length > 0 ? (
-                              [...savingsTransactions].reverse().map((t, i) => (
-                                <div key={i} className="flex items-center justify-between border-b border-slate-700/10 pb-2 last:border-0">
-                                  <div>
-                                    <p className={`text-[10px] font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                      {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                    </p>
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase">{t.amount < 0 ? 'Deposit' : 'Withdrawal'}</p>
-                                  </div>
-                                  <span className={`text-xs font-black ${t.amount < 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {t.amount < 0 ? '+' : '-'}£{Math.abs(t.amount).toLocaleString()}
-                                  </span>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-[10px] font-bold text-slate-500 text-center py-4 uppercase">Empty Vault</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-8 flex justify-center">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] text-center max-w-lg leading-relaxed opacity-60">
-                      Spending from the vault decreases your savings balance but doesn't affect your monthly expense budget tracking.
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* AI Budget Insights - Smart Caching */}
@@ -1386,7 +992,7 @@ function BudgetPlanning() {
                       fontWeight="bold"
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={(value) => `£${value}`}
+                      tickFormatter={(value) => `EGP ${value}`}
                     />
                     <Tooltip content={CustomTooltipComponent(theme)} cursor={{ fill: theme === 'dark' ? '#334155' : '#f1f5f9', opacity: 0.4 }} />
                     <Legend
@@ -1493,9 +1099,9 @@ function BudgetPlanning() {
                     </select>
                   </div>
                   <div>
-                    <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-3`}>Monthly Budget (£)</label>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-3`}>Monthly Budget (EGP)</label>
                     <div className="relative">
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-amber-500">£</span>
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-amber-500">EGP</span>
                       <input
                         type="number"
                         step="0.01"
@@ -1584,13 +1190,13 @@ function BudgetPlanning() {
                             </div>
                           </td>
                           <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                            £{budget.budgeted.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
+                            EGP {budget.budgeted.toLocaleString('en-EG', { maximumFractionDigits: 0 })}
                           </td>
                           <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                            £{budget.actual.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
+                            EGP {budget.actual.toLocaleString('en-EG', { maximumFractionDigits: 0 })}
                           </td>
-                          <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${budget.remaining > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            £{budget.remaining.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
+                          <td className={`px-8 py-6 text-right font-black text-lg tracking-tight ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                            EGP {budget.remaining.toLocaleString('en-EG', { maximumFractionDigits: 0 })}
                           </td>
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-4 min-w-[150px]">

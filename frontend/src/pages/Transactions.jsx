@@ -383,7 +383,7 @@ function Transactions() {
               stat.color === 'amber' ? 'text-amber-500' : 
               'text-blue-500'
             }`}>
-              {stat.label === 'Total Count' ? stat.value : `£${Math.abs(stat.value).toLocaleString()}`}
+              {stat.label === 'Total Count' ? stat.value : `EGP ${Math.abs(stat.value).toLocaleString()}`}
             </p>
           </div>
         ))}
@@ -453,9 +453,9 @@ function Transactions() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               <div className="space-y-4">
-                <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Amount (£)</label>
+                <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Amount (EGP)</label>
                 <div className="relative group">
-                  <span className={`absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black ${isExpense ? 'text-rose-500' : 'text-emerald-500'} transition-colors duration-500`}>£</span>
+                  <span className={`absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black ${isExpense ? 'text-rose-500' : 'text-emerald-500'} transition-colors duration-500`}>EGP</span>
                   <input
                     type="number"
                     step="0.01"
@@ -716,11 +716,13 @@ function Transactions() {
                           </span>
                         </td>
                         <td className={`px-10 py-8 text-right font-black text-2xl ${
-                          txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500'
+                          isSavings 
+                            ? 'text-blue-500' 
+                            : (txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500')
                         }`}>
                           <div className="flex items-center justify-end gap-2">
                             <span>{txn.amount > 0 ? '+' : '-'}</span>
-                            <span>£{Math.abs(txn.amount).toLocaleString()}</span>
+                            <span>EGP {Math.abs(txn.amount).toLocaleString()}</span>
                           </div>
                         </td>
                         <td className="px-10 py-8 text-center">

@@ -533,11 +533,11 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Target Amount (EGP)</label>
               <div className="relative">
-                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-amber-500">£</span>
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-amber-500 text-[10px]">EGP</span>
                 <input
                   type="number"
                   {...register('target_amount', { valueAsNumber: true })}
-                  className={`w-full p-6 pl-12 rounded-[1.5rem] border-2 transition-all outline-none font-black text-xl ${
+                  className={`w-full p-6 pl-14 rounded-[1.5rem] border-2 transition-all outline-none font-black text-xl ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                       : 'bg-slate-50 border-slate-200 focus:border-amber-500'
@@ -550,11 +550,11 @@ const GoalFormModal = ({ goal, categories, isDark, onClose, onSuccess }) => {
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-[0.2em] ml-2 opacity-50">Starting Balance</label>
               <div className="relative">
-                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-400">£</span>
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-400 text-[10px]">EGP</span>
                 <input
                   type="number"
                   {...register('current_amount', { valueAsNumber: true })}
-                  className={`w-full p-6 pl-12 rounded-[1.5rem] border-2 transition-all outline-none font-black text-xl ${
+                  className={`w-full p-6 pl-14 rounded-[1.5rem] border-2 transition-all outline-none font-black text-xl ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 focus:border-amber-500' 
                       : 'bg-slate-50 border-slate-200 focus:border-amber-500'

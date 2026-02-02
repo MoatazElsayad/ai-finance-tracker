@@ -1808,7 +1808,7 @@ def _plot_monthly_trend(trend: Dict[str, List]) -> bytes:
     
     # Format Y axis as currency
     def currency_formatter(x, pos):
-        return f'£{x:,.0f}'
+        return f'EGP {x:,.0f}'
     ax.yaxis.set_major_formatter(FuncFormatter(currency_formatter))
     
     ax.legend(frameon=True, facecolor='white', framealpha=0.8, loc='upper left', fontsize=9)
@@ -2012,9 +2012,9 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
             Paragraph("Savings Rate", styles["StatLabel"]),
         ],
         [
-            Paragraph(f"£{summary['income']:,.0f}", ParagraphStyle('V1', parent=styles['StatValue'], textColor=income_green)),
-            Paragraph(f"£{summary['expenses']:,.0f}", ParagraphStyle('V2', parent=styles['StatValue'], textColor=expense_red)),
-            Paragraph(f"£{summary['net']:,.0f}", styles['StatValue']),
+            Paragraph(f"EGP {summary['income']:,.0f}", ParagraphStyle('V1', parent=styles['StatValue'], textColor=income_green)),
+            Paragraph(f"EGP {summary['expenses']:,.0f}", ParagraphStyle('V2', parent=styles['StatValue'], textColor=expense_red)),
+            Paragraph(f"EGP {summary['net']:,.0f}", styles['StatValue']),
             Paragraph(f"{summary['savings_rate']:.1f}%", styles['StatValue']),
         ]
     ]
@@ -2051,8 +2051,8 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
             progress = (g['current_amount'] / g['target_amount'] * 100) if g['target_amount'] > 0 else 0
             goal_rows.append([
                 g['name'],
-                f"£{g['target_amount']:,.0f}",
-                f"£{g['current_amount']:,.0f}",
+                f"EGP {g['target_amount']:,.0f}",
+                f"EGP {g['current_amount']:,.0f}",
                 f"{progress:.1f}%",
                 g['target_date'].strftime("%d %b %Y") if hasattr(g['target_date'], 'strftime') else str(g['target_date'])
             ])
@@ -2141,8 +2141,8 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
             
             bs_rows.append([
                 b["category"],
-                f"£{b.get('budget', 0):,.2f}",
-                f"£{b.get('actual', 0):,.2f}",
+                f"EGP {b.get('budget', 0):,.2f}",
+                f"EGP {b.get('actual', 0):,.2f}",
                 f"{used_pct:.1f}%",
                 status
             ])
@@ -2188,7 +2188,7 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
             t.date.strftime("%d %b"),
             (t.description or "-")[:40],
             cat_name,
-            f"£{abs(t.amount):,.2f}",
+            f"EGP {abs(t.amount):,.2f}",
             typ
         ])
         
@@ -2220,7 +2220,7 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     # Subtotal line
     subtotal = sum(t.amount for t in transactions)
     story.append(Spacer(1, 12))
-    story.append(Paragraph(f"<b>Net Period Flow:</b> <font color='{income_green if subtotal > 0 else expense_red}'>£{subtotal:,.2f}</font>", styles["NormalFancy"]))
+    story.append(Paragraph(f"<b>Net Period Flow:</b> <font color='{income_green if subtotal > 0 else expense_red}'>EGP {subtotal:,.2f}</font>", styles["NormalFancy"]))
 
     # Build PDF with custom footer
     doc.build(story, onFirstPage=my_footer, onLaterPages=my_footer)

@@ -18,6 +18,7 @@ import Goals from './pages/Goals';
 import Landing from "./pages/Landing";
 import Profile from './pages/Profile';
 import ReceiptUpload from './pages/ReceiptUpload';
+import Savings from './pages/Savings';
 import About from './pages/About';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
@@ -57,6 +58,7 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/budget" element={<Budget />} />
+          <Route path="/savings" element={<Savings />} />
           <Route path="/goals" element={<Goals />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/receipt-upload" element={<ReceiptUpload />} />
@@ -174,9 +176,10 @@ function Layout() {
             <div className="hidden lg:flex gap-8">
               {[
                 { to: '/dashboard', label: 'Dashboard' },
-                { to: '/transactions', label: 'Transactions' },
-                { to: '/budget', label: 'Budget' }
-              ].map((item) => (
+            { to: '/transactions', label: 'Transactions' },
+            { to: '/budget', label: 'Budget' },
+            { to: '/savings', label: 'Savings' }
+          ].map((item) => (
                 <Link 
                   key={item.to}
                   to={item.to} 
@@ -249,7 +252,7 @@ function Layout() {
                         {user?.email?.split('@')[0]}
                       </span>
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'} border border-amber-500/20`}>
-                        £{(user?.available_balance || 0).toLocaleString('en-GB', { maximumFractionDigits: 0 })}
+                        {(user?.available_balance || 0).toLocaleString('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 })}
                       </span>
                     </div>
                   </div>

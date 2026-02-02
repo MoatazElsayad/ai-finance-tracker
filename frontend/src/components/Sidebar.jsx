@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info, Target } from 'lucide-react';
+import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info, Target, Landmark } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useSidebarCollapsed } from '../context/SidebarContext';
 import { logout } from '../api';
@@ -36,6 +36,7 @@ function Sidebar({ user: initialUser }) {
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { path: '/transactions', label: 'Transactions', icon: CreditCard },
     { path: '/budget', label: 'Budget', icon: Wallet },
+    { path: '/savings', label: 'Savings', icon: Landmark },
     { path: '/goals', label: 'Savings Goals', icon: Target },
     { path: '/receipt-upload', label: 'Receipt Upload', icon: ImagePlus },
     { path: '/profile', label: 'Profile', icon: User },
@@ -59,9 +60,9 @@ function Sidebar({ user: initialUser }) {
 
   // Format currency helper
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-GB', {
+    return new Intl.NumberFormat('en-EG', {
       style: 'currency',
-      currency: 'GBP',
+      currency: 'EGP',
       maximumFractionDigits: 0
     }).format(amount || 0);
   };
