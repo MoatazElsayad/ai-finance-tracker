@@ -40,6 +40,21 @@ def init_database():
                 print("Adding 'monthly_savings_goal' column to users table...")
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN monthly_savings_goal FLOAT DEFAULT 0.0")
                 
+            # Check market_rates_cache columns for expanded currency support
+            rates_cols = conn.exec_driver_sql("PRAGMA table_info(market_rates_cache)").fetchall()
+            rates_col_names = [c[1] for c in rates_cols]
+            
+            new_currencies = [
+                "sar_to_egp", "aed_to_egp", "kwd_to_egp", "qar_to_egp", 
+                "bhd_to_egp", "omr_to_egp", "jod_to_egp", "try_to_egp", 
+                "cad_to_egp", "aud_to_egp"
+            ]
+            
+            for curr_col in new_currencies:
+                if curr_col not in rates_col_names:
+                    print(f"Adding '{curr_col}' column to market_rates_cache table...")
+                    conn.exec_driver_sql(f"ALTER TABLE market_rates_cache ADD COLUMN {curr_col} FLOAT")
+                    
         except Exception as e:
             print(f"Migration error: {e}")
     
