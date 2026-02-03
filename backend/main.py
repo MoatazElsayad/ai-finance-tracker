@@ -24,7 +24,7 @@ import asyncio
 
 # Import local modules
 from database import get_db, init_database
-from models import User, Transaction, Category, Budget, Goal, Investment, MarketRatesCache
+from models import User, Transaction, Category, Budget, Goal, Investment, MarketRatesCache, SavingsGoal
 from dotenv import load_dotenv
 from ocr_utils import parse_receipt
 from fastapi import File, UploadFile
@@ -140,6 +140,10 @@ class InvestmentCreate(BaseModel):
 
 class SavingsGoalUpdate(BaseModel):
     monthly_goal: float
+
+class SavingsGoalLongTerm(BaseModel):
+    target_amount: float
+    target_date: str
 
 class ReportRequest(BaseModel):
     start_date: Optional[str] = None
@@ -1425,8 +1429,38 @@ async def get_savings(token: str, db: Session = Depends(get_db)):
         ).scalar() or 0.0
         monthly_saved = max(0.0, -monthly_net)
 
+    # 5. Long-term Savings Goal
+    long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
+    goal_data = None
+    if long_term_goal:
+        goal_data = {
+            "target_amount": long_term_goal.target_amount,
+            "target_date": long_term_goal.target_date.isoformat(),
+            "created_at": long_term_goal.created_at.isoformat()
+        }
+
+    # 6. Rate History (last 7 days)
+    # Get one record per day for the last 7 days
+    seven_days_ago = now - timedelta(days=7)
+    history_records = db.query(MarketRatesCache).filter(
+        MarketRatesCache.updated_at >= seven_days_ago
+    ).order_by(MarketRatesCache.updated_at.asc()).all()
+    
+    # Simple grouping by date to get daily close (last record of each day)
+    daily_history = {}
+    for rec in history_records:
+        date_str = rec.updated_at.date().isoformat()
+        daily_history[date_str] = {
+            "gold": rec.gold_egp_per_gram,
+            "silver": rec.silver_egp_per_gram,
+            "usd": rec.usd_to_egp,
+            "gbp": rec.gbp_to_egp,
+            "eur": rec.eur_to_egp,
+            "date": date_str
+        }
+
     return {
-        "cash_balance": cash_savings,  # This is the "cash_savings" part of total wealth
+        "cash_balance": cash_savings,
         "investments": [
             {
                 "id": i.id,
@@ -1440,7 +1474,9 @@ async def get_savings(token: str, db: Session = Depends(get_db)):
         ],
         "monthly_goal": getattr(user, "monthly_savings_goal", 0.0),
         "monthly_saved": monthly_saved,
-        "rates": rates
+        "rates": rates,
+        "long_term_goal": goal_data,
+        "rate_history": list(daily_history.values())
     }
 
 @app.post("/investments")
@@ -1485,6 +1521,30 @@ def update_savings_goal(data: SavingsGoalUpdate, token: str, db: Session = Depen
     user.monthly_savings_goal = data.monthly_goal
     db.commit()
     return {"message": "Savings goal updated", "monthly_goal": user.monthly_savings_goal}
+
+@app.post("/savings/long-term-goal")
+def set_long_term_goal(data: SavingsGoalLongTerm, token: str, db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    
+    try:
+        target_date = datetime.strptime(data.target_date, "%Y-%m-%d")
+    except:
+        raise HTTPException(400, "Invalid date format. Use YYYY-MM-DD")
+
+    goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
+    if goal:
+        goal.target_amount = data.target_amount
+        goal.target_date = target_date
+    else:
+        goal = SavingsGoal(
+            user_id=user.id,
+            target_amount=data.target_amount,
+            target_date=target_date
+        )
+        db.add(goal)
+    
+    db.commit()
+    return {"message": "Long-term goal secured"}
 
 # ============================================
 # BUDGET ROUTES (Add these to main.py)

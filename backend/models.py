@@ -42,6 +42,23 @@ class User(Base):
     budgets = relationship("Budget", back_populates="user")
     goals = relationship("Goal", back_populates="user")
     investments = relationship("Investment", back_populates="user")
+    savings_goal = relationship("SavingsGoal", back_populates="user", uselist=False)
+
+
+class SavingsGoal(Base):
+    """
+    Long-term Savings Goal
+    """
+    __tablename__ = "savings_goals"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    target_amount = Column(Float, nullable=False)
+    target_date = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship
+    user = relationship("User", back_populates="savings_goal")
 
 
 class Investment(Base):

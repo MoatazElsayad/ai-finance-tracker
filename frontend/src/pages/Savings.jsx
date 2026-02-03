@@ -43,11 +43,230 @@ import {
   getSavingsRates,
   createInvestment,
   deleteInvestment,
-  updateSavingsGoal
+  updateSavingsGoal,
+  setLongTermSavingsGoal
 } from '../api';
 import confetti from 'canvas-confetti';
 
 // --- Sub-components ---
+
+const WealthChangeIndicator = ({ change, percent, isDark }) => {
+  const isPositive = change >= 0;
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'} border ${isPositive ? 'border-emerald-500/20' : 'border-rose-500/20'} animate-in slide-in-from-left duration-500`}>
+      {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+      <span className="text-[11px] font-black uppercase tracking-wider">
+        {isPositive ? '+' : ''}{change.toLocaleString()} EGP ({isPositive ? '+' : ''}{percent}%)
+      </span>
+    </div>
+  );
+};
+
+const GoalTrackerCard = ({ goal, currentAmount, isDark, onEdit }) => {
+  const progress = goal ? Math.min(100, (currentAmount / goal.target_amount) * 100) : 0;
+  const remaining = goal ? Math.max(0, goal.target_amount - currentAmount) : 0;
+  
+  // Estimate completion date based on progress and time since creation
+  const getEstimatedDate = () => {
+    if (!goal || currentAmount <= 0) return 'TBD';
+    const created = new Date(goal.created_at);
+    const now = new Date();
+    const target = new Date(goal.target_date);
+    const elapsedDays = Math.max(1, (now - created) / (1000 * 60 * 60 * 24));
+    const egpPerDay = currentAmount / elapsedDays;
+    
+    if (egpPerDay <= 0) return 'TBD';
+    const remainingDays = remaining / egpPerDay;
+    const estDate = new Date();
+    estDate.setDate(estDate.getDate() + remainingDays);
+    
+    return estDate.toLocaleDateString('en-EG', { month: 'short', year: 'numeric' });
+  };
+
+  return (
+    <div className={`relative overflow-hidden p-8 rounded-[2.5rem] border ${isDark ? 'bg-slate-900/50 border-slate-700/50' : 'bg-white border-slate-200'} group hover:border-amber-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/10`}>
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Financial Mission</p>
+          <h3 className="text-2xl font-black tracking-tight">{goal ? 'Fortress of Solitude' : 'Set a Goal'}</h3>
+        </div>
+        <button onClick={onEdit} className="p-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-2xl transition-all active:scale-95">
+          <Target className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-8">
+        <div className="relative w-32 h-32">
+          <svg className="w-full h-full -rotate-90 transform">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              fill="transparent"
+              stroke="currentColor"
+              strokeWidth="10"
+              className={`${isDark ? 'text-slate-800' : 'text-slate-100'}`}
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              fill="transparent"
+              stroke="url(#progressGradient)"
+              strokeWidth="10"
+              strokeDasharray={364.4}
+              strokeDashoffset={364.4 - (364.4 * progress) / 100}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-out"
+            />
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fbbf24" />
+                <stop offset="100%" stopColor="#f59e0b" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-black">{Math.round(progress)}%</span>
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Remaining</p>
+            <p className="text-xl font-black text-amber-500">{remaining.toLocaleString()} <span className="text-[10px] opacity-60">EGP</span></p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">ETA</p>
+            <p className="text-lg font-black">{getEstimatedDate()}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WealthDonutChart = ({ data, isDark }) => {
+  const COLORS = {
+    Cash: '#3b82f6',
+    Gold: '#fbbf24',
+    Silver: '#94a3b8',
+    USD: '#10b981',
+    EUR: '#6366f1',
+    GBP: '#ef4444'
+  };
+
+  return (
+    <div className={`p-8 rounded-[2.5rem] border ${isDark ? 'bg-slate-900/50 border-slate-700/50' : 'bg-white border-slate-200'} group hover:border-blue-500/30 transition-all duration-500`}>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Asset Distribution</p>
+          <h3 className="text-xl font-black tracking-tight">Wealth Split</h3>
+        </div>
+        <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+          <PieChartIcon className="w-5 h-5" />
+        </div>
+      </div>
+
+      <div className="h-[250px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={8}
+              dataKey="value"
+              animationBegin={0}
+              animationDuration={1500}
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#cbd5e1'} />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} shadow-2xl`}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{payload[0].name}</p>
+                      <p className="text-lg font-black">{payload[0].value.toLocaleString()} <span className="text-[10px] opacity-60">EGP</span></p>
+                      <p className="text-[10px] font-bold text-blue-500">{( (payload[0].value / data.reduce((a,b) => a + b.value, 0)) * 100).toFixed(1)}% of total</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mt-4">
+        {data.filter(d => d.value > 0).map((entry, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[entry.name] }} />
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{entry.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const LongTermGoalModal = ({ isOpen, onClose, onSave, currentGoal, isDark }) => {
+  const [amount, setAmount] = useState(currentGoal?.target_amount || '');
+  const [date, setDate] = useState(currentGoal?.target_date?.split('T')[0] || '');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-md bg-slate-950/40">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className={`relative w-full max-w-md ${isDark ? 'bg-slate-900 border-slate-700/50' : 'bg-white border-slate-200'} border p-8 rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300`}>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-xl font-black tracking-tight">Set Long-term Target</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Secure Your Future</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-500/10 rounded-xl transition-colors text-slate-400">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Amount (EGP)</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="e.g. 1,000,000"
+              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold text-lg"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold"
+            />
+          </div>
+          <button 
+            onClick={() => onSave(amount, date)}
+            className="w-full py-5 bg-amber-500 hover:bg-amber-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-amber-500/20 transition-all active:scale-95"
+          >
+            Lock Mission Target
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
   const [amount, setAmount] = useState('');
@@ -240,6 +459,10 @@ const Savings = () => {
   const [showInvestmentModal, setShowInvestmentModal] = useState(false);
   const [selectedInvestmentType, setSelectedInvestmentType] = useState(null);
   const [activeTab, setActiveTab] = useState('cash');
+  const [showLongTermGoalModal, setShowLongTermGoalModal] = useState(false);
+
+  // For milestone tracking
+  const prevProgressRef = useRef(0);
 
   useEffect(() => {
     loadAllData();
@@ -266,6 +489,7 @@ const Savings = () => {
       ]);
       
       setCategories(cats);
+      // Ensure ratesResp is the source of truth for rates
       setSavingsData({ ...data, rates: ratesResp });
       setAllTransactions(txns || []);
       
@@ -304,6 +528,93 @@ const Savings = () => {
   }, [savingsData]);
 
   const totalOverallSavings = (savingsData?.cash_balance || 0) + totalInvestmentsValue;
+
+  // Asset Breakdown for Donut Chart
+  const assetBreakdown = useMemo(() => {
+    if (!savingsData) return [];
+    const breakdown = [
+      { name: 'Cash', value: savingsData.cash_balance },
+      { name: 'Gold', value: 0 },
+      { name: 'Silver', value: 0 },
+      { name: 'USD', value: 0 },
+      { name: 'EUR', value: 0 },
+      { name: 'GBP', value: 0 },
+    ];
+
+    savingsData.investments.forEach(inv => {
+      const type = inv.type.toUpperCase();
+      const item = breakdown.find(b => b.name === (type === 'GOLD' ? 'Gold' : type === 'SILVER' ? 'Silver' : type));
+      if (item) item.value += inv.current_value;
+    });
+
+    return breakdown.filter(b => b.value > 0);
+  }, [savingsData]);
+
+  // Wealth Change Indicators (Daily/Weekly)
+  const wealthChange = useMemo(() => {
+    if (!savingsData?.rate_history || savingsData.rate_history.length < 2) return { daily: { change: 0, percent: 0 }, weekly: { change: 0, percent: 0 } };
+    
+    const history = savingsData.rate_history;
+    const latestRates = history[history.length - 1];
+    const yesterdayRates = history[history.length - 2];
+    const weekAgoRates = history[0];
+
+    const calculateWealthWithRates = (targetRates) => {
+      const cash = savingsData.cash_balance;
+      const invValue = savingsData.investments.reduce((sum, inv) => {
+        const rate = targetRates[inv.type.toLowerCase()] || 0;
+        return sum + (inv.amount * rate);
+      }, 0);
+      return cash + invValue;
+    };
+
+    const currentWealth = totalOverallSavings;
+    const yesterdayWealth = calculateWealthWithRates(yesterdayRates);
+    const weekAgoWealth = calculateWealthWithRates(weekAgoRates);
+
+    const dailyChange = currentWealth - yesterdayWealth;
+    const dailyPercent = yesterdayWealth > 0 ? ((dailyChange / yesterdayWealth) * 100).toFixed(1) : 0;
+
+    const weeklyChange = currentWealth - weekAgoWealth;
+    const weeklyPercent = weekAgoWealth > 0 ? ((weeklyChange / weekAgoWealth) * 100).toFixed(1) : 0;
+
+    return {
+      daily: { change: dailyChange, percent: dailyPercent },
+      weekly: { change: weeklyChange, percent: weeklyPercent }
+    };
+  }, [savingsData, totalOverallSavings]);
+
+  // Milestone tracking
+  useEffect(() => {
+    if (!savingsData?.long_term_goal) return;
+    const progress = (totalOverallSavings / savingsData.long_term_goal.target_amount) * 100;
+    const milestones = [25, 50, 75, 100];
+    
+    milestones.forEach(m => {
+      if (progress >= m && prevProgressRef.current < m) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3b82f6', '#fbbf24', '#ffffff']
+        });
+        // Success toast would go here
+      }
+    });
+    prevProgressRef.current = progress;
+  }, [totalOverallSavings, savingsData?.long_term_goal]);
+
+  const handleSetLongTermGoal = async (amount, date) => {
+    try {
+      await setLongTermSavingsGoal(amount, date);
+      setShowLongTermGoalModal(false);
+      loadAllData();
+      confetti({ particleCount: 100, spread: 50, origin: { y: 0.8 } });
+    } catch (err) {
+      console.error("Failed to set long-term goal", err);
+      setError("Failed to secure mission target.");
+    }
+  };
 
   const savingsTransactions = useMemo(() => {
     return allTransactions.filter(t => 
@@ -470,10 +781,18 @@ const Savings = () => {
 
           <div className="mt-8 flex items-center justify-center gap-8">
             <div className="flex flex-col items-center">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Live Market Index</p>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-emerald-500">+5.2%</span>
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Market Velocity</p>
+              <WealthChangeIndicator 
+                change={wealthChange.daily.change} 
+                percent={wealthChange.daily.percent} 
+                isDark={isDark} 
+              />
+            </div>
+            <div className="w-px h-8 bg-slate-800" />
+            <div className="flex flex-col items-center">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">7D Delta</p>
+              <div className={`px-3 py-1.5 rounded-xl ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'} border text-[11px] font-black uppercase tracking-wider ${wealthChange.weekly.change >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+                {wealthChange.weekly.change >= 0 ? '+' : ''}{wealthChange.weekly.change.toLocaleString()} ({wealthChange.weekly.percent}%)
               </div>
             </div>
             <div className="w-px h-8 bg-slate-800" />
@@ -494,6 +813,14 @@ const Savings = () => {
           {/* Left Column: Actions & Summary */}
           <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
             
+            {/* Long-term Goal Tracker */}
+            <GoalTrackerCard 
+              goal={savingsData?.long_term_goal} 
+              currentAmount={totalOverallSavings} 
+              isDark={isDark} 
+              onEdit={() => setShowLongTermGoalModal(true)} 
+            />
+
             {/* Cash Allocation Card */}
             <div className={`p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl backdrop-blur-xl group`}>
               <div className="flex items-center justify-between mb-8">
@@ -619,66 +946,75 @@ const Savings = () => {
               ))}
             </div>
 
-            {/* Growth Trend - Premium Chart */}
-            <div className={`p-10 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl relative overflow-hidden group`}>
-              <div className="flex items-center justify-between mb-12">
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight">Growth Trajectory</h3>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Wealth Accumulation Trend</p>
+            {/* Charts Section: Growth & Distribution */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              {/* Growth Trend - Premium Chart */}
+              <div className={`p-10 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl relative overflow-hidden group`}>
+                <div className="flex items-center justify-between mb-12">
+                  <div>
+                    <h3 className="text-xl font-bold tracking-tight">Growth Trajectory</h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Wealth Accumulation Trend</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                    <TrendingUp className="w-6 h-6 text-blue-500" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                  <TrendingUp className="w-6 h-6 text-blue-500" />
+
+                <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={savingsTransactions.length > 0 ? savingsTransactions.slice(-7).reverse().map((t, i) => ({
+                      date: new Date(t.date).toLocaleDateString('en-EG', { day: 'numeric', month: 'short' }),
+                      val: Math.abs(t.amount)
+                    })) : [
+                      { date: 'Q1', val: (totalOverallSavings * 0.65) },
+                      { date: 'Q2', val: (totalOverallSavings * 0.82) },
+                      { date: 'Q3', val: (totalOverallSavings * 0.94) },
+                      { date: 'Live', val: totalOverallSavings },
+                    ]}>
+                      <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#1e293b" : "#e2e8f0"} opacity={0.3} />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fill: '#64748b', fontSize: 10, fontWeight: '900'}} 
+                        dy={15} 
+                      />
+                      <YAxis hide domain={['auto', 'auto']} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#0f172a' : '#fff', 
+                          borderRadius: '1.5rem', 
+                          border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, 
+                          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)',
+                          padding: '1.5rem'
+                        }} 
+                        itemStyle={{ color: isDark ? '#fff' : '#0f172a', fontWeight: '900', fontSize: '1.1rem' }}
+                        cursor={{ stroke: '#3b82f6', strokeWidth: 2 }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="val" 
+                        stroke="#3b82f6" 
+                        strokeWidth={5} 
+                        fillOpacity={1} 
+                        fill="url(#chartGradient)" 
+                        animationDuration={2500}
+                        dot={{ r: 6, fill: '#3b82f6', strokeWidth: 3, stroke: isDark ? '#0f172a' : '#fff' }}
+                        activeDot={{ r: 8, fill: '#fff', strokeWidth: 3, stroke: '#3b82f6' }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={[
-                    { date: 'Q1', val: (totalOverallSavings * 0.65) },
-                    { date: 'Q2', val: (totalOverallSavings * 0.82) },
-                    { date: 'Q3', val: (totalOverallSavings * 0.94) },
-                    { date: 'Live', val: totalOverallSavings },
-                  ]}>
-                    <defs>
-                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" opacity={0.3} />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#64748b', fontSize: 10, fontWeight: '900'}} 
-                      dy={15} 
-                    />
-                    <YAxis hide domain={['auto', 'auto']} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#0f172a', 
-                        borderRadius: '1.5rem', 
-                        border: '1px solid #334155', 
-                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)',
-                        padding: '1.5rem'
-                      }} 
-                      itemStyle={{ color: '#fff', fontWeight: '900', fontSize: '1.1rem' }}
-                      cursor={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="val" 
-                      stroke="#3b82f6" 
-                      strokeWidth={5} 
-                      fillOpacity={1} 
-                      fill="url(#chartGradient)" 
-                      animationDuration={2500}
-                      dot={{ r: 6, fill: '#3b82f6', strokeWidth: 3, stroke: '#0f172a' }}
-                      activeDot={{ r: 8, fill: '#fff', strokeWidth: 3, stroke: '#3b82f6' }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {/* Wealth Distribution - Donut Chart */}
+              <WealthDonutChart data={assetBreakdown} isDark={isDark} />
             </div>
 
             {/* Quick-Add Grid - Modern Minimal */}

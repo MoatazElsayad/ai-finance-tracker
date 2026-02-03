@@ -375,6 +375,18 @@ export const updateSavingsGoal = async (monthlyGoal) => {
   return handleResponse(response);
 };
 
+export const setLongTermSavingsGoal = async (targetAmount, targetDate) => {
+  const token = getToken();
+  const response = await authFetch(`/savings/long-term-goal?token=${token}`, {
+    method: 'POST',
+    body: JSON.stringify({ 
+      target_amount: parseFloat(targetAmount), 
+      target_date: targetDate 
+    }),
+  });
+  return handleResponse(response);
+};
+
 // ============================================
 // User Profile
 // ============================================
