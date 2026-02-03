@@ -83,11 +83,22 @@ const GoalTrackerCard = ({ goal, currentAmount, isDark, onEdit }) => {
     return estDate.toLocaleDateString('en-EG', { month: 'short', year: 'numeric' });
   };
 
+  const getStatus = () => {
+    if (progress >= 100) return { label: 'Mission Accomplished', color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+    if (progress >= 75) return { label: 'Final Stretch', color: 'text-blue-500', bg: 'bg-blue-500/10' };
+    return { label: 'In Progress', color: 'text-amber-500', bg: 'bg-amber-500/10' };
+  };
+  const status = getStatus();
+
   return (
     <div className={`relative overflow-hidden p-8 rounded-[2.5rem] border ${isDark ? 'bg-slate-900/50 border-slate-700/50' : 'bg-white border-slate-200'} group hover:border-amber-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/10`}>
       <div className="flex items-start justify-between mb-8">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Financial Mission</p>
+          <div className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-lg ${status.bg} ${status.color} mb-1 animate-pulse`}>
+             <div className={`w-1 h-1 rounded-full bg-current`} />
+             <span className="text-[10px] font-black uppercase tracking-tighter">{status.label}</span>
+          </div>
+          <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Financial Mission</p>
           <h3 className="text-2xl font-black tracking-tight">{goal ? 'Fortress of Solitude' : 'Set a Goal'}</h3>
         </div>
         <button onClick={onEdit} className="p-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-2xl transition-all active:scale-95">
@@ -133,11 +144,11 @@ const GoalTrackerCard = ({ goal, currentAmount, isDark, onEdit }) => {
 
         <div className="flex-1 space-y-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Remaining</p>
-            <p className="text-xl font-black text-amber-500">{remaining.toLocaleString()} <span className="text-[10px] opacity-60">EGP</span></p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Remaining</p>
+            <p className="text-xl font-black text-amber-500">{remaining.toLocaleString()} <span className="text-xs opacity-60">EGP</span></p>
           </div>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">ETA</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-1">ETA</p>
             <p className="text-lg font-black">{getEstimatedDate()}</p>
           </div>
         </div>
@@ -160,7 +171,7 @@ const WealthDonutChart = ({ data, isDark }) => {
     <div className={`p-8 rounded-[2.5rem] border ${isDark ? 'bg-slate-900/50 border-slate-700/50' : 'bg-white border-slate-200'} group hover:border-blue-500/30 transition-all duration-500`}>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Asset Distribution</p>
+          <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Asset Distribution</p>
           <h3 className="text-xl font-black tracking-tight">Wealth Split</h3>
         </div>
         <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
@@ -191,9 +202,9 @@ const WealthDonutChart = ({ data, isDark }) => {
                 if (active && payload && payload.length) {
                   return (
                     <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} shadow-2xl`}>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{payload[0].name}</p>
-                      <p className="text-lg font-black">{payload[0].value.toLocaleString()} <span className="text-[10px] opacity-60">EGP</span></p>
-                      <p className="text-[10px] font-bold text-blue-500">{( (payload[0].value / data.reduce((a,b) => a + b.value, 0)) * 100).toFixed(1)}% of total</p>
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1">{payload[0].name}</p>
+                      <p className="text-lg font-black">{payload[0].value.toLocaleString()} <span className="text-xs opacity-60">EGP</span></p>
+                      <p className="text-xs font-bold text-blue-500">{( (payload[0].value / data.reduce((a,b) => a + b.value, 0)) * 100).toFixed(1)}% of total</p>
                     </div>
                   );
                 }
@@ -208,7 +219,7 @@ const WealthDonutChart = ({ data, isDark }) => {
         {data.filter(d => d.value > 0).map((entry, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[entry.name] }} />
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{entry.name}</span>
+            <span className="text-xs font-black uppercase tracking-wider text-slate-500">{entry.name}</span>
           </div>
         ))}
       </div>
@@ -229,7 +240,7 @@ const LongTermGoalModal = ({ isOpen, onClose, onSave, currentGoal, isDark }) => 
         <div className="flex items-center justify-between mb-8">
           <div>
             <h3 className="text-xl font-black tracking-tight">Set Long-term Target</h3>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Secure Your Future</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Secure Your Future</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-500/10 rounded-xl transition-colors text-slate-400">
             <X className="w-5 h-5" />
@@ -238,7 +249,7 @@ const LongTermGoalModal = ({ isOpen, onClose, onSave, currentGoal, isDark }) => 
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Amount (EGP)</label>
+            <label className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Amount (EGP)</label>
             <input
               type="number"
               value={amount}
@@ -248,7 +259,7 @@ const LongTermGoalModal = ({ isOpen, onClose, onSave, currentGoal, isDark }) => 
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Date</label>
+            <label className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Date</label>
             <input
               type="date"
               value={date}
@@ -324,7 +335,7 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
             </div>
             <div>
               <h3 className="text-xl font-bold tracking-tight">Secure {type}</h3>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Vault Acquisition</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Vault Acquisition</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-500/10 rounded-xl transition-colors text-slate-400">
@@ -341,7 +352,7 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">
+            <label className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 ml-1">
               {isCurrency ? `Amount in ${type}` : 'Grams of Metal'}
             </label>
             <div className="relative">
@@ -360,13 +371,13 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
                 </div>
               )}
             </div>
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-2 ml-1">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-2 ml-1">
               * Buy price will be automatically fetched at current market rate
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Acquisition Date</label>
+            <label className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Acquisition Date</label>
             <input
               type="date"
               required
@@ -411,7 +422,7 @@ const SavingsHistory = ({ transactions, investments, isDark }) => {
   }, [transactions, investments]);
 
   if (allHistory.length === 0) return (
-    <div className="py-20 text-center text-slate-500 font-black uppercase tracking-[0.4em] text-[10px]">Vault History Empty</div>
+    <div className="py-20 text-center text-slate-500 font-black uppercase tracking-[0.4em] text-xs">Vault History Empty</div>
   );
 
   return (
@@ -424,12 +435,12 @@ const SavingsHistory = ({ transactions, investments, isDark }) => {
             </div>
             <div>
               <p className="text-sm font-bold tracking-tight mb-1">{item.description}</p>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.date.toLocaleDateString('en-EG', { day: 'numeric', month: 'short' })}</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{item.date.toLocaleDateString('en-EG', { day: 'numeric', month: 'short' })}</p>
             </div>
           </div>
           <div className="text-right">
             <p className={`text-lg font-black ${item.color === 'blue' ? 'text-blue-500' : 'text-amber-500'}`}>
-              {item.amount.toLocaleString()} <span className="text-[10px] uppercase opacity-60 ml-1">{item.assetType || 'EGP'}</span>
+              {item.amount.toLocaleString()} <span className="text-xs uppercase opacity-60 ml-1">{item.assetType || 'EGP'}</span>
             </p>
           </div>
         </div>
@@ -732,7 +743,7 @@ const Savings = () => {
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0a0f1d]' : 'bg-slate-50'}`}>
         <div className="flex flex-col items-center gap-6">
           <RefreshCw className="w-16 h-16 text-amber-500 animate-spin" />
-          <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-500 animate-pulse">Building Financial Fortress...</p>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 animate-pulse">Building Financial Fortress...</p>
         </div>
       </div>
     );
@@ -771,27 +782,27 @@ const Savings = () => {
         <div className="absolute top-48 right-0 w-96 h-96 bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
         
         <div className="max-w-7xl mx-auto relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/40 border border-slate-700/50 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/40 border border-slate-700/50 mb-6 animate-in fade-in slide-in-from-top-4 duration-1000">
             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Vault Total Balance</span>
+            <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Total Net Worth</span>
           </div>
 
-          <h1 className="text-sm font-black uppercase tracking-[0.5em] text-slate-500 mb-4">Net Liquidity & Assets</h1>
+          <h1 className="text-xs font-black uppercase tracking-[0.5em] text-slate-500 mb-2">Liquidity & Assets Summary</h1>
           
           <div className="relative inline-block group">
             {/* Animated Number with Glow */}
             <div className="flex items-baseline justify-center gap-4 mb-2">
-              <span className="text-8xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transition-all duration-700">
+              <span className="text-6xl md:text-8xl font-black tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transition-all duration-700">
                 {displaySavings.toLocaleString()}
               </span>
-              <span className="text-3xl md:text-5xl font-black text-blue-500/80 tracking-tight">EGP</span>
+              <span className="text-2xl md:text-4xl font-black text-blue-500/80 tracking-tight">EGP</span>
             </div>
             <div className="h-1 w-full bg-gradient-to-r from-transparent via-amber-500/50 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-1000" />
           </div>
 
           <div className="mt-8 flex items-center justify-center gap-8">
             <div className="flex flex-col items-center">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Market Velocity</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Daily Change</p>
               <WealthChangeIndicator 
                 change={wealthChange.daily.change} 
                 percent={wealthChange.daily.percent} 
@@ -800,7 +811,7 @@ const Savings = () => {
             </div>
             <div className="w-px h-8 bg-slate-800" />
             <div className="flex flex-col items-center">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">7D Delta</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Weekly Change</p>
               <div className={`px-3 py-1.5 rounded-xl ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'} border text-[11px] font-black uppercase tracking-wider ${wealthChange.weekly.change >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                 {wealthChange.weekly.change >= 0 ? '+' : ''}{wealthChange.weekly.change.toLocaleString()} ({wealthChange.weekly.percent}%)
               </div>
@@ -810,7 +821,7 @@ const Savings = () => {
               onClick={() => loadAllData(true)}
               className="group flex flex-col items-center"
             >
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 group-hover:text-amber-500 transition-colors">Sync Vault</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 group-hover:text-amber-500 transition-colors">Sync Vault</p>
               <RefreshCw className={`w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-all ${refreshing ? 'animate-spin text-amber-500' : ''}`} />
             </button>
           </div>
@@ -834,15 +845,15 @@ const Savings = () => {
             {/* Cash Allocation Card */}
             <div className={`p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl backdrop-blur-xl group`}>
               <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-500/20">
-                    <Wallet className="w-6 h-6 text-blue-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-500/20">
+                      <Wallet className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold tracking-tight">Cash Vault</h3>
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500">Monthly Allocation</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold tracking-tight">Cash Vault</h3>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Monthly Allocation</p>
-                  </div>
-                </div>
                 <button onClick={() => setShowGoalModal(true)} className="p-2 hover:bg-slate-500/10 rounded-xl transition-colors">
                   <Target className="w-5 h-5 text-slate-500 hover:text-amber-500 transition-colors" />
                 </button>
@@ -872,8 +883,8 @@ const Savings = () => {
               <div className="mt-10 pt-10 border-t border-slate-800/50">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Monthly Goal Progress</p>
-                    <p className="text-2xl font-black">{progressPercent.toFixed(0)}% <span className="text-[10px] text-slate-500 font-bold uppercase ml-2">Complete</span></p>
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Monthly Goal Progress</p>
+                    <p className="text-2xl font-black">{progressPercent.toFixed(0)}% <span className="text-xs text-slate-500 font-bold uppercase ml-2">Complete</span></p>
                   </div>
                   <div className="relative w-16 h-16">
                     <svg className="w-full h-full transform -rotate-90">
@@ -885,7 +896,7 @@ const Savings = () => {
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] font-bold text-slate-500">
+                <p className="text-xs font-bold text-slate-500">
                   <span className="text-white">{monthlySaved.toLocaleString()}</span> / {monthlyGoal.toLocaleString()} EGP target
                 </p>
               </div>
@@ -894,7 +905,7 @@ const Savings = () => {
             {/* Portfolio Summary Minimal */}
             <div className={`p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl`}>
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-lg font-bold tracking-tight">Portfolio Alpha</h3>
+                <h3 className="text-lg font-bold tracking-tight">Performance Summary</h3>
                 <button 
                   onClick={() => setShowHistory(!showHistory)}
                   className={`p-2 rounded-xl transition-all duration-300 ${showHistory ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-amber-500'}`}
@@ -912,19 +923,25 @@ const Savings = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-6 rounded-3xl bg-slate-800/30 border border-slate-700/30">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Asset Valuation</p>
-                      <p className="text-xl font-black">{totalInvestmentsValue.toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span></p>
-                    </div>
-                    <PieChartIcon className="w-8 h-8 text-amber-500/20" />
+                <div>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Asset Valuation</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-xl font-black">{totalInvestmentsValue.toLocaleString()}</p>
+                    <span className="text-[10px] text-slate-500 font-black uppercase">EGP</span>
                   </div>
-                  <div className="flex items-center justify-between p-6 rounded-3xl bg-slate-800/30 border border-slate-700/30">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Cash Reserve</p>
-                      <p className="text-xl font-black">{(savingsData?.cash_balance || 0).toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span></p>
-                    </div>
-                    <Wallet className="w-8 h-8 text-blue-500/20" />
+                </div>
+                <PieChartIcon className="w-8 h-8 text-amber-500/20" />
+              </div>
+              <div className="flex items-center justify-between p-6 rounded-3xl bg-slate-800/30 border border-slate-700/30">
+                <div>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Cash Reserve</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-xl font-black">{(savingsData?.cash_balance || 0).toLocaleString()}</p>
+                    <span className="text-[10px] text-slate-500 font-black uppercase">EGP</span>
                   </div>
+                </div>
+                <Wallet className="w-8 h-8 text-blue-500/20" />
+              </div>
                 </div>
               )}
             </div>
@@ -934,7 +951,7 @@ const Savings = () => {
           <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000">
             
             {/* Asset Tabs Minimal */}
-            <div className={`flex items-center gap-2 p-2 rounded-[2rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white'} border shadow-xl backdrop-blur-xl overflow-x-auto no-scrollbar`}>
+            <div className={`flex items-center gap-2 p-2 rounded-[2rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white'} border shadow-xl backdrop-blur-xl overflow-x-auto no-scrollbar snap-x snap-mandatory`}>
               {[
                 { id: 'cash', label: 'Cash', icon: <Wallet className="w-5 h-5" /> },
                 { id: 'gold', label: 'Gold', icon: <Coins className="w-5 h-5" /> },
@@ -944,7 +961,7 @@ const Savings = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${
+                  className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap snap-start ${
                     activeTab === tab.id
                       ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 scale-105'
                       : 'text-slate-500 hover:text-white hover:bg-slate-800'
@@ -964,9 +981,9 @@ const Savings = () => {
               <div className={`p-10 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl relative overflow-hidden group`}>
                 <div className="flex items-center justify-between mb-12">
                   <div>
-                    <h3 className="text-xl font-bold tracking-tight">Growth Trajectory</h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Wealth Accumulation Trend</p>
-                  </div>
+                      <h3 className="text-xl font-bold tracking-tight">Growth Trajectory</h3>
+                      <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Wealth Accumulation Trend</p>
+                    </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                     <TrendingUp className="w-6 h-6 text-blue-500" />
                   </div>
@@ -994,7 +1011,7 @@ const Savings = () => {
                         dataKey="date" 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{fill: '#64748b', fontSize: 10, fontWeight: '900'}} 
+                        tick={{fill: '#64748b', fontSize: 11, fontWeight: '900'}} 
                         dy={15} 
                       />
                       <YAxis hide domain={['auto', 'auto']} />
@@ -1030,7 +1047,7 @@ const Savings = () => {
             </div>
 
             {/* Quick-Add Grid - Modern Minimal */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
               {[
                 { type: 'Gold', label: '24K Gold', icon: <Coins className="w-8 h-8 text-amber-500" />, rate: rates.gold },
                 { type: 'Silver', label: 'Pure Silver', icon: <Coins className="w-8 h-8 text-slate-400" />, rate: rates.silver },
@@ -1047,14 +1064,17 @@ const Savings = () => {
                     setSelectedInvestmentType(item.type);
                     setShowInvestmentModal(true);
                   }}
-                  className={`relative p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border group transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 overflow-hidden`}
+                  className={`relative p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border group transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 overflow-hidden text-left`}
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 flex justify-center">{item.icon}</div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">{item.label}</p>
-                  <p className="text-lg font-black text-white group-hover:text-amber-500 transition-colors">
-                    {item.rate?.toLocaleString() || '---'} <span className="text-[10px] text-slate-500">EGP</span>
-                  </p>
+                  <div className="mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 flex justify-start">{item.icon}</div>
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-2">{item.label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-xl font-black text-white group-hover:text-amber-500 transition-colors">
+                      {item.rate?.toLocaleString() || '---'}
+                    </p>
+                    <span className="text-[10px] text-slate-500 font-black uppercase">EGP</span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -1069,21 +1089,22 @@ const Savings = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold tracking-tight uppercase">{activeTab} Holdings</h3>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">Live Asset Valuation</p>
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mt-1">Live Asset Valuation</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Market Open</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-500">Market Open</span>
                   </div>
                 </div>
 
                 <div className="divide-y divide-slate-800/50">
-                  {savingsData?.investments
+                {savingsData?.investments
                     .filter(inv => activeTab === 'currencies' ? ![ 'gold', 'silver' ].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab)
                     .map((inv) => {
                       const profit = inv.current_value - (inv.buy_price * inv.amount);
                       const isProfit = profit >= 0;
+                      const yieldPercent = ( (profit / (inv.buy_price * inv.amount)) * 100).toFixed(1);
                       const flagMap = {
                         'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'SAR': '🇸🇦', 'AED': '🇦🇪',
                         'KWD': '🇰🇼', 'QAR': '🇶🇦', 'BHD': '🇧🇭', 'OMR': '🇴🇲', 'JOD': '🇯🇴',
@@ -1109,10 +1130,15 @@ const Savings = () => {
                               {getIcon()}
                             </div>
                             <div>
-                              <p className="text-xl font-black mb-1">
-                                {inv.amount.toLocaleString()} {['gold', 'silver'].includes(inv.type.toLowerCase()) ? 'Grams' : inv.type}
-                              </p>
-                              <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                              <div className="flex items-center gap-3 mb-1">
+                                <p className="text-xl font-black">
+                                  {inv.amount.toLocaleString()} {['gold', 'silver'].includes(inv.type.toLowerCase()) ? 'Grams' : inv.type}
+                                </p>
+                                <div className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tighter ${isProfit ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                  {isProfit ? '+' : ''}{yieldPercent}%
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-slate-500">
                                 <span>Buy @ {inv.buy_price.toLocaleString()}</span>
                                 <div className="w-1 h-1 rounded-full bg-slate-700" />
                                 <span>{new Date(inv.buy_date).toLocaleDateString('en-EG', { day: '2-digit', month: 'short' })}</span>
@@ -1122,8 +1148,11 @@ const Savings = () => {
                           
                           <div className="flex items-center gap-12">
                             <div className="text-right">
-                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Live Value</p>
-                              <p className="text-2xl font-black text-white">{inv.current_value.toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span></p>
+                              <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Live Value</p>
+                              <div className="flex items-baseline justify-end gap-2">
+                                <p className="text-2xl font-black text-white">{inv.current_value.toLocaleString()}</p>
+                                <span className="text-[10px] text-slate-500 font-black uppercase">EGP</span>
+                              </div>
                             </div>
                             <div className="text-right min-w-[120px]">
                               <div className="flex items-center justify-end gap-2 mb-1">
@@ -1132,8 +1161,8 @@ const Savings = () => {
                                   {isProfit ? '+' : ''}{profit.toLocaleString()}
                                 </p>
                               </div>
-                              <p className={`text-[10px] font-black uppercase tracking-widest ${isProfit ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
-                                {((profit / (inv.buy_price * inv.amount)) * 100).toFixed(1)}% Yield
+                              <p className={`text-xs font-black uppercase tracking-widest ${isProfit ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
+                                Total Yield
                               </p>
                             </div>
                             <button 
@@ -1190,12 +1219,12 @@ const Savings = () => {
               </div>
               <div>
                 <h3 className="text-2xl font-black uppercase tracking-tight">Set Target</h3>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Monthly Savings Goal</p>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">Monthly Savings Goal</p>
               </div>
             </div>
             <form onSubmit={handleUpdateGoal} className="space-y-8">
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Amount (EGP)</label>
+                <label className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Amount (EGP)</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -1220,7 +1249,7 @@ const Savings = () => {
       <div className="max-w-7xl mx-auto px-6 md:px-12 pb-12">
         <div className="flex items-center justify-center gap-2 text-slate-500/60">
           <AlertCircle className="w-4 h-4" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
+          <span className="text-xs font-bold uppercase tracking-[0.2em]">
             Market rates are automatically synced 3 times daily (8AM, 2PM, 8PM EET)
           </span>
         </div>

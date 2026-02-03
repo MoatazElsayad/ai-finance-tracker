@@ -153,49 +153,31 @@ function Layout() {
     }`}>
         <div className="px-4 md:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 ${
-                isDark 
-                  ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40' 
-                  : 'bg-gradient-to-br from-amber-400 to-amber-500 shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40'
-              }`}>
-                <span className="text-white font-black text-xl tracking-tighter">FT</span>
-              </div>
-              <div className="flex flex-col">
-                <span className={`font-black text-xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Finance <span className="text-amber-500">Tracker</span>
-                </span>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Intelligence
-                </span>
-              </div>
+            {/* Active Page Indicator */}
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>
+                Current View
+              </span>
+              <span className={`font-black text-xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {(() => {
+                  const currentItem = [
+                    { path: '/dashboard', label: 'Dashboard' },
+                    { path: '/transactions', label: 'Transactions' },
+                    { path: '/budget', label: 'Budget' },
+                    { path: '/savings', label: 'Savings' },
+                    { path: '/goals', label: 'Savings Goals' },
+                    { path: '/receipt-upload', label: 'Receipt Upload' },
+                    { path: '/profile', label: 'Profile' },
+                    { path: '/about', label: 'About' },
+                  ].find(item => location.pathname === item.path);
+                  return currentItem ? currentItem.label : 'Finance Tracker';
+                })()}
+              </span>
             </div>
+          </div>
 
-            {/* Navigation Links - Hidden on Mobile */}
-            <div className="hidden lg:flex gap-8">
-              {[
-                { to: '/dashboard', label: 'Dashboard' },
-            { to: '/transactions', label: 'Transactions' },
-            { to: '/budget', label: 'Budget' },
-            { to: '/savings', label: 'Savings' }
-          ].map((item) => (
-                <Link 
-                  key={item.to}
-                  to={item.to} 
-                  className={`text-sm font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-                    location.pathname === item.to
-                      ? 'text-amber-500'
-                      : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Actions - Show on Desktop */}
-            <div className="hidden md:flex items-center gap-4">
+          {/* Actions - Show on Desktop */}
+          <div className="hidden md:flex items-center gap-4">
               <Link
                 to="/receipt-upload"
                 state={{ fromNavbarScan: true }}

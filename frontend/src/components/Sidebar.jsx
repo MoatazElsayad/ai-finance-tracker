@@ -182,6 +182,7 @@ function Sidebar({ user: initialUser }) {
               <Link
                 key={item.path}
                 to={item.path}
+                title={isCollapsed ? item.label : ''}
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group ${
                   active
