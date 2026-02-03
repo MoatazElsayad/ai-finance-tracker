@@ -20,6 +20,7 @@ import {
   AlertCircle,
   X,
   DollarSign,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 import {
   AreaChart,
@@ -708,7 +709,10 @@ export default function Savings() {
   const loadAllData = useCallback(
     async (forceRates = false) => {
       if (forceRates) setRefreshing(true);
-      else if (!savingsData) setLoading(true);
+      else {
+        // Only set global loading if we have no data at all
+        setLoading(prev => !prev && true); 
+      }
       setError(null);
 
       const abortCtrl = new AbortController();
@@ -737,7 +741,7 @@ export default function Savings() {
       // cleanup (in case component unmounts before fetch finishes)
       return () => abortCtrl.abort();
     },
-    [savingsData]
+    [] // Removed savingsData from dependencies to avoid infinite loop
   );
 
   /* ---------- Initial load & 1‑h interval ---------- */
@@ -801,8 +805,8 @@ export default function Savings() {
     const weekAgo = hist[0];
 
     const valueWith = (target) => {
-      const cash = savingsData.cash_balance;
-      const inv = savingsData.investments.reduce(
+      const cash = savingsData.cash_balance ?? 0;
+      const inv = (savingsData.investments || []).reduce(
         (sum, i) => sum + i.amount * (target[i.type.toLowerCase()] ?? 0),
         0
       );
