@@ -65,11 +65,11 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
     const numPrice = parseFloat(buyPrice);
 
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Please enter a valid amount greater than 0');
+      setError('Enter a valid amount');
       return;
     }
     if (isNaN(numPrice) || numPrice <= 0) {
-      setError('Please enter a valid buy price greater than 0');
+      setError('Enter a valid price');
       return;
     }
 
@@ -81,7 +81,6 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
     });
     setAmount('');
     setBuyPrice('');
-    setError('');
     onClose();
   };
 
@@ -95,31 +94,35 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative w-full max-w-md card-unified ${isDark ? 'card-unified-dark bg-[#0f172a]' : 'card-unified-light'} p-8 animate-in zoom-in-95 duration-300 shadow-2xl border-2 ${isDark ? 'border-amber-500/20' : 'border-amber-400/20'} rounded-3xl`}>
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-slate-500/10 rounded-full transition-colors">
-          <X className="w-6 h-6" />
-        </button>
-        
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-amber-500 rounded-2xl shadow-lg shadow-amber-500/20 text-2xl">
-            {flagMap[type] || (isCurrency ? '💵' : '💰')}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-slate-950/40">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className={`relative w-full max-w-md ${isDark ? 'bg-slate-900 border-slate-700/50' : 'bg-white border-slate-200'} border p-8 rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300`}>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl border border-amber-500/20">
+              {flagMap[type] || '💰'}
+            </div>
+            <div>
+              <h3 className="text-xl font-bold tracking-tight">Secure {type}</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Vault Acquisition</p>
+            </div>
           </div>
-          <h3 className="text-2xl font-black uppercase tracking-tight">Add {type}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-500/10 rounded-xl transition-colors text-slate-400">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle className="w-5 h-5 text-rose-500" />
-            <p className="text-xs font-bold text-rose-500">{error}</p>
+          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3">
+            <AlertCircle className="w-4 h-4 text-rose-500" />
+            <p className="text-[11px] font-bold text-rose-500 uppercase tracking-wider">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
-              {isCurrency ? 'Amount' : 'Grams'}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">
+              {isCurrency ? 'Units' : 'Grams'}
             </label>
             <input
               type="number"
@@ -128,33 +131,33 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={isCurrency ? "e.g. 500" : "e.g. 10.5"}
-              className={`input-unified w-full !py-4 ${isDark ? 'bg-slate-900 border-slate-700' : ''}`}
+              className={`w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold text-lg`}
             />
           </div>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Buy Price (EGP per {isCurrency ? 'unit' : 'gram'})</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Buy Price (EGP)</label>
             <input
               type="number"
               required
               step="0.01"
               value={buyPrice}
               onChange={(e) => setBuyPrice(e.target.value)}
-              placeholder="e.g. 48.50"
-              className={`input-unified w-full !py-4 ${isDark ? 'bg-slate-900 border-slate-700' : ''}`}
+              placeholder="Price per unit/gram"
+              className={`w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold text-lg`}
             />
           </div>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Purchase Date</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Acquisition Date</label>
             <input
               type="date"
               required
               value={buyDate}
               onChange={(e) => setBuyDate(e.target.value)}
-              className={`input-unified w-full !py-4 ${isDark ? 'bg-slate-900 border-slate-700' : ''}`}
+              className={`w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold`}
             />
           </div>
-          <button type="submit" className="btn-primary-unified w-full !py-5 !rounded-2xl !bg-amber-500 hover:!bg-amber-600 shadow-xl shadow-amber-500/20 font-black uppercase tracking-widest">
-            Confirm Purchase
+          <button type="submit" className="w-full py-5 bg-amber-500 hover:bg-amber-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-amber-500/20 transition-all active:scale-95">
+            Lock into Vault
           </button>
         </form>
       </div>
@@ -170,7 +173,7 @@ const SavingsHistory = ({ transactions, investments, isDark }) => {
       amount: Math.abs(t.amount),
       description: t.description,
       date: new Date(t.date),
-      icon: <Wallet className="w-6 h-6 text-blue-500" />,
+      icon: <Wallet className="w-5 h-5 text-blue-500" />,
       color: 'blue'
     }));
 
@@ -179,9 +182,9 @@ const SavingsHistory = ({ transactions, investments, isDark }) => {
       type: 'investment',
       amount: i.amount,
       assetType: i.type,
-      description: `Bought ${i.amount} ${['gold', 'silver'].includes(i.type.toLowerCase()) ? 'g' : ''} ${i.type}`,
+      description: `Bought ${i.amount}${['gold', 'silver'].includes(i.type.toLowerCase()) ? 'g' : ''} ${i.type}`,
       date: new Date(i.buy_date),
-      icon: i.type.toLowerCase() === 'gold' ? <Coins className="w-6 h-6 text-amber-500" /> : <Landmark className="w-6 h-6 text-blue-500" />,
+      icon: i.type.toLowerCase() === 'gold' ? <Coins className="w-5 h-5 text-amber-500" /> : <Landmark className="w-5 h-5 text-blue-500" />,
       color: 'amber'
     }));
 
@@ -189,25 +192,25 @@ const SavingsHistory = ({ transactions, investments, isDark }) => {
   }, [transactions, investments]);
 
   if (allHistory.length === 0) return (
-    <div className="p-16 text-center text-slate-500 font-black uppercase tracking-[0.4em] text-[10px]">No historical data found</div>
+    <div className="py-20 text-center text-slate-500 font-black uppercase tracking-[0.4em] text-[10px]">Vault History Empty</div>
   );
 
   return (
-    <div className="divide-y divide-slate-700/20 max-h-[500px] overflow-y-auto no-scrollbar pr-2">
+    <div className="space-y-4 max-h-[500px] overflow-y-auto no-scrollbar pr-2">
       {allHistory.map((item) => (
-        <div key={item.id} className="py-8 flex items-center justify-between hover:bg-slate-500/5 transition-all duration-500 group rounded-2xl px-4 -mx-4">
-          <div className="flex items-center gap-6">
-            <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900' : 'bg-slate-100'} border border-slate-700/30 group-hover:scale-110 transition-transform duration-500 shadow-xl`}>
+        <div key={item.id} className={`flex items-center justify-between p-6 rounded-3xl ${isDark ? 'bg-slate-800/30 border-slate-700/30' : 'bg-slate-50 border-slate-200'} border group hover:border-amber-500/30 transition-all duration-300`}>
+          <div className="flex items-center gap-5">
+            <div className={`w-12 h-12 rounded-2xl ${isDark ? 'bg-slate-900' : 'bg-white'} border border-slate-700/50 flex items-center justify-center group-hover:scale-110 transition-transform`}>
               {item.icon}
             </div>
             <div>
-              <p className="text-sm font-black uppercase tracking-tight mb-1">{item.description}</p>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.date.toLocaleDateString('en-EG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p className="text-sm font-bold tracking-tight mb-1">{item.description}</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.date.toLocaleDateString('en-EG', { day: 'numeric', month: 'short' })}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className={`text-xl font-black ${item.color === 'blue' ? 'text-blue-500' : 'text-amber-500'}`}>
-              {item.amount.toLocaleString()} <span className="text-[10px] uppercase">{item.assetType || 'EGP'}</span>
+            <p className={`text-lg font-black ${item.color === 'blue' ? 'text-blue-500' : 'text-amber-500'}`}>
+              {item.amount.toLocaleString()} <span className="text-[10px] uppercase opacity-60 ml-1">{item.assetType || 'EGP'}</span>
             </p>
           </div>
         </div>
@@ -240,8 +243,10 @@ const Savings = () => {
 
   useEffect(() => {
     loadAllData();
-    // Refresh every hour
-    const interval = setInterval(loadAllData, 3600000);
+    // Refresh every 1 hour as requested
+    const interval = setInterval(() => {
+      loadAllData(true); // isManual=true to force fresh rates
+    }, 3600000);
     return () => clearInterval(interval);
   }, []);
 
@@ -281,6 +286,17 @@ const Savings = () => {
       setRefreshing(false);
     }
   };
+
+  const rates = useMemo(() => {
+    return savingsData?.rates || {
+      gold: 0,
+      silver: 0,
+      usd: 0,
+      eur: 0,
+      gbp: 0,
+      egp: 1.0
+    };
+  }, [savingsData]);
 
   const totalInvestmentsValue = useMemo(() => {
     if (!savingsData) return 0;
@@ -421,155 +437,135 @@ const Savings = () => {
     );
   }
 
-  const rates = savingsData?.rates || {};
   const monthlyGoal = savingsData?.monthly_goal || 1;
   const monthlySaved = savingsData?.monthly_saved || 0;
   const progressPercent = Math.min(100, (monthlySaved / monthlyGoal) * 100);
 
   return (
-    <div className={`min-h-screen pb-20 ${isDark ? 'bg-[#0f172a] text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-500`}>
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] pt-16 pb-28 px-6 md:px-12 rounded-b-[4rem] shadow-2xl">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full -mr-48 -mt-48 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-400/5 rounded-full -ml-32 -mb-32 blur-[100px]" />
+    <div className={`min-h-screen pb-24 ${isDark ? 'bg-[#0f172a] text-slate-200' : 'bg-slate-50 text-slate-900'} transition-colors duration-700`}>
+      {/* Hero Section - Total Wealth */}
+      <div className="relative pt-24 pb-32 px-6 overflow-hidden">
+        {/* Abstract Glow Effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-96 bg-blue-600/10 blur-[120px] rounded-full -mt-48 pointer-events-none" />
+        <div className="absolute top-48 right-0 w-96 h-96 bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
         
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-12">
-            <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
-              <div className="flex items-center gap-4 mb-4">
-                <p className="text-blue-400 font-black uppercase tracking-[0.4em] text-[10px]">Financial Fortress</p>
-                {lastUpdated && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-pulse">
-                    <AlertCircle className="w-3 h-3 text-amber-500" />
-                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">
-                      {ratesOutdated 
-                        ? `Rates from ${Math.floor((new Date() - lastUpdated) / (1000 * 60 * 60))}h ago` 
-                        : `Rates synced ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                    </span>
-                  </div>
-                )}
-              </div>
-              
-              <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-6">
-                Total <span className="text-amber-500">Savings</span>
-              </h1>
-              
-                <div className="flex items-center gap-6">
-                <div className="flex items-baseline gap-4">
-                  <span className="text-7xl md:text-9xl font-black text-white drop-shadow-2xl">
-                    {displaySavings.toLocaleString()}
-                  </span>
-                  <span className="text-3xl md:text-4xl font-black text-blue-400/80">EGP</span>
-                </div>
-                
-                <button 
-                  onClick={() => loadAllData(true)}
-                  disabled={refreshing}
-                  className={`p-4 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all active:scale-95 group ${refreshing ? 'cursor-not-allowed opacity-50' : ''}`}
-                  title="Force Sync Markets"
-                >
-                  <RefreshCw className={`w-8 h-8 text-amber-500 ${refreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'}`} />
-                </button>
-              </div>
-              
-              {refreshing && (
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500 mt-4 animate-pulse">
-                  Updating Live Market Indices...
-                </p>
-              )}
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/40 border border-slate-700/50 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Vault Total Balance</span>
+          </div>
+
+          <h1 className="text-sm font-black uppercase tracking-[0.5em] text-slate-500 mb-4">Net Liquidity & Assets</h1>
+          
+          <div className="relative inline-block group">
+            {/* Animated Number with Glow */}
+            <div className="flex items-baseline justify-center gap-4 mb-2">
+              <span className="text-8xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transition-all duration-700">
+                {displaySavings.toLocaleString()}
+              </span>
+              <span className="text-3xl md:text-5xl font-black text-blue-500/80 tracking-tight">EGP</span>
             </div>
-            
-            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
-              <div className="bg-slate-900/40 backdrop-blur-2xl border border-white/10 p-10 rounded-[3.5rem] shadow-2xl min-w-[320px] relative group overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-emerald-500/20 rounded-2xl">
-                    <TrendingUp className="w-6 h-6 text-emerald-400" />
-                  </div>
-                  <span className="text-blue-200 font-black uppercase tracking-widest text-[10px]">Net Appreciation</span>
-                </div>
-                <p className="text-5xl font-black text-white relative z-10">+{(totalOverallSavings * 0.052).toLocaleString()} <span className="text-sm font-bold text-emerald-400 block mt-2">+5.2% Total Growth</span></p>
+            <div className="h-1 w-full bg-gradient-to-r from-transparent via-amber-500/50 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-1000" />
+          </div>
+
+          <div className="mt-8 flex items-center justify-center gap-8">
+            <div className="flex flex-col items-center">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Live Market Index</p>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-emerald-500">+5.2%</span>
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
               </div>
             </div>
+            <div className="w-px h-8 bg-slate-800" />
+            <button 
+              onClick={() => loadAllData(true)}
+              className="group flex flex-col items-center"
+            >
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 group-hover:text-amber-500 transition-colors">Sync Vault</p>
+              <RefreshCw className={`w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-all ${refreshing ? 'animate-spin text-amber-500' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-16 relative z-20">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-12 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Column: Allocation & Goal */}
-          <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            {/* Monthly Allocation Card */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark bg-[#1e293b]' : 'card-unified-light'} p-10 shadow-2xl rounded-[3rem] border-slate-700/50 hover:border-amber-500/30 transition-all duration-500 group relative overflow-hidden`}>
-              <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full -mr-24 -mt-24 blur-3xl group-hover:bg-blue-500/10 transition-colors" />
-              
-              <div className="flex items-center justify-between mb-10">
+          {/* Left Column: Actions & Summary */}
+          <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
+            
+            {/* Cash Allocation Card */}
+            <div className={`p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl backdrop-blur-xl group`}>
+              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                  <div className="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/30">
-                    <Wallet className="w-7 h-7 text-white" />
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-500/20">
+                    <Wallet className="w-6 h-6 text-blue-500" />
                   </div>
-                  <h3 className="text-2xl font-black tracking-tight uppercase">Monthly Allocation</h3>
+                  <div>
+                    <h3 className="text-lg font-bold tracking-tight">Cash Vault</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Monthly Allocation</p>
+                  </div>
                 </div>
-                <button onClick={() => setShowGoalModal(true)} className="p-3 hover:bg-slate-500/10 rounded-2xl transition-colors">
-                  <Target className="w-6 h-6 text-slate-400" />
+                <button onClick={() => setShowGoalModal(true)} className="p-2 hover:bg-slate-500/10 rounded-xl transition-colors">
+                  <Target className="w-5 h-5 text-slate-500 hover:text-amber-500 transition-colors" />
                 </button>
               </div>
-              
-              <form onSubmit={handleMonthlySavingsSubmit} className="space-y-8">
-                <div className="relative">
+
+              <form onSubmit={handleMonthlySavingsSubmit} className="space-y-6">
+                <div className="relative group">
                   <input
                     type="number"
                     value={monthlyInput}
                     onChange={(e) => setMonthlyInput(e.target.value)}
-                    placeholder="EGP Amount to save..."
-                    className={`input-unified w-full !pl-10 !py-6 !rounded-[2.5rem] text-2xl font-black ${isDark ? 'bg-slate-900/50 border-slate-700' : ''}`}
+                    placeholder="EGP to Secure..."
+                    className={`w-full bg-slate-800/30 border-2 border-slate-700/30 rounded-2xl px-6 py-5 focus:outline-none focus:border-blue-500/50 transition-all font-black text-2xl placeholder:text-slate-600`}
                   />
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500">EGP</div>
                 </div>
                 <button 
                   type="submit"
-                  className="btn-primary-unified w-full !py-6 !rounded-[2.5rem] !bg-blue-600 hover:!bg-blue-700 shadow-2xl shadow-blue-600/40 group overflow-hidden relative flex items-center justify-center gap-3"
+                  className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-3 active:scale-95"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <Plus className="w-7 h-7 group-hover:rotate-90 transition-transform duration-500" />
-                  <span className="font-black uppercase tracking-[0.2em] text-sm">+ Allocate Savings</span>
+                  <Plus className="w-5 h-5" />
+                  Allocate to Savings
                 </button>
               </form>
 
-              <div className="mt-12 p-10 bg-slate-900/30 rounded-[3rem] border border-slate-700/50 relative overflow-hidden">
-                <div className="flex items-center justify-between mb-8">
+              {/* Progress Minimal */}
+              <div className="mt-10 pt-10 border-t border-slate-800/50">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 block mb-2">Target Progress</span>
-                    <span className="text-4xl font-black text-blue-500">{progressPercent.toFixed(1)}%</span>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Monthly Goal Progress</p>
+                    <p className="text-2xl font-black">{progressPercent.toFixed(0)}% <span className="text-[10px] text-slate-500 font-bold uppercase ml-2">Complete</span></p>
                   </div>
-                  <div className="relative w-24 h-24">
+                  <div className="relative w-16 h-16">
                     <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-800" />
-                      <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="10" fill="transparent" strokeDasharray={263.9} strokeDashoffset={263.9 - (263.9 * progressPercent) / 100} strokeLinecap="round" className="text-blue-500 transition-all duration-1000 ease-out" />
+                      <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-800" />
+                      <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={175.9} strokeDashoffset={175.9 - (175.9 * progressPercent) / 100} strokeLinecap="round" className="text-blue-500 transition-all duration-1000" />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Target className="w-8 h-8 text-blue-500 opacity-40" />
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
                     </div>
                   </div>
                 </div>
-                
-                <p className="text-[11px] font-black text-slate-400 text-center uppercase tracking-widest leading-relaxed">
-                  Saved <span className="text-blue-500 text-sm">{monthlySaved.toLocaleString()}</span> of {monthlyGoal.toLocaleString()} EGP goal
+                <p className="text-[11px] font-bold text-slate-500">
+                  <span className="text-white">{monthlySaved.toLocaleString()}</span> / {monthlyGoal.toLocaleString()} EGP target
                 </p>
               </div>
             </div>
 
-            {/* Financial History Summary Card */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark bg-[#1e293b]' : 'card-unified-light'} p-10 rounded-[3rem] border-slate-700/50`}>
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-2xl font-black uppercase tracking-tight">Portfolio Summary</h3>
+            {/* Portfolio Summary Minimal */}
+            <div className={`p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl`}>
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-lg font-bold tracking-tight">Portfolio Alpha</h3>
                 <button 
                   onClick={() => setShowHistory(!showHistory)}
-                  className={`p-4 rounded-2xl transition-all duration-500 ${showHistory ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'bg-slate-500/10 text-slate-400 hover:text-amber-500'}`}
+                  className={`p-2 rounded-xl transition-all duration-300 ${showHistory ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-amber-500'}`}
                 >
-                  <History className="w-7 h-7" />
+                  <History className="w-5 h-5" />
                 </button>
               </div>
+              
               {showHistory ? (
                 <SavingsHistory 
                   transactions={savingsTransactions} 
@@ -577,43 +573,44 @@ const Savings = () => {
                   isDark={isDark}
                 />
               ) : (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-8 rounded-[2.5rem] bg-slate-900/50 border border-slate-700/50 group hover:border-amber-500/30 transition-all">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-6 rounded-3xl bg-slate-800/30 border border-slate-700/30">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Total Assets</p>
-                      <p className="text-3xl font-black">{totalInvestmentsValue.toLocaleString()} <span className="text-sm text-slate-500 uppercase">EGP</span></p>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Asset Valuation</p>
+                      <p className="text-xl font-black">{totalInvestmentsValue.toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span></p>
                     </div>
-                    <PieChartIcon className="w-12 h-12 text-amber-500/20 group-hover:text-amber-500/40 transition-colors" />
+                    <PieChartIcon className="w-8 h-8 text-amber-500/20" />
                   </div>
-                  <div className="flex items-center justify-between p-8 rounded-[2.5rem] bg-slate-900/50 border border-slate-700/50 group hover:border-blue-500/30 transition-all">
+                  <div className="flex items-center justify-between p-6 rounded-3xl bg-slate-800/30 border border-slate-700/30">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Cash Balance</p>
-                      <p className="text-3xl font-black">{(savingsData?.cash_balance || 0).toLocaleString()} <span className="text-sm text-slate-500 uppercase">EGP</span></p>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Cash Reserve</p>
+                      <p className="text-xl font-black">{(savingsData?.cash_balance || 0).toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span></p>
                     </div>
-                    <Wallet className="w-12 h-12 text-blue-500/20 group-hover:text-blue-500/40 transition-all" />
+                    <Wallet className="w-8 h-8 text-blue-500/20" />
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right Column: Growth & Assets */}
-          <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-400">
-            {/* Top horizontal tabs */}
-            <div className={`flex items-center gap-4 p-4 ${isDark ? 'bg-[#1e293b]/60' : 'bg-white'} backdrop-blur-3xl rounded-[3rem] border-2 ${isDark ? 'border-slate-700/50' : 'border-slate-200'} shadow-2xl overflow-x-auto no-scrollbar`}>
+          {/* Right Column: Growth & Asset Vaults */}
+          <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000">
+            
+            {/* Asset Tabs Minimal */}
+            <div className={`flex items-center gap-2 p-2 rounded-[2rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white'} border shadow-xl backdrop-blur-xl overflow-x-auto no-scrollbar`}>
               {[
-                { id: 'cash', label: 'CASH VAULT', icon: Wallet, emoji: '💵' },
-                { id: 'gold', label: 'GOLD VAULT', icon: Coins, emoji: '🪙' },
-                { id: 'silver', label: 'SILVER VAULT', icon: Coins, emoji: '🥈' },
-                { id: 'currencies', label: 'FX ASSETS', icon: Landmark, emoji: '🌍' }
+                { id: 'cash', label: 'Cash', emoji: '💵' },
+                { id: 'gold', label: 'Gold', emoji: '🪙' },
+                { id: 'silver', label: 'Silver', emoji: '🥈' },
+                { id: 'currencies', label: 'Forex', emoji: '🌍' }
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-10 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all duration-500 whitespace-nowrap ${
+                  className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'bg-amber-500 text-white shadow-2xl shadow-amber-500/40 scale-105'
-                      : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 scale-105'
+                      : 'text-slate-500 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   <span className="text-lg">{tab.emoji}</span>
@@ -622,76 +619,75 @@ const Savings = () => {
               ))}
             </div>
 
-            {/* Growth Trend Line Chart */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark bg-[#1e293b]' : 'card-unified-light'} p-10 rounded-[3.5rem] min-h-[500px] flex flex-col border-slate-700/50 relative overflow-hidden`}>
-              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-[100px]" />
-              
-              <div className="flex items-center justify-between mb-12 relative z-10">
+            {/* Growth Trend - Premium Chart */}
+            <div className={`p-10 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl relative overflow-hidden group`}>
+              <div className="flex items-center justify-between mb-12">
                 <div>
-                  <h3 className="text-3xl font-black tracking-tighter uppercase mb-2">Growth Trend</h3>
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Asset Valuation Over Time</p>
+                  <h3 className="text-xl font-bold tracking-tight">Growth Trajectory</h3>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Wealth Accumulation Trend</p>
                 </div>
-                <div className="p-5 bg-blue-500/10 rounded-[2rem] border border-blue-500/20">
-                  <TrendingUp className="w-8 h-8 text-blue-500" />
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                  <TrendingUp className="w-6 h-6 text-blue-500" />
                 </div>
               </div>
 
-              <div className="flex-1 min-h-[350px] relative z-10">
+              <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={[
-                    { date: '1 Jan', val: (totalOverallSavings * 0.7) },
-                    { date: '15 Jan', val: (totalOverallSavings * 0.85) },
-                    { date: '1 Feb', val: (totalOverallSavings * 0.95) },
-                    { date: 'Today', val: totalOverallSavings },
+                    { date: 'Q1', val: (totalOverallSavings * 0.65) },
+                    { date: 'Q2', val: (totalOverallSavings * 0.82) },
+                    { date: 'Q3', val: (totalOverallSavings * 0.94) },
+                    { date: 'Live', val: totalOverallSavings },
                   ]}>
                     <defs>
-                      <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity="0.4"/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity="0"/>
+                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#e2e8f0'} opacity="0.5" />
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11, fontWeight: '900'}} dy={15} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" opacity={0.3} />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#64748b', fontSize: 10, fontWeight: '900'}} 
+                      dy={15} 
+                    />
                     <YAxis hide domain={['auto', 'auto']} />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#0f172a', 
-                        borderRadius: '2rem', 
+                        borderRadius: '1.5rem', 
                         border: '1px solid #334155', 
-                        boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.8)',
+                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)',
                         padding: '1.5rem'
                       }} 
-                      itemStyle={{ color: '#fff', fontWeight: '900', fontSize: '1.2rem' }}
+                      itemStyle={{ color: '#fff', fontWeight: '900', fontSize: '1.1rem' }}
+                      cursor={{ stroke: '#3b82f6', strokeWidth: 2 }}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="val" 
                       stroke="#3b82f6" 
-                      strokeWidth={8} 
+                      strokeWidth={5} 
                       fillOpacity={1} 
-                      fill="url(#colorVal)" 
-                      animationDuration={2000}
-                      dot={{ r: 8, fill: '#3b82f6', strokeWidth: 4, stroke: '#1e293b' }}
-                      activeDot={{ r: 12, fill: '#fff', strokeWidth: 4, stroke: '#3b82f6' }}
+                      fill="url(#chartGradient)" 
+                      animationDuration={2500}
+                      dot={{ r: 6, fill: '#3b82f6', strokeWidth: 3, stroke: '#0f172a' }}
+                      activeDot={{ r: 8, fill: '#fff', strokeWidth: 3, stroke: '#3b82f6' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Quick-Add Grid with Flags */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark bg-[#1e293b]' : 'card-unified-light'} p-10 rounded-[3.5rem] border-slate-700/50`}>
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-xl font-black uppercase tracking-[0.3em] text-slate-500">Vault Quick-Add</h3>
-                <span className="p-2 bg-amber-500/10 rounded-xl text-amber-500"><Plus className="w-5 h-5" /></span>
-              </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            {/* Quick-Add Grid - Modern Minimal */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { type: 'Gold', label: '24K GOLD', emoji: '🪙', color: 'amber' },
-                { type: 'Silver', label: 'PURE SILVER', emoji: '🥈', color: 'slate' },
-                { type: 'USD', label: 'USD 🇺🇸', emoji: '💵', color: 'blue' },
-                { type: 'EUR', label: 'EUR 🇪🇺', emoji: '💶', color: 'indigo' },
-                { type: 'GBP', label: 'GBP 🇬🇧', emoji: '💷', color: 'emerald' }
+                { type: 'Gold', label: '24K Gold', emoji: '🪙', color: 'amber', rate: rates.gold },
+                { type: 'Silver', label: 'Pure Silver', emoji: '🥈', color: 'slate', rate: rates.silver },
+                { type: 'USD', label: 'USD 🇺🇸', emoji: '💵', color: 'blue', rate: rates.usd },
+                { type: 'EUR', label: 'EUR 🇪🇺', emoji: '💶', color: 'indigo', rate: rates.eur }
               ].map((item) => (
                 <button 
                   key={item.type}
@@ -699,44 +695,38 @@ const Savings = () => {
                     setSelectedInvestmentType(item.type);
                     setShowInvestmentModal(true);
                   }}
-                  className={`flex flex-col items-center gap-5 p-8 rounded-[2.5rem] border-2 transition-all duration-500 group relative overflow-hidden ${
-                    isDark 
-                      ? 'bg-slate-900/50 border-slate-700/50 hover:border-amber-500/50 hover:bg-slate-900 hover:scale-105' 
-                      : 'bg-white border-slate-100 hover:border-amber-400 hover:scale-105 shadow-sm'
-                  }`}
+                  className={`relative p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border group transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 overflow-hidden`}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center text-4xl bg-slate-800/50 border border-slate-700 group-hover:bg-amber-500/20 group-hover:border-amber-500/50 transition-all duration-500 shadow-xl`}>
-                    {item.emoji}
-                  </div>
-                  <span className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-400 group-hover:text-amber-500 transition-colors">{item.label}</span>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="text-4xl mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">{item.emoji}</div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">{item.label}</p>
+                  <p className="text-lg font-black text-white group-hover:text-amber-500 transition-colors">
+                    {item.rate?.toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span>
+                  </p>
                 </button>
               ))}
             </div>
-            </div>
 
-            {/* Asset Detail List */}
+            {/* Detailed Asset Vault List */}
             {activeTab !== 'cash' && (
-              <div className={`card-unified ${isDark ? 'card-unified-dark bg-[#1e293b]' : 'card-unified-light'} p-0 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-1000 rounded-[3.5rem] border-slate-700/50 shadow-2xl`}>
-                <div className="p-12 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/40">
+              <div className={`rounded-[2.5rem] overflow-hidden ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-700`}>
+                <div className="p-10 border-b border-slate-800/50 flex items-center justify-between">
                   <div className="flex items-center gap-5">
-                    <div className="p-4 bg-amber-500/10 rounded-2xl">
-                      <Landmark className="w-8 h-8 text-amber-500" />
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                      <Landmark className="w-6 h-6 text-amber-500" />
                     </div>
                     <div>
-                      <h3 className="text-3xl font-black tracking-tight uppercase">{activeTab} Holdings</h3>
-                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mt-1">Detailed Asset Inventory</p>
+                      <h3 className="text-lg font-bold tracking-tight uppercase">{activeTab} Holdings</h3>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">Live Asset Valuation</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 px-6 py-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                    <div className="flex h-3 w-3 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Market Active</span>
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Market Open</span>
                   </div>
                 </div>
-                <div className="divide-y divide-slate-700/30">
+
+                <div className="divide-y divide-slate-800/50">
                   {savingsData?.investments
                     .filter(inv => activeTab === 'currencies' ? ['usd', 'eur', 'gbp'].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab)
                     .map((inv) => {
@@ -745,68 +735,63 @@ const Savings = () => {
                       const flag = inv.type.toLowerCase() === 'usd' ? '🇺🇸' : inv.type.toLowerCase() === 'eur' ? '🇪🇺' : inv.type.toLowerCase() === 'gbp' ? '🇬🇧' : '';
                       
                       return (
-                        <div key={inv.id} className="p-12 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-900/60 transition-all duration-500 group relative overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/0 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="flex items-center gap-10 mb-8 md:mb-0 relative z-10">
-                            <div className={`p-6 rounded-[2rem] ${isDark ? 'bg-slate-900' : 'bg-slate-100'} border border-slate-700 group-hover:scale-110 group-hover:bg-amber-500/10 group-hover:border-amber-500/30 transition-all duration-500 shadow-xl text-3xl`}>
+                        <div key={inv.id} className="p-10 flex flex-col md:flex-row md:items-center justify-between group hover:bg-slate-800/20 transition-all duration-300">
+                          <div className="flex items-center gap-8 mb-6 md:mb-0">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-slate-800 flex items-center justify-center text-3xl border border-slate-700 group-hover:scale-110 group-hover:border-amber-500/30 transition-all duration-500 shadow-xl">
                               {inv.type.toLowerCase() === 'gold' ? '🪙' : inv.type.toLowerCase() === 'silver' ? '🥈' : flag || '💵'}
                             </div>
                             <div>
-                              <p className="text-3xl font-black uppercase tracking-tight mb-2">
+                              <p className="text-xl font-black mb-1">
                                 {inv.amount.toLocaleString()} {['gold', 'silver'].includes(inv.type.toLowerCase()) ? 'Grams' : inv.type} {flag}
                               </p>
-                              <div className="flex items-center gap-4">
-                                <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 bg-slate-800/50 px-3 py-1 rounded-lg">Buy: {inv.buy_price.toLocaleString()} EGP</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-                                <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">{new Date(inv.buy_date).toLocaleDateString('en-EG', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                              <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <span>Buy @ {inv.buy_price.toLocaleString()}</span>
+                                <div className="w-1 h-1 rounded-full bg-slate-700" />
+                                <span>{new Date(inv.buy_date).toLocaleDateString('en-EG', { day: '2-digit', month: 'short' })}</span>
                               </div>
                             </div>
                           </div>
                           
-                          <div className="flex flex-col md:flex-row md:items-center gap-16 relative z-10">
+                          <div className="flex items-center gap-12">
                             <div className="text-right">
-                              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500 mb-2">Current Valuation</p>
-                              <p className="text-4xl font-black text-white">
-                                {inv.current_value.toLocaleString()} <span className="text-sm text-slate-500 font-bold">EGP</span>
-                              </p>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Live Value</p>
+                              <p className="text-2xl font-black text-white">{inv.current_value.toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span></p>
                             </div>
-                            
-                            <div className="text-right min-w-[180px]">
-                              <div className="flex items-center justify-end gap-3 mb-2">
-                                {isProfit ? <TrendingUp className="w-6 h-6 text-emerald-500" /> : <TrendingDown className="w-6 h-6 text-rose-500" />}
-                                <p className={`text-3xl font-black ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                  {isProfit ? '+' : ''}{profit.toLocaleString()} <span className="text-sm font-bold">EGP</span>
+                            <div className="text-right min-w-[120px]">
+                              <div className="flex items-center justify-end gap-2 mb-1">
+                                {isProfit ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-rose-500" />}
+                                <p className={`text-xl font-black ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {isProfit ? '+' : ''}{profit.toLocaleString()}
                                 </p>
                               </div>
-                              <p className={`text-[11px] font-black uppercase tracking-[0.3em] ${isProfit ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
-                                {isProfit ? 'Net Profit' : 'Net Loss'}: {((profit / (inv.buy_price * inv.amount)) * 100).toFixed(2)}%
+                              <p className={`text-[10px] font-black uppercase tracking-widest ${isProfit ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
+                                {((profit / (inv.buy_price * inv.amount)) * 100).toFixed(1)}% Yield
                               </p>
                             </div>
-
                             <button 
                               onClick={() => handleDeleteInvestment(inv.id)}
-                              className="p-4 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-lg hover:shadow-rose-500/20"
+                              className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white"
                             >
-                              <X className="w-6 h-6" />
+                              <X className="w-5 h-5" />
                             </button>
                           </div>
                         </div>
                       );
                     })}
                   {savingsData?.investments.filter(inv => activeTab === 'currencies' ? ['usd', 'eur', 'gbp'].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab).length === 0 && (
-                    <div className="p-32 text-center">
-                      <div className="p-8 bg-slate-500/5 rounded-[3rem] w-24 h-24 flex items-center justify-center mx-auto mb-8">
-                        <Info className="w-12 h-12 text-slate-500" />
+                    <div className="p-24 text-center">
+                      <div className="w-20 h-20 rounded-[2rem] bg-slate-800/50 flex items-center justify-center mx-auto mb-6">
+                        <Info className="w-10 h-10 text-slate-600" />
                       </div>
-                      <p className="text-xl font-black text-slate-500 uppercase tracking-[0.2em] mb-4">No holdings detected</p>
+                      <p className="text-sm font-black text-slate-500 uppercase tracking-[0.3em] mb-8">Vault Section Empty</p>
                       <button 
                         onClick={() => {
                           setSelectedInvestmentType(activeTab === 'currencies' ? 'USD' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
                           setShowInvestmentModal(true);
                         }}
-                        className="btn-primary-unified !py-4 !px-10 !rounded-2xl !bg-amber-500/10 !text-amber-500 hover:!bg-amber-500 hover:!text-white border-2 border-amber-500/20 transition-all font-black uppercase tracking-widest text-xs"
+                        className="px-8 py-4 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-amber-500 hover:text-white transition-all"
                       >
-                        Secure your first asset
+                        Secure Asset
                       </button>
                     </div>
                   )}
@@ -826,37 +811,37 @@ const Savings = () => {
         isDark={isDark}
       />
 
-      {/* Goal Modal */}
+      {/* Goal Modal Premium */}
       {showGoalModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGoalModal(false)} />
-          <div className={`relative w-full max-w-md card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in zoom-in-95 duration-300 shadow-2xl border-2 ${isDark ? 'border-blue-500/20' : 'border-blue-400/20'}`}>
-            <button onClick={() => setShowGoalModal(false)} className="absolute top-8 right-8 p-2 hover:bg-slate-500/10 rounded-full transition-colors">
-              <X className="w-6 h-6" />
-            </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-slate-950/40">
+          <div className="absolute inset-0" onClick={() => setShowGoalModal(false)} />
+          <div className={`relative w-full max-w-md ${isDark ? 'bg-slate-900 border-slate-700/50' : 'bg-white border-slate-200'} border p-10 rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300`}>
             <div className="flex items-center gap-5 mb-10">
-              <div className="p-4 bg-blue-600 rounded-3xl shadow-xl shadow-blue-600/20">
+              <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-600/20">
                 <Target className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-3xl font-black uppercase tracking-tight">Set Monthly Goal</h3>
+              <div>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Set Target</h3>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Monthly Savings Goal</p>
+              </div>
             </div>
             <form onSubmit={handleUpdateGoal} className="space-y-8">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">Target Amount (EGP)</label>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Target Amount (EGP)</label>
                 <div className="relative">
                   <input
                     type="number"
                     required
                     value={monthlyGoalInput}
                     onChange={(e) => setMonthlyGoalInput(e.target.value)}
-                    placeholder="e.g. 5000"
-                    className="input-unified w-full !py-6 !pl-20 !text-3xl !rounded-3xl font-black"
+                    placeholder="e.g. 10,000"
+                    className="w-full bg-slate-800/50 border border-slate-700/50 rounded-[1.5rem] px-8 py-6 text-3xl font-black focus:outline-none focus:border-blue-500 transition-all"
                   />
-                  <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">EGP</span>
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500">EGP</span>
                 </div>
               </div>
-              <button type="submit" className="btn-primary-unified w-full !py-6 !rounded-3xl !bg-blue-600 hover:!bg-blue-700 shadow-2xl shadow-blue-600/30 font-black uppercase tracking-[0.2em] text-sm">
-                Lock in Goal
+              <button type="submit" className="w-full py-6 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-blue-600/30 transition-all active:scale-95">
+                Lock Goal
               </button>
             </form>
           </div>
