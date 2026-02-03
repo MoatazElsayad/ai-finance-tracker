@@ -270,7 +270,6 @@ const LongTermGoalModal = ({ isOpen, onClose, onSave, currentGoal, isDark }) => 
 
 const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
   const [amount, setAmount] = useState('');
-  const [buyPrice, setBuyPrice] = useState('');
   const [buyDate, setBuyDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
 
@@ -281,35 +280,37 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
     setError('');
 
     const numAmount = parseFloat(amount);
-    const numPrice = parseFloat(buyPrice);
 
     if (isNaN(numAmount) || numAmount <= 0) {
       setError('Enter a valid amount');
-      return;
-    }
-    if (isNaN(numPrice) || numPrice <= 0) {
-      setError('Enter a valid price');
       return;
     }
 
     onAdd({
       type,
       amount: numAmount,
-      buy_price: numPrice,
       buy_date: buyDate
     });
     setAmount('');
-    setBuyPrice('');
     onClose();
   };
 
-  const isCurrency = ['USD', 'GBP', 'EUR'].includes(type);
+  const isCurrency = !['Gold', 'Silver'].includes(type);
   const flagMap = {
-    'USD': '🇺🇸',
-    'EUR': '🇪🇺',
-    'GBP': '🇬🇧',
-    'Gold': '🪙',
-    'Silver': '🥈'
+    'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'SAR': '🇸🇦', 'AED': '🇦🇪',
+    'KWD': '🇰🇼', 'QAR': '🇶🇦', 'BHD': '🇧🇭', 'OMR': '🇴🇲', 'JOD': '🇯🇴',
+    'TRY': '🇹🇷', 'CAD': '🇨🇦', 'AUD': '🇦🇺',
+  };
+
+  const getIcon = () => {
+    if (type === 'Gold') return <Coins className="w-6 h-6 text-amber-500" />;
+    if (type === 'Silver') return <Coins className="w-6 h-6 text-slate-400" />;
+    return (
+      <div className="flex items-center gap-1.5">
+        <DollarSign className="w-5 h-5 text-emerald-500" />
+        <span className="text-lg">{flagMap[type]}</span>
+      </div>
+    );
   };
 
   return (
@@ -318,8 +319,8 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
       <div className={`relative w-full max-w-md ${isDark ? 'bg-slate-900 border-slate-700/50' : 'bg-white border-slate-200'} border p-8 rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300`}>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl border border-amber-500/20">
-              {flagMap[type] || '💰'}
+            <div className="w-16 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50 shadow-inner px-2">
+              {getIcon()}
             </div>
             <div>
               <h3 className="text-xl font-bold tracking-tight">Secure {type}</h3>
@@ -341,30 +342,29 @@ const InvestmentModal = ({ isOpen, onClose, onAdd, type, isDark }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">
-              {isCurrency ? 'Units' : 'Grams'}
+              {isCurrency ? `Amount in ${type}` : 'Grams of Metal'}
             </label>
-            <input
-              type="number"
-              required
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder={isCurrency ? "e.g. 500" : "e.g. 10.5"}
-              className={`w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold text-lg`}
-            />
+            <div className="relative">
+              <input
+                type="number"
+                required
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder={isCurrency ? "e.g. 500" : "e.g. 10.5"}
+                className={`w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold text-lg`}
+              />
+              {isCurrency && (
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500">
+                  {type}
+                </div>
+              )}
+            </div>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-2 ml-1">
+              * Buy price will be automatically fetched at current market rate
+            </p>
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Buy Price (EGP)</label>
-            <input
-              type="number"
-              required
-              step="0.01"
-              value={buyPrice}
-              onChange={(e) => setBuyPrice(e.target.value)}
-              placeholder="Price per unit/gram"
-              className={`w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:border-amber-500/50 transition-all font-bold text-lg`}
-            />
-          </div>
+
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Acquisition Date</label>
             <input
@@ -539,6 +539,16 @@ const Savings = () => {
       { name: 'USD', value: 0 },
       { name: 'EUR', value: 0 },
       { name: 'GBP', value: 0 },
+      { name: 'SAR', value: 0 },
+      { name: 'AED', value: 0 },
+      { name: 'KWD', value: 0 },
+      { name: 'QAR', value: 0 },
+      { name: 'BHD', value: 0 },
+      { name: 'OMR', value: 0 },
+      { name: 'JOD', value: 0 },
+      { name: 'TRY', value: 0 },
+      { name: 'CAD', value: 0 },
+      { name: 'AUD', value: 0 },
     ];
 
     savingsData.investments.forEach(inv => {
@@ -926,10 +936,10 @@ const Savings = () => {
             {/* Asset Tabs Minimal */}
             <div className={`flex items-center gap-2 p-2 rounded-[2rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white'} border shadow-xl backdrop-blur-xl overflow-x-auto no-scrollbar`}>
               {[
-                { id: 'cash', label: 'Cash', emoji: '💵' },
-                { id: 'gold', label: 'Gold', emoji: '🪙' },
-                { id: 'silver', label: 'Silver', emoji: '🥈' },
-                { id: 'currencies', label: 'Forex', emoji: '🌍' }
+                { id: 'cash', label: 'Cash', icon: <Wallet className="w-5 h-5" /> },
+                { id: 'gold', label: 'Gold', icon: <Coins className="w-5 h-5" /> },
+                { id: 'silver', label: 'Silver', icon: <Coins className="w-5 h-5" /> },
+                { id: 'currencies', label: 'Forex', icon: <Landmark className="w-5 h-5" /> }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -940,7 +950,9 @@ const Savings = () => {
                       : 'text-slate-500 hover:text-white hover:bg-slate-800'
                   }`}
                 >
-                  <span className="text-lg">{tab.emoji}</span>
+                  <div className={`${activeTab === tab.id ? 'text-white' : 'text-amber-500'}`}>
+                    {tab.icon}
+                  </div>
                   {tab.label}
                 </button>
               ))}
@@ -1020,10 +1032,14 @@ const Savings = () => {
             {/* Quick-Add Grid - Modern Minimal */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { type: 'Gold', label: '24K Gold', emoji: '🪙', color: 'amber', rate: rates.gold },
-                { type: 'Silver', label: 'Pure Silver', emoji: '🥈', color: 'slate', rate: rates.silver },
-                { type: 'USD', label: 'USD 🇺🇸', emoji: '💵', color: 'blue', rate: rates.usd },
-                { type: 'EUR', label: 'EUR 🇪🇺', emoji: '💶', color: 'indigo', rate: rates.eur }
+                { type: 'Gold', label: '24K Gold', icon: <Coins className="w-8 h-8 text-amber-500" />, rate: rates.gold },
+                { type: 'Silver', label: 'Pure Silver', icon: <Coins className="w-8 h-8 text-slate-400" />, rate: rates.silver },
+                { type: 'USD', label: 'USD 🇺🇸', icon: <div className="flex items-center gap-1"><DollarSign className="w-8 h-8 text-blue-500" /><span className="text-2xl">🇺🇸</span></div>, rate: rates.usd },
+                { type: 'EUR', label: 'EUR 🇪🇺', icon: <div className="flex items-center gap-1"><DollarSign className="w-8 h-8 text-indigo-500" /><span className="text-2xl">🇪🇺</span></div>, rate: rates.eur },
+                { type: 'SAR', label: 'SAR 🇸🇦', icon: <div className="flex items-center gap-1"><DollarSign className="w-8 h-8 text-emerald-500" /><span className="text-2xl">🇸🇦</span></div>, rate: rates.sar },
+                { type: 'AED', label: 'AED 🇦🇪', icon: <div className="flex items-center gap-1"><DollarSign className="w-8 h-8 text-teal-500" /><span className="text-2xl">🇦🇪</span></div>, rate: rates.aed },
+                { type: 'GBP', label: 'GBP 🇬🇧', icon: <div className="flex items-center gap-1"><DollarSign className="w-8 h-8 text-purple-500" /><span className="text-2xl">🇬🇧</span></div>, rate: rates.gbp },
+                { type: 'KWD', label: 'KWD 🇰🇼', icon: <div className="flex items-center gap-1"><DollarSign className="w-8 h-8 text-amber-600" /><span className="text-2xl">🇰🇼</span></div>, rate: rates.kwd }
               ].map((item) => (
                 <button 
                   key={item.type}
@@ -1034,10 +1050,10 @@ const Savings = () => {
                   className={`relative p-8 rounded-[2.5rem] ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200'} border group transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="text-4xl mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">{item.emoji}</div>
+                  <div className="mb-6 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 flex justify-center">{item.icon}</div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">{item.label}</p>
                   <p className="text-lg font-black text-white group-hover:text-amber-500 transition-colors">
-                    {item.rate?.toLocaleString()} <span className="text-[10px] text-slate-500">EGP</span>
+                    {item.rate?.toLocaleString() || '---'} <span className="text-[10px] text-slate-500">EGP</span>
                   </p>
                 </button>
               ))}
@@ -1064,21 +1080,37 @@ const Savings = () => {
 
                 <div className="divide-y divide-slate-800/50">
                   {savingsData?.investments
-                    .filter(inv => activeTab === 'currencies' ? ['usd', 'eur', 'gbp'].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab)
+                    .filter(inv => activeTab === 'currencies' ? ![ 'gold', 'silver' ].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab)
                     .map((inv) => {
                       const profit = inv.current_value - (inv.buy_price * inv.amount);
                       const isProfit = profit >= 0;
-                      const flag = inv.type.toLowerCase() === 'usd' ? '🇺🇸' : inv.type.toLowerCase() === 'eur' ? '🇪🇺' : inv.type.toLowerCase() === 'gbp' ? '🇬🇧' : '';
+                      const flagMap = {
+                        'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'SAR': '🇸🇦', 'AED': '🇦🇪',
+                        'KWD': '🇰🇼', 'QAR': '🇶🇦', 'BHD': '🇧🇭', 'OMR': '🇴🇲', 'JOD': '🇯🇴',
+                        'TRY': '🇹🇷', 'CAD': '🇨🇦', 'AUD': '🇦🇺',
+                      };
+                      const flag = flagMap[inv.type.toUpperCase()] || '';
                       
+                      const getIcon = () => {
+                        if (inv.type.toLowerCase() === 'gold') return <Coins className="w-6 h-6 text-amber-500" />;
+                        if (inv.type.toLowerCase() === 'silver') return <Coins className="w-6 h-6 text-slate-400" />;
+                        return (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="w-5 h-5 text-emerald-500" />
+                            <span className="text-xl">{flag}</span>
+                          </div>
+                        );
+                      };
+
                       return (
                         <div key={inv.id} className="p-10 flex flex-col md:flex-row md:items-center justify-between group hover:bg-slate-800/20 transition-all duration-300">
                           <div className="flex items-center gap-8 mb-6 md:mb-0">
-                            <div className="w-16 h-16 rounded-[1.5rem] bg-slate-800 flex items-center justify-center text-3xl border border-slate-700 group-hover:scale-110 group-hover:border-amber-500/30 transition-all duration-500 shadow-xl">
-                              {inv.type.toLowerCase() === 'gold' ? '🪙' : inv.type.toLowerCase() === 'silver' ? '🥈' : flag || '💵'}
+                            <div className="w-20 h-16 rounded-[1.5rem] bg-slate-800 flex items-center justify-center text-3xl border border-slate-700 group-hover:scale-110 group-hover:border-amber-500/30 transition-all duration-500 shadow-xl px-2">
+                              {getIcon()}
                             </div>
                             <div>
                               <p className="text-xl font-black mb-1">
-                                {inv.amount.toLocaleString()} {['gold', 'silver'].includes(inv.type.toLowerCase()) ? 'Grams' : inv.type} {flag}
+                                {inv.amount.toLocaleString()} {['gold', 'silver'].includes(inv.type.toLowerCase()) ? 'Grams' : inv.type}
                               </p>
                               <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
                                 <span>Buy @ {inv.buy_price.toLocaleString()}</span>
@@ -1114,7 +1146,7 @@ const Savings = () => {
                         </div>
                       );
                     })}
-                  {savingsData?.investments.filter(inv => activeTab === 'currencies' ? ['usd', 'eur', 'gbp'].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab).length === 0 && (
+                  {savingsData?.investments.filter(inv => activeTab === 'currencies' ? ![ 'gold', 'silver' ].includes(inv.type.toLowerCase()) : inv.type.toLowerCase() === activeTab).length === 0 && (
                     <div className="p-24 text-center">
                       <div className="w-20 h-20 rounded-[2rem] bg-slate-800/50 flex items-center justify-center mx-auto mb-6">
                         <Info className="w-10 h-10 text-slate-600" />

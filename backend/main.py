@@ -133,10 +133,10 @@ class CategoryCreate(BaseModel):
     icon: str  # emoji like 🍔
 
 class InvestmentCreate(BaseModel):
-    type: str  # "gold", "silver", "USD", "GBP", "EUR"
+    type: str  # "gold", "silver", "USD", "GBP", "EUR", "SAR", etc.
     amount: float
-    buy_price: float
-    buy_date: str  # "2026-01-15"
+    buy_price: float | None = None
+    buy_date: str | None = None  # Format: "2026-01-15"
 
 class SavingsGoalUpdate(BaseModel):
     monthly_goal: float
@@ -1261,30 +1261,50 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
             "usd": cached_record.usd_to_egp,
             "gbp": cached_record.gbp_to_egp,
             "eur": cached_record.eur_to_egp,
+            "sar": cached_record.sar_to_egp,
+            "aed": cached_record.aed_to_egp,
+            "kwd": cached_record.kwd_to_egp,
+            "qar": cached_record.qar_to_egp,
+            "bhd": cached_record.bhd_to_egp,
+            "omr": cached_record.omr_to_egp,
+            "jod": cached_record.jod_to_egp,
+            "try": cached_record.try_to_egp,
+            "cad": cached_record.cad_to_egp,
+            "aud": cached_record.aud_to_egp,
             "egp": 1.0,
             "last_updated": cached_record.updated_at.isoformat(),
             "is_cached": True
         }
 
     # Default fallback rates if API fails and no cache exists
-    # Using real current market rates for Egypt (Feb 2026)
     rates_data = {
-        "gold": 7151.64,  # ~7150 EGP/g for 24K
-        "silver": 123.34, # ~123 EGP/g for Pure Silver
-        "usd": 48.9,
-        "eur": 52.8,
-        "gbp": 62.1,
+        "gold": 7151.64,
+        "silver": 123.34,
+        "usd": 48.9, "eur": 52.8, "gbp": 62.1,
+        "sar": 13.0, "aed": 13.3, "kwd": 158.0,
+        "qar": 13.4, "bhd": 129.0, "omr": 127.0,
+        "jod": 69.0, "try": 1.6, "cad": 36.0, "aud": 32.0,
         "egp": 1.0
     }
     
-    # If we have a cached record, use its values as fallback instead of hardcoded ones
+    # If we have a cached record, use its values as fallback
     if cached_record:
         rates_data.update({
             "gold": cached_record.gold_egp_per_gram,
             "silver": cached_record.silver_egp_per_gram,
             "usd": cached_record.usd_to_egp,
             "gbp": cached_record.gbp_to_egp,
-            "eur": cached_record.eur_to_egp
+            "eur": cached_record.eur_to_egp,
+            "sar": cached_record.sar_to_egp or rates_data["sar"],
+            "aed": cached_record.aed_to_egp or rates_data["aed"],
+            "kwd": cached_record.kwd_to_egp or rates_data["kwd"],
+            "qar": cached_record.qar_to_egp or rates_data["qar"],
+            "bhd": cached_record.bhd_to_egp or rates_data["bhd"],
+            "omr": cached_record.omr_to_egp or rates_data["omr"],
+            "jod": cached_record.jod_to_egp or rates_data["jod"],
+            "try": cached_record.try_to_egp or rates_data["try"],
+            "cad": cached_record.cad_to_egp or rates_data["cad"],
+            "aud": cached_record.aud_to_egp or rates_data["aud"],
         })
 
     try:
@@ -1324,9 +1344,9 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
                         currency_json = currency_resp.json()
                         if currency_json.get("result") == "success" and "conversion_rates" in currency_json:
                             conv = currency_json.get("conversion_rates", {})
-                            if conv.get("USD"): rates_data["usd"] = round(1 / conv["USD"], 2)
-                            if conv.get("EUR"): rates_data["eur"] = round(1 / conv["EUR"], 2)
-                            if conv.get("GBP"): rates_data["gbp"] = round(1 / conv["GBP"], 2)
+                            for curr in ["USD", "EUR", "GBP", "SAR", "AED", "KWD", "QAR", "BHD", "OMR", "JOD", "TRY", "CAD", "AUD"]:
+                                if conv.get(curr):
+                                    rates_data[curr.lower()] = round(1 / conv[curr], 2)
                 except Exception as ce:
                     print(f"Currency API failed: {ce}")
 
@@ -1357,6 +1377,16 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
             usd_to_egp=rates_data["usd"],
             gbp_to_egp=rates_data["gbp"],
             eur_to_egp=rates_data["eur"],
+            sar_to_egp=rates_data.get("sar"),
+            aed_to_egp=rates_data.get("aed"),
+            kwd_to_egp=rates_data.get("kwd"),
+            qar_to_egp=rates_data.get("qar"),
+            bhd_to_egp=rates_data.get("bhd"),
+            omr_to_egp=rates_data.get("omr"),
+            jod_to_egp=rates_data.get("jod"),
+            try_to_egp=rates_data.get("try"),
+            cad_to_egp=rates_data.get("cad"),
+            aud_to_egp=rates_data.get("aud"),
             updated_at=now_utc
         )
         db.add(new_cache)
@@ -1480,11 +1510,42 @@ async def get_savings(token: str, db: Session = Depends(get_db)):
     }
 
 @app.post("/investments")
-def add_investment(data: InvestmentCreate, token: str, db: Session = Depends(get_db)):
+async def add_investment(data: InvestmentCreate, token: str, db: Session = Depends(get_db)):
     user = get_current_user(token, db)
     
+    # Fetch current rates to get the automatic buy price
+    rates = await fetch_real_time_rates(db)
+    
+    # Use provided buy_price or fetch from live rates
+    buy_price = data.buy_price
+    if buy_price is None or buy_price <= 0:
+        # Check if the type matches one of our currencies or metals
+        inv_type = data.type.lower()
+        buy_price = rates.get(inv_type, 0.0)
+        
+        # If still not found, try uppercase (some might be stored that way)
+        if buy_price <= 0:
+            buy_price = rates.get(data.type.upper(), 0.0)
+            
+        # Last resort fallback if both fail
+        if buy_price <= 0:
+            # Look for common mappings
+            mapping = {
+                "gold": "gold",
+                "silver": "silver",
+                "usd": "usd",
+                "eur": "eur",
+                "gbp": "gbp",
+                "sar": "sar",
+                "aed": "aed",
+                "kwd": "kwd"
+            }
+            mapped_key = mapping.get(inv_type)
+            if mapped_key:
+                buy_price = rates.get(mapped_key, 0.0)
+    
     try:
-        buy_date = datetime.strptime(data.buy_date, "%Y-%m-%d")
+        buy_date = datetime.strptime(data.buy_date, "%Y-%m-%d") if data.buy_date else datetime.utcnow()
     except:
         buy_date = datetime.utcnow()
         
@@ -1492,7 +1553,7 @@ def add_investment(data: InvestmentCreate, token: str, db: Session = Depends(get
         user_id=user.id,
         type=data.type,
         amount=data.amount,
-        buy_price=data.buy_price,
+        buy_price=buy_price,
         buy_date=buy_date
     )
     db.add(investment)

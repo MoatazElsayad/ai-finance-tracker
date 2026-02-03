@@ -166,6 +166,16 @@ class MarketRatesCache(Base):
     usd_to_egp = Column(Float, nullable=False)
     gbp_to_egp = Column(Float, nullable=False)
     eur_to_egp = Column(Float, nullable=False)
+    sar_to_egp = Column(Float, nullable=True)
+    aed_to_egp = Column(Float, nullable=True)
+    kwd_to_egp = Column(Float, nullable=True)
+    qar_to_egp = Column(Float, nullable=True)
+    bhd_to_egp = Column(Float, nullable=True)
+    omr_to_egp = Column(Float, nullable=True)
+    jod_to_egp = Column(Float, nullable=True)
+    try_to_egp = Column(Float, nullable=True)
+    cad_to_egp = Column(Float, nullable=True)
+    aud_to_egp = Column(Float, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
