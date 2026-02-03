@@ -174,10 +174,9 @@ function Layout() {
                 })()}
               </span>
             </div>
-          </div>
 
-          {/* Actions - Show on Desktop */}
-          <div className="hidden md:flex items-center gap-4">
+            {/* Actions - Show on Desktop */}
+            <div className="hidden md:flex items-center gap-4">
               <Link
                 to="/receipt-upload"
                 state={{ fromNavbarScan: true }}
