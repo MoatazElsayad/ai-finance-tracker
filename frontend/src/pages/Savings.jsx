@@ -711,7 +711,7 @@ export default function Savings() {
       if (forceRates) setRefreshing(true);
       else {
         // Only set global loading if we have no data at all
-        setLoading(prev => !prev && true); 
+        if (!savingsData) setLoading(true); 
       }
       setError(null);
 
@@ -725,11 +725,11 @@ export default function Savings() {
           getSavingsRates(forceRates),
         ]);
 
-        setCategories(cats);
-        setSavingsData({ ...data, rates: ratesResp });
-        setAllTransactions(txns ?? []);
+        setCategories(cats || []);
+        setSavingsData({ ...(data || {}), rates: ratesResp || {} });
+        setAllTransactions(txns?.transactions || []);
 
-        if (data.monthly_goal) setMonthlyGoalInput(data.monthly_goal.toString());
+        if (data?.monthly_goal) setMonthlyGoalInput(data.monthly_goal.toString());
       } catch (err) {
         console.error(err);
         setError("Unable to connect to your vault. Please try again.");
@@ -1044,7 +1044,7 @@ export default function Savings() {
 
           <div className="relative inline-block group">
             <div className="flex items-baseline justify-center gap-4 mb-2">
-              <span className="text-7xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transition-all duration-700">
+              <span className={`text-7xl md:text-[10rem] font-black tracking-tighter ${isDark ? "text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" : "text-slate-900"} group-hover:drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transition-all duration-700`}>
                 {fmt(displayWealth)}
               </span>
               <span className="text-3xl md:text-5xl font-black text-blue-500/80 tracking-tight">

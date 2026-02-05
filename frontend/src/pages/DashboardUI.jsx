@@ -224,6 +224,8 @@ export const SectionHeaderAndSummary = memo(({
   );
 });
 
+ReportsSection.displayName = 'ReportsSection';
+
 const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history, analytics }) => {
   const colors = {
     green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
@@ -337,7 +339,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
   );
 };
 
-export const ReportsSection = ({ theme, reportLoading, reportProgress, reportStatus, handleDownloadReport }) => {
+export const ReportsSection = memo(({ theme, reportLoading, reportProgress, reportStatus, handleDownloadReport }) => {
   const isDark = theme === 'dark';
   return (
     <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
@@ -417,6 +419,8 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
     </section>
   );
 });
+
+ReportsSection.displayName = 'ReportsSection';
 
 export const MainChartsSection = memo(({ theme, barData, pieData }) => {
   const isDark = theme === 'dark';
@@ -667,7 +671,9 @@ export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailyS
   );
 });
 
-export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthlyComparisonData, hasSavingsAccount }) => {
+MainChartsSection.displayName = 'MainChartsSection';
+
+export const ProgressComparisonSection = memo(({ theme, cumulativeSavingsData, monthlyComparisonData, hasSavingsAccount }) => {
   const isDark = theme === 'dark';
   return (
     <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
