@@ -12,6 +12,7 @@ import {
   updateSavingsGoal,
   setLongTermSavingsGoal,
   generateAISummary,
+  getSavingsAnalysis,
 } from "../api";
 import { 
   RefreshCw, 
@@ -34,12 +35,18 @@ import {
 } from "lucide-react";
 import { formatAISummary } from './DashboardUtils';
 
-// Helper for currency formatting
-const fmt = (n) => (n ?? 0).toLocaleString('en-EG', { 
-  style: 'currency', 
-  currency: 'EGP',
-  maximumFractionDigits: 0 
-});
+  // Helper for currency formatting with enhanced precision for small changes
+  const fmt = (n) => (n ?? 0).toLocaleString('en-EG', { 
+    style: 'currency', 
+    currency: 'EGP',
+    maximumFractionDigits: 0 
+  });
+
+  const fmtPrecise = (n) => (n ?? 0).toLocaleString('en-EG', { 
+    style: 'currency', 
+    currency: 'EGP',
+    maximumFractionDigits: 2
+  });
 
 export default function Savings() {
   const { theme } = useTheme();
@@ -135,8 +142,8 @@ export default function Savings() {
     setAiLoading(true);
     setAiText("");
     try {
-      const res = await generateAISummary(new Date().getFullYear(), new Date().getMonth() + 1);
-      setAiText(res?.summary || "No AI summary available.");
+      const res = await getSavingsAnalysis();
+      setAiText(res?.summary || "No specialized savings analysis available.");
     } catch (e) {
       console.error(e);
       setAiText("AI service unavailable.");
@@ -200,18 +207,23 @@ export default function Savings() {
               </p>
             </div>
             
-            <div className="flex items-center gap-4">
-               <button 
-                onClick={loadAll}
-                className={`p-4 rounded-2xl transition-all ${isDark ? 'bg-slate-800/50 hover:bg-slate-700 border-slate-700' : 'bg-white hover:bg-slate-50 border-slate-200'} border-2 shadow-sm`}
-              >
-                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''} text-amber-500`} />
-              </button>
-              <button className="btn-primary-unified !px-8" onClick={() => alert("Investment creation flow coming soon!")}>
-                <Plus className="w-5 h-5" />
-                Add Investment
-              </button>
-            </div>
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={loadAll}
+                    title="Refresh Vault Data"
+                    className={`p-4 rounded-2xl transition-all ${isDark ? 'bg-slate-800/50 hover:bg-slate-700 border-slate-700' : 'bg-white hover:bg-slate-50 border-slate-200'} border-2 shadow-sm group`}
+                  >
+                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500 text-amber-500`} />
+                  </button>
+                  <button 
+                    className="btn-primary-unified !px-8 relative overflow-hidden group" 
+                    onClick={() => alert("Investment creation flow coming soon!")}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 opacity-0 group-hover:opacity-10 transition-opacity" />
+                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                    Add Investment
+                  </button>
+                </div>
           </div>
 
           {/* Top Stats Row */}
@@ -279,10 +291,12 @@ export default function Savings() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className={`text-2xl font-black ${monthlyProgress >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  <span className={`text-2xl font-black ${monthlyProgress >= 100 ? 'text-emerald-500' : 'text-amber-500'} animate-in zoom-in duration-500`}>
                     {Math.round(monthlyProgress)}%
                   </span>
-                  <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Achieved</span>
+                  <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {monthlyProgress >= 100 ? 'Goal Reached!' : 'Achieved'}
+                  </span>
                 </div>
               </div>
 
@@ -513,12 +527,15 @@ export default function Savings() {
                 </h3>
                 <div className="space-y-4">
                   {[
-                    { label: 'Gold (24K)', value: 'EGP 3,850', trend: '+1.2%' },
-                    { label: 'Silver (999)', value: 'EGP 48.50', trend: '-0.4%' },
-                    { label: 'USD/EGP', value: 'EGP 48.15', trend: '+0.1%' },
+                    { label: 'Gold (24K)', value: rates?.gold_egp ? `EGP ${rates.gold_egp.toLocaleString()}` : 'EGP 3,850', trend: '+1.2%', icon: <Sparkles className="w-3 h-3 text-yellow-500" /> },
+                    { label: 'Silver (999)', value: rates?.silver_egp ? `EGP ${rates.silver_egp.toLocaleString()}` : 'EGP 48.50', trend: '-0.4%', icon: <Coins className="w-3 h-3 text-slate-400" /> },
+                    { label: 'USD/EGP', value: rates?.usd_egp ? `EGP ${rates.usd_egp.toLocaleString()}` : 'EGP 48.15', trend: '+0.1%', icon: <Landmark className="w-3 h-3 text-blue-500" /> },
                   ].map((rate, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{rate.label}</span>
+                    <div key={i} className={`flex items-center justify-between p-3 rounded-xl transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                      <div className="flex items-center gap-2">
+                        {rate.icon}
+                        <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{rate.label}</span>
+                      </div>
                       <div className="flex flex-col items-end">
                         <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{rate.value}</span>
                         <span className={`text-[9px] font-black ${rate.trend.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>

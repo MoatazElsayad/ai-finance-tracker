@@ -414,6 +414,18 @@ export const generateAISummary = async (year, month) => {
   }
 };
 
+export const getSavingsAnalysis = async () => {
+  try {
+    const response = await authFetch(`/ai/savings-analysis`, {
+      method: 'POST',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error generating savings analysis:', error);
+    throw new Error(error.message || 'Failed to generate savings analysis.');
+  }
+};
+
 // Simple chat-style question using the summary endpoint as a fallback
 export const askAIQuestion = async (year, month, question) => {
   try {

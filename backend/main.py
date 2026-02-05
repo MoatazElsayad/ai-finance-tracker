@@ -938,6 +938,58 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
         "transaction_frequency": transaction_frequency
     }
 
+def build_savings_analysis_context(db: Session, user_id: int):
+    """
+    Build specialized context for savings and investment analysis
+    """
+    # 1. Get User and Goals
+    user = db.query(User).filter(User.id == user_id).first()
+    long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).first()
+    
+    # 2. Get Savings Category and Cash Balance
+    savings_cat = db.query(Category).filter(
+        Category.name.ilike("%savings%"),
+        (Category.user_id == user_id) | (Category.user_id == None)
+    ).first()
+    
+    cash_savings = 0.0
+    if savings_cat:
+        net_savings = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == user_id,
+            Transaction.category_id == savings_cat.id
+        ).scalar() or 0.0
+        cash_savings = max(0.0, -net_savings)
+
+    # 3. Get Current Month Stats
+    now = datetime.utcnow()
+    year, month = now.year, now.month
+    monthly_stats = build_rich_financial_context(db, user_id, year, month)
+    
+    # 4. Get Investments
+    investments = db.query(Investment).filter(Investment.user_id == user_id).all()
+    
+    # Fetch real-time rates for valuation
+    from main import fetch_real_time_rates # Lazy import if needed, but it's in the same file
+    # We'll assume fetch_real_time_rates is available or mock it if needed
+    # Actually, we can just pass the rates if we call it from the endpoint
+    
+    return {
+        "monthly_goal": getattr(user, "monthly_savings_goal", 0.0),
+        "monthly_saved": monthly_stats["current_month"]["savings_from_transactions"],
+        "savings_rate": monthly_stats["current_month"]["savings_rate"],
+        "cash_balance": cash_savings,
+        "investment_count": len(investments),
+        "long_term_goal": {
+            "target": long_term_goal.target_amount if long_term_goal else 0,
+            "date": long_term_goal.target_date.strftime("%Y-%m-%d") if long_term_goal else "None"
+        },
+        "asset_allocation": [
+            {"type": i.type, "amount": i.amount, "buy_price": i.buy_price} 
+            for i in investments
+        ],
+        "market_context": monthly_stats["trends"]
+    }
+
 
 # ============================================
 # AI ROUTES (OpenAI Integration with Real-time Updates)
@@ -1102,6 +1154,87 @@ async def ai_progress_stream(year: int, month: int, token: str, db: Session = De
             "Access-Control-Allow-Methods": "GET",
         }
     )
+
+@app.post("/ai/savings-analysis")
+async def generate_savings_analysis(token: str, db: Session = Depends(get_db)):
+    """
+    Generate specialized AI analysis for savings and investments
+    """
+    user = get_current_user(token, db)
+    context = build_savings_analysis_context(db, user.id)
+    
+    # Build a savings-focused prompt
+    prompt_text = f"""You are a specialized savings and investment advisor. Analyze the user's progress and provide actionable advice.
+
+🎯 GOALS:
+- Monthly Savings Target: EGP {context['monthly_goal']:,.2f}
+- Current Monthly Savings: EGP {context['monthly_saved']:,.2f}
+- Monthly Savings Rate: {context['savings_rate']}%
+- Long-term Target: EGP {context['long_term_goal']['target']:,.2f} (by {context['long_term_goal']['date']})
+
+💰 LIQUIDITY & ASSETS:
+- Cash Balance: EGP {context['cash_balance']:,.2f}
+- Investment Count: {context['investment_count']}
+- Asset Allocation: {json.dumps(context['asset_allocation'])}
+
+📈 MARKET TRENDS:
+- Income Change: {context['market_context']['income_change']:+.1f}%
+- Expense Change: {context['market_context']['expense_change']:+.1f}%
+
+PROVIDE A CONCISE ANALYSIS (150-200 words max):
+1. **Savings Performance** (2 sentences) - How close are they to their monthly goal?
+2. **Wealth Building** (2 sentences) - Analysis of their cash vs investments.
+3. **Strategic Advice** (2 bullet points) - Specific steps to reach the long-term goal faster.
+
+Be professional, data-driven, and encouraging. Use 1-2 emojis."""
+
+    # Re-use the same model selection logic as the dashboard
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        return {
+            "summary": "AI analysis is unavailable (No API Key). Your savings rate is " + str(context['savings_rate']) + "%. Keep going!",
+            "context": context,
+            "model_used": "mock"
+        }
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8001",
+        "X-Title": "Finance Tracker AI",
+    }
+    
+    MODELS = FREE_MODELS.copy()
+    random.shuffle(MODELS)
+    
+    for model_id in MODELS:
+        payload = {
+            "model": model_id,
+            "messages": [
+                {"role": "system", "content": "You are a savings advisor. Be CONCISE and data-driven."},
+                {"role": "user", "content": prompt_text}
+            ],
+            "max_tokens": 400,
+            "temperature": 0.7
+        }
+        
+        async with httpx.AsyncClient(verify=False) as client:
+            try:
+                response = await client.post(url, headers=headers, json=payload, timeout=20.0)
+                if response.status_code == 200:
+                    result = response.json()
+                    summary = result['choices'][0]['message']['content']
+                    return {
+                        "summary": summary,
+                        "context": context,
+                        "model_used": model_id
+                    }
+            except Exception as e:
+                print(f"Error with {model_id}: {e}")
+                continue
+                
+    raise HTTPException(status_code=503, detail="AI models busy")
 
 @app.post("/ai/summary")
 async def generate_ai_summary(year: int, month: int, token: str, db: Session = Depends(get_db)):
