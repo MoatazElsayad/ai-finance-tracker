@@ -224,7 +224,7 @@ export const SectionHeaderAndSummary = memo(({
   );
 });
 
-ReportsSection.displayName = 'ReportsSection';
+SectionHeaderAndSummary.displayName = 'SectionHeaderAndSummary';
 
 const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history, analytics }) => {
   const colors = {
@@ -671,7 +671,7 @@ export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailyS
   );
 });
 
-MainChartsSection.displayName = 'MainChartsSection';
+SpendingTrendsSection.displayName = 'SpendingTrendsSection';
 
 export const ProgressComparisonSection = memo(({ theme, cumulativeSavingsData, monthlyComparisonData, hasSavingsAccount }) => {
   const isDark = theme === 'dark';

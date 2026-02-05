@@ -326,7 +326,7 @@ def get_token_from_header_or_query(
     )
 
 def get_current_user(
-    request: Request,
+    request: Optional[Request] = None,
     authorization: HTTPAuthorizationCredentials = Depends(security),
     token: Optional[str] = None,
     db: Session = Depends(get_db)
@@ -336,8 +336,15 @@ def get_current_user(
     Supports both Authorization header and query parameter for backward compatibility
     """
     try:
-        # Get token from header or query
-        token_value = get_token_from_header_or_query(request, authorization, token)
+        # If the first argument is a string, it's likely a manual call passing the token
+        if isinstance(request, str):
+            token_value = request
+            # In this case, the second argument (authorization) might be the DB session
+            if not isinstance(db, Session) and isinstance(authorization, Session):
+                db = authorization
+        else:
+            # Get token from header or query
+            token_value = get_token_from_header_or_query(request, authorization, token)
         
         # Decode the token
         payload = jwt.decode(token_value, SECRET_KEY, algorithms=["HS256"])
