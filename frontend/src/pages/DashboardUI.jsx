@@ -222,7 +222,7 @@ export const SectionHeaderAndSummary = memo(({
       </div>
     </section>
   );
-};
+});
 
 const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history, analytics }) => {
   const colors = {
