@@ -335,7 +335,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
       }`} />
     </div>
   );
-};
+});
 
 export const ReportsSection = ({ theme, reportLoading, reportProgress, reportStatus, handleDownloadReport }) => {
   const isDark = theme === 'dark';
@@ -665,7 +665,7 @@ export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailyS
       </div>
     </section>
   );
-};
+});
 
 export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthlyComparisonData, hasSavingsAccount }) => {
   const isDark = theme === 'dark';
