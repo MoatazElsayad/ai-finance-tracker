@@ -416,7 +416,7 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
       </div>
     </section>
   );
-};
+});
 
 export const MainChartsSection = memo(({ theme, barData, pieData }) => {
   const isDark = theme === 'dark';
@@ -1017,7 +1017,7 @@ export const AIInsightsSection = memo(({
       </div>
     </section>
   );
-};
+});
 
 export const RecentActivitySection = ({ theme, recentTransactions }) => {
   const isDark = theme === 'dark';
