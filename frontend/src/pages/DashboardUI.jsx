@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight, Landmark } from 'lucide-react';
 import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
 
-export const CustomTooltip = ({ active, payload, label, theme }) => {
+export const CustomTooltip = memo(({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
     return (
       <div className={`${theme === 'dark' ? 'bg-slate-900/95 border-slate-600/50' : 'bg-white/95 border-slate-300/50'} backdrop-blur-md border rounded-xl p-4 shadow-2xl`}>
@@ -25,8 +25,11 @@ export const CustomTooltip = ({ active, payload, label, theme }) => {
     );
   }
   return null;
-};
-export const SectionHeaderAndSummary = ({
+});
+
+CustomTooltip.displayName = 'CustomTooltip';
+
+export const SectionHeaderAndSummary = memo(({
   theme,
   user,
   viewMode,
@@ -415,7 +418,7 @@ export const ReportsSection = ({ theme, reportLoading, reportProgress, reportSta
   );
 };
 
-export const MainChartsSection = ({ theme, barData, pieData }) => {
+export const MainChartsSection = memo(({ theme, barData, pieData }) => {
   const isDark = theme === 'dark';
   return (
     <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
@@ -536,9 +539,11 @@ export const MainChartsSection = ({ theme, barData, pieData }) => {
       </div>
     </section>
   );
-};
+});
 
-export const SpendingTrendsSection = ({ theme, dailySpendingData, avgDailySpending, dailySpendingChartData, weeklyPatternData }) => {
+MainChartsSection.displayName = 'MainChartsSection';
+
+export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailySpending, dailySpendingChartData, weeklyPatternData }) => {
   const isDark = theme === 'dark';
   return (
     <section className={`py-16 px-6 md:px-12 transition-colors duration-500 ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
@@ -746,9 +751,11 @@ export const ProgressComparisonSection = ({ theme, cumulativeSavingsData, monthl
       </div>
     </section>
   );
-};
+});
 
-export const AIInsightsSection = ({
+ProgressComparisonSection.displayName = 'ProgressComparisonSection';
+
+export const AIInsightsSection = memo(({
   theme,
   aiMode,
   setAiMode,

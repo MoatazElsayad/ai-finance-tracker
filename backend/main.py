@@ -8,12 +8,13 @@ import os
 # Fix imports - add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from pydantic import BaseModel, EmailStr
+from sqlalchemy import func, Index
+from pydantic import BaseModel, EmailStr, validator
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta, time
@@ -21,6 +22,10 @@ import httpx
 import random
 import json
 import asyncio
+import html
+import re
+from collections import defaultdict
+from time import time as current_time
 
 # Import local modules
 from database import get_db, init_database
@@ -79,6 +84,62 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ============================================
+# RATE LIMITING
+# ============================================
+rate_limit_store = defaultdict(list)
+RATE_LIMIT_WINDOW = 60  # 1 minute window
+RATE_LIMIT_MAX_REQUESTS = 100  # Max requests per window per IP
+
+def check_rate_limit(request: Request):
+    """Simple in-memory rate limiting"""
+    client_ip = request.client.host if request.client else "unknown"
+    now = current_time()
+    
+    # Clean old entries
+    rate_limit_store[client_ip] = [
+        timestamp for timestamp in rate_limit_store[client_ip]
+        if now - timestamp < RATE_LIMIT_WINDOW
+    ]
+    
+    # Check limit
+    if len(rate_limit_store[client_ip]) >= RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_MAX_REQUESTS} requests per minute."
+        )
+    
+    # Add current request
+    rate_limit_store[client_ip].append(now)
+
+# ============================================
+# INPUT SANITIZATION
+# ============================================
+def sanitize_string(value: str, max_length: int = 1000) -> str:
+    """Sanitize user input to prevent XSS and injection attacks"""
+    if not isinstance(value, str):
+        return str(value)
+    # Remove null bytes
+    value = value.replace('\x00', '')
+    # HTML escape
+    value = html.escape(value)
+    # Limit length
+    if len(value) > max_length:
+        value = value[:max_length]
+    return value.strip()
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal"""
+    # Remove path components
+    filename = os.path.basename(filename)
+    # Remove dangerous characters
+    filename = re.sub(r'[<>:"/\\|?*]', '', filename)
+    # Limit length
+    if len(filename) > 255:
+        name, ext = os.path.splitext(filename)
+        filename = name[:250] + ext
+    return filename
+
 # Initialize database on startup
 @app.on_event("startup")
 def startup():
@@ -97,6 +158,20 @@ class UserRegister(BaseModel):
     phone: str | None = None
     gender: str | None = None
     password: str
+    
+    @validator('username', 'first_name', 'last_name', 'phone')
+    def sanitize_fields(cls, v):
+        if v is None:
+            return v
+        return sanitize_string(str(v), max_length=100)
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError('Password must be at least 6 characters long')
+        if len(v) > 128:
+            raise ValueError('Password must be less than 128 characters')
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -107,6 +182,25 @@ class TransactionCreate(BaseModel):
     amount: float
     description: str
     date: str  # Format: "2026-01-15"
+    
+    @validator('description')
+    def sanitize_description(cls, v):
+        return sanitize_string(str(v), max_length=500)
+    
+    @validator('amount')
+    def validate_amount(cls, v):
+        if abs(v) > 999999999:  # 999 million max
+            raise ValueError('Amount is too large')
+        return v
+    
+    @validator('date')
+    def validate_date(cls, v):
+        # Validate date format
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError('Date must be in YYYY-MM-DD format')
+        return v
 
 class TransactionResponse(BaseModel):
     id: int
@@ -131,6 +225,22 @@ class CategoryCreate(BaseModel):
     name: str
     type: str  # "income" or "expense"
     icon: str  # emoji like 🍔
+    
+    @validator('name')
+    def sanitize_name(cls, v):
+        return sanitize_string(str(v), max_length=50)
+    
+    @validator('type')
+    def validate_type(cls, v):
+        if v not in ['income', 'expense']:
+            raise ValueError('Type must be either "income" or "expense"')
+        return v
+    
+    @validator('icon')
+    def sanitize_icon(cls, v):
+        # Allow emojis and basic characters, limit length
+        sanitized = sanitize_string(str(v), max_length=10)
+        return sanitized
 
 class InvestmentCreate(BaseModel):
     type: str  # "gold", "silver", "USD", "GBP", "EUR", "SAR", etc.
@@ -186,10 +296,51 @@ def create_token(user_id: int) -> str:
     return jwt.encode(data, SECRET_KEY, algorithm="HS256")
 
 
-def get_current_user(token: str, db: Session = Depends(get_db)) -> User:
+# Security scheme for Authorization header
+security = HTTPBearer(auto_error=False)
+
+def get_token_from_header_or_query(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None
+) -> str:
+    """
+    Get token from Authorization header (preferred) or query parameter (backward compatibility)
+    """
+    # Try Authorization header first (Bearer token)
+    if authorization and authorization.credentials:
+        return authorization.credentials
+    
+    # Fallback to query parameter for backward compatibility
+    if token:
+        return token
+    
+    # Try to get from query string if not in function params
+    query_token = request.query_params.get("token")
+    if query_token:
+        return query_token
+    
+    raise HTTPException(
+        status_code=401,
+        detail="Authentication required. Please provide a valid token in Authorization header or query parameter."
+    )
+
+def get_current_user(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    Get current authenticated user from token
+    Supports both Authorization header and query parameter for backward compatibility
+    """
     try:
-        # 1. Decode the token
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        # Get token from header or query
+        token_value = get_token_from_header_or_query(request, authorization, token)
+        
+        # Decode the token
+        payload = jwt.decode(token_value, SECRET_KEY, algorithms=["HS256"])
         user_id_str = payload.get("sub")
         
         if user_id_str is None:
@@ -197,7 +348,7 @@ def get_current_user(token: str, db: Session = Depends(get_db)) -> User:
             
         user_id = int(user_id_str)
         
-        # 2. Find the user
+        # Find the user
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=401, detail="User no longer exists")
@@ -205,9 +356,12 @@ def get_current_user(token: str, db: Session = Depends(get_db)) -> User:
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired. Please login again.")
+    except jwt.JWTError as e:
+        print(f"JWT Error: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token format")
     except Exception as e:
-        print(f"Auth Error: {e}") # This will show in your terminal
-        raise HTTPException(status_code=401, detail="Invalid token")
+        print(f"Auth Error: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 
 # ============================================
@@ -272,11 +426,17 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 
 
 @app.get("/auth/me")
-def get_me(token: str, db: Session = Depends(get_db)):
+def get_me(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """
     Get current user info
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     return {
         "id": user.id,
         "email": user.email,
@@ -295,15 +455,32 @@ def get_me(token: str, db: Session = Depends(get_db)):
 # ============================================
 
 @app.get("/transactions")
-def get_transactions(token: str, db: Session = Depends(get_db)):
+def get_transactions(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
     """
-    Get all transactions for current user
+    Get transactions for current user with pagination
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     
+    # Validate pagination params
+    page = max(1, page)
+    limit = min(max(1, limit), 100)  # Max 100 per page
+    offset = (page - 1) * limit
+    
+    # Get total count
+    total = db.query(Transaction).filter(Transaction.user_id == user.id).count()
+    
+    # Get paginated transactions
     transactions = db.query(Transaction).filter(
         Transaction.user_id == user.id
-    ).order_by(Transaction.date.desc()).all()
+    ).order_by(Transaction.date.desc()).offset(offset).limit(limit).all()
     
     # Format response
     result = []
@@ -317,19 +494,30 @@ def get_transactions(token: str, db: Session = Depends(get_db)):
             "category_icon": t.category.icon
         })
     
-    return result
+    return {
+        "transactions": result,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": (total + limit - 1) // limit
+        }
+    }
 
 
 @app.post("/transactions")
 def create_transaction(
+    request: Request,
     data: TransactionCreate,
-    token: str,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Add a new transaction
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     
     # 1. Verify if this is a 'Savings' transaction and handle type mismatch
     category = db.query(Category).filter(Category.id == data.category_id).first()
@@ -374,14 +562,17 @@ def create_transaction(
 
 @app.delete("/transactions/{transaction_id}")
 def delete_transaction(
+    request: Request,
     transaction_id: int,
-    token: str,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Delete a transaction
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     
     # Find transaction
     transaction = db.query(Transaction).filter(
@@ -413,11 +604,17 @@ def delete_transaction(
 
 
 @app.get("/categories")
-def get_categories(token: str, db: Session = Depends(get_db)):
+def get_categories(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """
     Get all available categories (default + user's custom ones)
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     
     # Get default categories (user_id is NULL)
     default_categories = db.query(Category).filter(Category.user_id == None).all()
@@ -442,14 +639,17 @@ def get_categories(token: str, db: Session = Depends(get_db)):
 
 @app.post("/categories")
 def create_category(
+    request: Request,
     data: CategoryCreate,
-    token: str,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Create a custom category for the user
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     
     # Validate category type
     if data.type not in ["income", "expense"]:
@@ -488,14 +688,17 @@ def create_category(
 
 @app.delete("/categories/{category_id}")
 def delete_category(
+    request: Request,
     category_id: int,
-    token: str,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Delete a custom category (only the user's own categories)
     """
-    user = get_current_user(token, db)
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
     
     category = db.query(Category).filter(
         Category.id == category_id,
@@ -1963,30 +2166,62 @@ class ReceiptData(BaseModel):
 
 @app.post("/ocr/upload-receipt")
 async def upload_receipt(
+    request: Request,
     file: UploadFile = File(...),
-    token: str = None,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Upload a receipt image and extract data using OCR
     Returns extracted merchant, amount, date, and suggested category
     """
+    check_rate_limit(request)
+    
+    # File validation
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+    ALLOWED_CONTENT_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
+    
+    # Validate file size
+    file_content = await file.read()
+    file_size = len(file_content)
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE / (1024*1024):.1f}MB"
+        )
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="File is empty")
+    
+    # Validate file extension
+    filename = sanitize_filename(file.filename or "upload")
+    file_ext = os.path.splitext(filename)[1].lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
+    
+    # Validate content type
+    if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid content type. Allowed types: {', '.join(ALLOWED_CONTENT_TYPES)}"
+        )
+    
     try:
-        # Get current user if authenticated (optional for testing)
-        user = None
-        if token:
-            try:
-                user = get_current_user(token, db)
-            except:
-                pass
+        # Get current user
+        user = get_current_user(request, authorization, token, db)
         
         # Save uploaded file temporarily
         temp_dir = tempfile.mkdtemp()
-        temp_file_path = os.path.join(temp_dir, file.filename)
+        temp_file_path = os.path.join(temp_dir, filename)
         
         try:
+            # Write file content (we already read it for validation)
             with open(temp_file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+                buffer.write(file_content)
             
             # Get available categories for categorization
             categories_db = db.query(Category).filter(

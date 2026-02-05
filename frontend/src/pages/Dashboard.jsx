@@ -253,11 +253,14 @@ function Dashboard() {
   const loadDashboard = async () => {
     setLoading(true);
     try {
-      const [txns, categories, userData] = await Promise.all([
-        getTransactions(),
+      const [txnsData, categories, userData] = await Promise.all([
+        getTransactions(1, 1000), // Get more transactions for dashboard
         getCategories(),
         getCurrentUser()
       ]);
+
+      // Handle both old format (array) and new format (object with pagination)
+      const txns = txnsData.transactions || txnsData;
 
       setUser(userData);
       console.log('🔄 Dashboard categories updated, checking for savings category...');

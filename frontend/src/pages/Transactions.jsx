@@ -2,10 +2,11 @@
  * Transactions Page - Enhanced Dark Mode Finance Tracker
  * Professional transaction management with advanced filtering and insights
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
+import { useDebounce } from '../utils/debounce';
 import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
@@ -24,6 +25,11 @@ function Transactions() {
   });
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(new Set());
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, pages: 1 });
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const toggleExpand = (id) => {
     const newExpanded = new Set(expanded);
@@ -45,6 +51,7 @@ function Transactions() {
 
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms debounce
   const [filterType, setFilterType] = useState('all'); // 'all', 'income', 'expense'
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('date'); // 'date', 'amount', 'category'
@@ -76,24 +83,49 @@ function Transactions() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(1, false);
+  }, [loadData]);
+  
+  // Load more transactions when scrolling (optional infinite scroll)
+  const loadMore = useCallback(() => {
+    if (!loadingMore && currentPage < pagination.pages) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      loadData(nextPage, true);
+    }
+  }, [currentPage, pagination.pages, loadingMore, loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async (page = 1, append = false) => {
     try {
-      const [txns, cats] = await Promise.all([
-        getTransactions(),
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const [txnsData, cats] = await Promise.all([
+        getTransactions(page, 50),
         getCategories()
       ]);
       
-      setTransactions(txns);
+      const txns = txnsData.transactions || txnsData;
+      const paginationData = txnsData.pagination || { page: 1, limit: txns.length, total: txns.length, pages: 1 };
+      
+      if (append) {
+        setTransactions(prev => [...prev, ...txns]);
+      } else {
+        setTransactions(txns);
+      }
+      setPagination(paginationData);
       setCategories(cats);
     } catch (error) {
       console.error('Failed to load:', error);
+      alert(error.message || 'Failed to load transactions. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -106,8 +138,8 @@ function Transactions() {
 
       await createTransaction(parseInt(categoryId), finalAmount, combinedDescription, date);
       
-      const txns = await getTransactions();
-      setTransactions(txns);
+      // Reload transactions from first page
+      await loadData(1, false);
       
       // Reset form
       setCategoryId('');
@@ -146,10 +178,10 @@ function Transactions() {
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
-    if (searchQuery) {
+    if (debouncedSearchQuery) {
       filtered = filtered.filter(txn =>
-        txn.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        txn.category_name.toLowerCase().includes(searchQuery.toLowerCase())
+        txn.description?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        txn.category_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
       );
     }
 
@@ -184,7 +216,7 @@ function Transactions() {
     });
 
     return filtered;
-  }, [transactions, searchQuery, filterType, filterCategory, viewMode, selectedMonth, sortBy, sortOrder]);
+  }, [transactions, debouncedSearchQuery, filterType, filterCategory, viewMode, selectedMonth, sortBy, sortOrder]);
 
   // Calculate totals based on current filters
   const totals = useMemo(() => {

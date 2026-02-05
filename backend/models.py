@@ -2,7 +2,7 @@
 Database Models - All in ONE file for simplicity
 This defines what data we store in the database
 """
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -68,7 +68,7 @@ class Investment(Base):
     __tablename__ = "investments"
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     type = Column(String, nullable=False)  # "gold", "silver", "USD", "GBP", "EUR"
     amount = Column(Float, nullable=False)  # grams or currency amount
     buy_price = Column(Float, nullable=False)  # in EGP at time of purchase
@@ -87,7 +87,7 @@ class Category(Base):
     __tablename__ = "categories"
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL = default category
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # NULL = default category
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # "income" or "expense"
     icon = Column(String)  # emoji like 🍔 or 💰
@@ -106,25 +106,31 @@ class Transaction(Base):
     __tablename__ = "transactions"
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)
     
     # Money details
     amount = Column(Float, nullable=False)  # Positive = income, Negative = expense
     description = Column(String)
-    date = Column(DateTime, nullable=False)
+    date = Column(DateTime, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
+    
+    # Composite index for common queries
+    __table_args__ = (
+        Index('idx_user_date', 'user_id', 'date'),
+        Index('idx_user_category', 'user_id', 'category_id'),
+    )
 
 
 class Budget(Base):
     __tablename__ = "budgets"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     amount = Column(Float, nullable=False) # e.g., 400.0
     month = Column(Integer, nullable=False) # 1-12
@@ -133,6 +139,11 @@ class Budget(Base):
     # Relationships
     user = relationship("User", back_populates="budgets")
     category = relationship("Category")
+    
+    # Composite index for common queries
+    __table_args__ = (
+        Index('idx_user_year_month', 'user_id', 'year', 'month'),
+    )
 
 
 class Goal(Base):
@@ -142,7 +153,7 @@ class Goal(Base):
     __tablename__ = "goals"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     target_amount = Column(Float, nullable=False)
     current_amount = Column(Float, default=0.0)
