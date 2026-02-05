@@ -1155,6 +1155,123 @@ async def ai_progress_stream(year: int, month: int, token: str, db: Session = De
         }
     )
 
+async def create_savings_ai_progress_generator(db: Session, user_id: int):
+    """Async generator that yields SSE events for specialized savings AI progress"""
+    
+    # Get savings context
+    context = build_savings_analysis_context(db, user_id)
+    
+    # Build a savings-focused prompt
+    prompt_text = f"""You are a specialized savings and investment advisor. Analyze the user's progress and provide actionable advice.
+
+🎯 GOALS:
+- Monthly Savings Target: EGP {context['monthly_goal']:,.2f}
+- Current Monthly Savings: EGP {context['monthly_saved']:,.2f}
+- Monthly Savings Rate: {context['savings_rate']}%
+- Long-term Target: EGP {context['long_term_goal']['target']:,.2f} (by {context['long_term_goal']['date']})
+
+💰 LIQUIDITY & ASSETS:
+- Cash Balance: EGP {context['cash_balance']:,.2f}
+- Investment Count: {context['investment_count']}
+- Asset Allocation: {json.dumps(context['asset_allocation'])}
+
+📈 MARKET TRENDS:
+- Income Change: {context['market_context']['income_change']:+.1f}%
+- Expense Change: {context['market_context']['expense_change']:+.1f}%
+
+PROVIDE A CONCISE ANALYSIS (150-200 words max):
+1. **Savings Performance** (2 sentences) - How close are they to their monthly goal?
+2. **Wealth Building** (2 sentences) - Analysis of their cash vs investments.
+3. **Strategic Advice** (2 bullet points) - Specific steps to reach the long-term goal faster.
+
+Be professional, data-driven, and encouraging. Use 1-2 emojis."""
+
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model'})}\n\n"
+        await asyncio.sleep(1)
+        yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model', 'summary': 'AI analysis is unavailable (No API Key). Your savings rate is ' + str(context['savings_rate']) + '%. Keep going!', 'context': context})}\n\n"
+        return
+
+    # AI Model Loop
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8001",
+        "X-Title": "Finance Tracker Savings AI",
+    }
+
+    MODELS = FREE_MODELS.copy()
+    random.shuffle(MODELS)
+
+    for model_id in MODELS:
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
+
+        payload = {
+            "model": model_id,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a specialized savings and investment advisor. Be CONCISE (150-200 words max). Use clear sections. Be specific with numbers and actionable."
+                },
+                {
+                    "role": "user",
+                    "content": prompt_text
+                }
+            ],
+            "max_tokens": 400,
+            "temperature": 0.7
+        }
+
+        async with httpx.AsyncClient(verify=False) as client:
+            try:
+                response = await client.post(url, headers=headers, json=payload, timeout=20.0)
+                if response.status_code == 200:
+                    result = response.json()
+                    summary = result['choices'][0]['message']['content']
+                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                    return
+                elif response.status_code == 429:
+                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                    await asyncio.sleep(0.5)
+                    continue
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
+                continue
+
+    yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
+
+@app.get("/ai/savings-progress")
+async def ai_savings_progress_stream(token: str, db: Session = Depends(get_db)):
+    """Server-Sent Events endpoint for real-time Savings AI model progress"""
+    if not token:
+        return {"error": "No token provided"}
+
+    try:
+        user = get_current_user(token, db)
+    except Exception:
+        return {"error": "Authentication failed"}
+
+    async def safe_generator():
+        try:
+            async for event in create_savings_ai_progress_generator(db, user.id):
+                yield event
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Server error: {str(e)}'})}\n\n"
+
+    return StreamingResponse(
+        safe_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+            "Access-Control-Allow-Methods": "GET",
+        }
+    )
+
 @app.post("/ai/savings-analysis")
 async def generate_savings_analysis(token: str, db: Session = Depends(get_db)):
     """

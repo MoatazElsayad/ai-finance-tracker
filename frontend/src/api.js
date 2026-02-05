@@ -550,6 +550,30 @@ export const createAIProgressStream = (year, month, onMessage, onError) => {
   return eventSource; // Return EventSource so it can be closed
 };
 
+// SSE endpoint for real-time Savings AI progress
+export const createSavingsAIProgressStream = (onMessage, onError) => {
+  const token = getToken();
+  const url = `${API_URL}/ai/savings-progress?${token ? `token=${token}` : ''}`;
+  const eventSource = new EventSource(url);
+
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      onMessage(data);
+    } catch (error) {
+      console.error('Error parsing SSE message:', error);
+      if (onError) onError(error);
+    }
+  };
+
+  eventSource.onerror = (error) => {
+    if (onError) onError(error);
+    eventSource.close();
+  };
+
+  return eventSource;
+};
+
 // Backwards-compatible wrapper name used in Dashboard.jsx
 export const createAIChatProgressStream = (year, month, question, onMessage, onError) => {
   const token = getToken();
