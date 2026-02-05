@@ -64,9 +64,9 @@ export default function Savings() {
   }, [loadAll]);
 
   const investments = useMemo(() => savings?.investments || [], [savings]);
-  const totalWealth = useMemo(() => (savings?.cash_balance || 0) + investments.reduce((s, i) => s + (i.current_value || 0), 0), [savings, investments]);
+  const totalWealth = useMemo(() => (savings?.cash_balance || 0) + investments.reduce((s, i) => s + (i?.current_value || 0), 0), [savings, investments]);
   const monthlySaved = savings?.monthly_saved ?? 0;
-  const monthlyGoal = parseFloat(savings?.monthly_goal ?? monthlyGoalInput || 0) || 0;
+  const monthlyGoal = (parseFloat(savings?.monthly_goal) || parseFloat(monthlyGoalInput)) || 0;
   const monthlyProgress = monthlyGoal ? Math.min(100, (monthlySaved / monthlyGoal) * 100) : 0;
 
   // Quick allocate into savings (creates a transaction categorized as Savings)
@@ -147,7 +147,7 @@ export default function Savings() {
     <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-[#0a0f1d]" : "bg-slate-50"}`}>
       <div className="flex flex-col items-center gap-4">
         <RefreshCw className="w-12 h-12 animate-spin text-amber-500" />
-        <div className="font-bold">Loading savings…</div>
+        <div className="font-bold">Loading savings...</div>
       </div>
     </div>
   );
@@ -170,7 +170,7 @@ export default function Savings() {
       <div className="max-w-5xl mx-auto px-6 pt-24">
         <header className="mb-8">
           <h1 className="text-3xl font-black">Savings</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage your vault, goals and investments — integrated with transactions and dashboard.</p>
+          <p className="text-sm text-slate-400 mt-1">Manage your vault, goals and investments - integrated with transactions and dashboard.</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -221,31 +221,46 @@ export default function Savings() {
               <h3 className="font-black">Investments</h3>
               <button onClick={()=>alert("Use Add Investment flow")} className="text-sm">Add</button>
             </div>
-            {investments.length===0 ? <p className="text-sm text-slate-400">No investments yet</p> : investments.map(inv=>(
-              <div key={inv.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                <div>
-                  <div className="font-bold">{inv.type} — {inv.amount}{["gold","silver"].includes(inv.type.toLowerCase())?"g":""}</div>
-                  <div className="text-xs text-slate-400">Value: EGP {fmt(inv.current_value)}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={()=>removeInvestment(inv.id)} className="px-3 py-1 rounded bg-rose-500 text-white">Remove</button>
-                </div>
-              </div>
-            ))}
+            <div className="space-y-4">
+              {investments.length === 0 ? (
+                <p className="text-sm text-slate-400">No investments yet</p>
+              ) : (
+                investments.map((inv) => {
+                  if (!inv) return null;
+                  return (
+                    <div key={inv.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                      <div>
+                        <div className="font-bold">
+                          {inv.type || "Investment"} - {inv.amount}
+                          {["gold", "silver"].includes((inv.type || "").toLowerCase()) ? "g" : ""}
+                        </div>
+                        <div className="text-xs text-slate-400">Value: EGP {fmt(inv.current_value)}</div>
+                      </div>
+                      <button
+                        onClick={() => removeInvestment(inv.id)}
+                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           <div className={card(isDark)}>
             <h3 className="font-black mb-3">Recent Savings Transactions</h3>
-            {transactions.filter(t=>t.category_name?.toLowerCase().includes('savings')).slice(0,10).map(tx=>(
+            {transactions.filter(t => t.category_name?.toLowerCase()?.includes('savings')).slice(0, 10).map(tx => (
               <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
                 <div>
                   <div className="font-bold">{tx.description}</div>
                   <div className="text-xs text-slate-400">{new Date(tx.date).toLocaleDateString()}</div>
                 </div>
-                <div className={`font-black ${tx.amount<0 ? 'text-blue-400':'text-rose-500'}`}>EGP {fmt(Math.abs(tx.amount))}</div>
+                <div className={`font-black ${tx.amount < 0 ? 'text-blue-400' : 'text-rose-500'}`}>EGP {fmt(Math.abs(tx.amount))}</div>
               </div>
             ))}
-            {transactions.filter(t=>t.category_name?.toLowerCase().includes('savings')).length===0 && <p className="text-sm text-slate-400">No recent savings transactions</p>}
+            {transactions.filter(t => t.category_name?.toLowerCase()?.includes('savings')).length === 0 && <p className="text-sm text-slate-400">No recent savings transactions</p>}
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction, getCurrentUser } from '../api';
+import { getModelInfo } from '../pages/DashboardUtils';
 import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
@@ -62,82 +63,6 @@ const CustomTooltipComponent = (theme) => ({ active, payload, label }) => {
     );
   }
   return null;
-};
-const getModelInfo = (modelId) => {
-  if (!modelId) return { name: 'AI Model', logo: '🤖', color: 'amber' };
-
-  const modelLower = modelId.toLowerCase();
-  const lobeBase = "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark";
-
-  if (modelLower.includes('openai') || modelLower.includes('gpt')) {
-    return {
-      name: modelLower.includes('oss') ? 'GPT-OSS' : 'ChatGPT-4o',
-      logo: `${lobeBase}/openai.png`,
-      color: 'emerald'
-    };
-  } else if (modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('gemma')) {
-    return {
-      name: modelLower.includes('gemma') ? 'Gemma 3' : 'Gemini 2.0',
-      logo: modelLower.includes('gemma') ? `${lobeBase}/gemma-color.png` : `${lobeBase}/gemini-color.png`,
-      color: 'blue'
-    };
-  } else if (modelLower.includes('z-ai') || modelLower.includes('glm')) {
-    return {
-      name: 'GLM 4.5 Air',
-      logo: `${lobeBase}/zhipu.png`,
-      color: 'blue'
-    };
-  } else if (modelLower.includes('deepseek') || modelLower.includes('chimera')) {
-    return {
-      name: modelLower.includes('chimera') ? 'DeepSeek Chimera' : 'DeepSeek R1',
-      logo: `${lobeBase}/deepseek-color.png`,
-      color: 'cyan'
-    };
-  } else if (modelLower.includes('meta') || modelLower.includes('llama')) {
-    return {
-      name: 'Llama 3.3',
-      logo: `${lobeBase}/meta-color.png`,
-      color: 'purple'
-    };
-  } else if (modelLower.includes('nvidia') || modelLower.includes('nemotron')) {
-    return {
-      name: 'Nemotron',
-      logo: `${lobeBase}/nvidia-color.png`,
-      color: 'green'
-    };
-  } else if (modelLower.includes('mistral') || modelLower.includes('devstral')) {
-    return {
-      name: modelLower.includes('devstral') ? 'Devstral' : 'Mistral 7B',
-      logo: `${lobeBase}/mistral-color.png`,
-      color: 'orange'
-    };
-  } else if (modelLower.includes('qwen')) {
-    return {
-      name: 'Qwen 2.5',
-      logo: `${lobeBase}/qwen-color.png`,
-      color: 'pink'
-    };
-  } else if (modelLower.includes('xiaomi') || modelLower.includes('mimo')) {
-    return {
-      name: 'MiMo-V2',
-      logo: `${lobeBase}/xiaomimimo.png`,
-      color: 'gray'
-    };
-  } else if (modelLower.includes('tngtech')) {
-    return {
-      name: 'TNG Chimera',
-      logo: `${lobeBase}/tngtech.png`,
-      color: 'yellow'
-    };
-  }
-
-  // Default fallback
-  const modelName = modelId.split('/').pop().split(':')[0].replace(/-/g, ' ');
-  return {
-    name: modelName,
-    logo: '🤖',
-    color: 'amber'
-  };
 };
 
 function BudgetPlanning() {

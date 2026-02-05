@@ -800,36 +800,42 @@ export const AIInsightsSection = memo(({
           {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (
             <div className="absolute top-8 right-8 z-20">
               {(() => {
-                const activeModel = aiMode === 'summary' ? aiModelUsed : chatModelUsed;
-                const modelInfo = getModelInfo(activeModel);
-                const colorMap = {
-                  emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
-                  blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
-                  purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/50 text-purple-300',
-                  cyan: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300',
-                  pink: 'from-pink-500/20 to-rose-500/20 border-pink-400/50 text-pink-300',
-                  amber: 'from-amber-500/20 to-yellow-500/20 border-amber-400/50 text-amber-300',
-                  green: 'from-green-500/20 to-emerald-500/20 border-green-400/50 text-green-300',
-                  orange: 'from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300',
-                  gray: 'from-slate-400/20 to-slate-600/20 border-slate-400/50 text-slate-200',
-                  'blue-700': 'from-blue-700/20 to-cyan-600/20 border-blue-600/50 text-blue-300',
-                  'blue-600': 'from-blue-600/20 to-cyan-500/20 border-blue-500/50 text-blue-300',
-                  'slate-100': 'from-slate-200/20 to-slate-400/20 border-slate-300/50 text-slate-800',
-                };
-                const colorClass = colorMap[modelInfo.color] || colorMap.amber;
-                return (
-                  <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5`}>
-                    {modelInfo.logo.startsWith('http') ? (
-                      <img src={modelInfo.logo} alt={modelInfo.name} className="w-5 h-5 object-contain rounded-sm" />
-                    ) : (
-                      <span className="text-lg">{modelInfo.logo}</span>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
-                      <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
+                try {
+                  const activeModel = aiMode === 'summary' ? aiModelUsed : chatModelUsed;
+                  if (!activeModel) return null;
+                  const modelInfo = getModelInfo(activeModel);
+                  const colorMap = {
+                    emerald: 'from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-emerald-300',
+                    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/50 text-blue-300',
+                    purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/50 text-purple-300',
+                    cyan: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300',
+                    pink: 'from-pink-500/20 to-rose-500/20 border-pink-400/50 text-pink-300',
+                    amber: 'from-amber-500/20 to-yellow-500/20 border-amber-400/50 text-amber-300',
+                    green: 'from-green-500/20 to-emerald-500/20 border-green-400/50 text-green-300',
+                    orange: 'from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300',
+                    gray: 'from-slate-400/20 to-slate-600/20 border-slate-400/50 text-slate-200',
+                    'blue-700': 'from-blue-700/20 to-cyan-600/20 border-blue-600/50 text-blue-300',
+                    'blue-600': 'from-blue-600/20 to-cyan-500/20 border-blue-500/50 text-blue-300',
+                    'slate-100': 'from-slate-200/20 to-slate-400/20 border-slate-300/50 text-slate-800',
+                  };
+                  const colorClass = colorMap[modelInfo.color] || colorMap.amber;
+                  return (
+                    <div className={`bg-gradient-to-br ${colorClass} backdrop-blur-md rounded-xl px-4 py-2.5 border shadow-xl flex items-center gap-2.5`}>
+                      {modelInfo.logo.startsWith('http') ? (
+                        <img src={modelInfo.logo} alt={modelInfo.name} className="w-5 h-5 object-contain rounded-sm" />
+                      ) : (
+                        <span className="text-lg">{modelInfo.logo}</span>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold leading-tight">{modelInfo.name}</span>
+                        <span className="text-[10px] opacity-75 leading-tight font-medium">Powered by</span>
+                      </div>
                     </div>
-                  </div>
-                );
+                  );
+                } catch (e) {
+                  console.error("Error in model info display:", e);
+                  return null;
+                }
               })()}
             </div>
           )}
@@ -886,17 +892,26 @@ export const AIInsightsSection = memo(({
                     <div className="mb-8">
                       {aiLoading && currentTryingModel ? (
                         (() => {
-                          const modelInfo = getModelInfo(currentTryingModel);
-                          const isUrl = modelInfo.logo.startsWith('http');
-                          return (
-                            <div className="p-6 bg-amber-500/10 rounded-[2.5rem] border-2 border-amber-500/20 shadow-2xl shadow-amber-500/10">
-                              {isUrl ? (
-                                <img src={modelInfo.logo} alt={modelInfo.name} className="w-16 h-16 object-contain animate-pulse rounded-md" />
-                              ) : (
-                                <span className="text-6xl animate-pulse inline-block">{modelInfo.logo}</span>
-                              )}
-                            </div>
-                          );
+                          try {
+                            const modelInfo = getModelInfo(currentTryingModel);
+                            const isUrl = modelInfo.logo.startsWith('http');
+                            return (
+                              <div className="p-6 bg-amber-500/10 rounded-[2.5rem] border-2 border-amber-500/20 shadow-2xl shadow-amber-500/10">
+                                {isUrl ? (
+                                  <img src={modelInfo.logo} alt={modelInfo.name} className="w-16 h-16 object-contain animate-pulse rounded-md" />
+                                ) : (
+                                  <span className="text-6xl animate-pulse inline-block">{modelInfo.logo}</span>
+                                )}
+                              </div>
+                            );
+                          } catch (e) {
+                            console.error("Error in AI Loading display:", e);
+                            return (
+                              <div className="p-6 bg-amber-500/10 rounded-[2.5rem] border-2 border-amber-500/20 shadow-2xl shadow-amber-500/10">
+                                <RefreshCw className="w-16 h-16 text-amber-500 animate-spin" />
+                              </div>
+                            );
+                          }
                         })()
                       ) : aiLoading ? (
                         <div className="p-6 bg-amber-500/10 rounded-[2.5rem] border-2 border-amber-500/20 shadow-2xl shadow-amber-500/10">
@@ -910,9 +925,18 @@ export const AIInsightsSection = memo(({
                     </div>
                     <h3 className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-4`}>
                       {aiLoading && currentTryingModel ? (
-                        <span className="flex items-center justify-center gap-3">
-                          Analyzing with <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">{getModelInfo(currentTryingModel).name}</span>
-                        </span>
+                        (() => {
+                          try {
+                            const mInfo = getModelInfo(currentTryingModel);
+                            return (
+                              <span className="flex items-center justify-center gap-3">
+                                Analyzing with <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">{mInfo.name}</span>
+                              </span>
+                            );
+                          } catch (e) {
+                            return <span className="uppercase tracking-[0.2em]">Analyzing Your Finances...</span>;
+                          }
+                        })()
                       ) : aiLoading ? (
                         <span className="uppercase tracking-[0.2em]">Analyzing Your Finances...</span>
                       ) : (
@@ -949,7 +973,14 @@ export const AIInsightsSection = memo(({
                     {chatMessages.map((m, idx) => {
                       const isAssistant = m.role === 'assistant';
                       const isLast = idx === chatMessages.length - 1;
-                      const modelInfo = chatModelUsed ? getModelInfo(chatModelUsed) : chatTryingModel ? getModelInfo(chatTryingModel) : null;
+                      
+                      let modelInfo = null;
+                      try {
+                        modelInfo = chatModelUsed ? getModelInfo(chatModelUsed) : chatTryingModel ? getModelInfo(chatTryingModel) : null;
+                      } catch (e) {
+                        console.error("Error getting model info in AIInsightsSection:", e);
+                      }
+
                       return (
                         <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
                           <div className={`max-w-[85%] p-5 rounded-[2rem] ${
@@ -992,7 +1023,7 @@ export const AIInsightsSection = memo(({
                           type="text"
                           value={chatQuestion}
                           onChange={(e) => setChatQuestion(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && !chatLoading && chatQuestion.trim() && handleAskAI()}
+                          onKeyPress={(e) => e.key === 'Enter' && !chatLoading && chatQuestion?.trim() && handleAskAI()}
                           placeholder="Ask anything about your finances..."
                           className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} pr-32`}
                           disabled={chatLoading}
@@ -1008,7 +1039,7 @@ export const AIInsightsSection = memo(({
                       </div>
                       <button
                         onClick={handleAskAI}
-                        disabled={chatLoading || !chatQuestion.trim()}
+                        disabled={chatLoading || !chatQuestion?.trim()}
                         className={`p-5 rounded-[1.5rem] bg-amber-500 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:grayscale`}
                       >
                         <SendHorizonal className="w-6 h-6" />
@@ -1214,7 +1245,14 @@ export const ChatWidgetPopup = ({
   if (!isChatWidgetOpen) return null;
   const isDark = theme === 'dark';
   const activeModel = chatWidgetModelUsed || chatWidgetTryingModel;
-  const modelInfo = activeModel ? getModelInfo(activeModel) : null;
+  
+  let modelInfo = null;
+  try {
+    modelInfo = activeModel ? getModelInfo(activeModel) : null;
+  } catch (e) {
+    console.error("Error getting model info in ChatWidgetPopup:", e);
+  }
+
   return (
     <div className={`fixed bottom-24 right-6 z-50 w-[24rem] h-[32rem] flex flex-col ${isDark ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-200'} backdrop-blur-xl shadow-2xl rounded-[2.5rem] border-2 overflow-hidden transition-all duration-500 animate-in fade-in slide-in-from-bottom-10`}>
       <div className={`flex items-center justify-between px-6 py-5 ${isDark ? 'bg-slate-800/50 border-b border-slate-700' : 'bg-slate-50 border-b border-slate-200'}`}>
@@ -1240,7 +1278,7 @@ export const ChatWidgetPopup = ({
       </div>
 
       <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
-        {chatWidgetMessages.map((m, idx) => {
+        {Array.isArray(chatWidgetMessages) && chatWidgetMessages.map((m, idx) => {
           const isAssistant = m.role === 'assistant';
           return (
             <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
@@ -1271,16 +1309,16 @@ export const ChatWidgetPopup = ({
         <div className="flex items-center gap-2">
           <input
             type="text"
-            value={chatWidgetInput}
+            value={chatWidgetInput || ''}
             onChange={(e) => setChatWidgetInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && !chatWidgetLoading && chatWidgetInput.trim() && handleWidgetAsk()}
+            onKeyPress={(e) => e.key === 'Enter' && !chatWidgetLoading && chatWidgetInput?.trim() && handleWidgetAsk()}
             placeholder="Type your message..."
             className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} !text-sm !py-3 !px-4`}
             disabled={chatWidgetLoading}
           />
           <button
             onClick={handleWidgetAsk}
-            disabled={chatWidgetLoading || !chatWidgetInput.trim()}
+            disabled={chatWidgetLoading || !chatWidgetInput?.trim()}
             className="p-3 bg-amber-500 text-white rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
           >
             <SendHorizonal className="w-5 h-5" />
