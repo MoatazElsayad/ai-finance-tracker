@@ -906,18 +906,57 @@ export default function Savings() {
                 </div>
                 
                 {aiLoading ? (
-                  <div className="flex flex-col items-center py-8 space-y-4 animate-in fade-in duration-500">
+                  <div className="flex flex-col items-center py-10 space-y-6 animate-in fade-in duration-500">
                     <div className="relative">
-                      <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Sparkles className="w-6 h-6 text-blue-600 animate-pulse" />
-                      </div>
+                      {currentTryingModel ? (
+                        (() => {
+                          try {
+                            const modelInfo = getModelInfo(currentTryingModel);
+                            const isUrl = modelInfo.logo.startsWith('http');
+                            return (
+                              <div className={`p-6 rounded-[2rem] border-2 shadow-2xl transition-all duration-500 ${
+                                isDark ? 'bg-blue-500/10 border-blue-500/20 shadow-blue-500/10' : 'bg-blue-50 border-blue-100 shadow-blue-200/50'
+                              }`}>
+                                {isUrl ? (
+                                  <img src={modelInfo.logo} alt={modelInfo.name} className="w-12 h-12 object-contain animate-pulse rounded-lg" />
+                                ) : (
+                                  <span className="text-4xl animate-pulse inline-block">{modelInfo.logo}</span>
+                                )}
+                              </div>
+                            );
+                          } catch (e) {
+                            return (
+                              <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                            );
+                          }
+                        })()
+                      ) : (
+                        <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                      )}
+                      {!currentTryingModel && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Sparkles className="w-6 h-6 text-blue-600 animate-pulse" />
+                        </div>
+                      )}
                     </div>
                     <div className="text-center">
-                      <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                        {currentTryingModel ? `Trying ${currentTryingModel.split('/')[1] || currentTryingModel}` : 'Analyzing Vault...'}
+                      <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                        {currentTryingModel ? (
+                          (() => {
+                            try {
+                              const mInfo = getModelInfo(currentTryingModel);
+                              return (
+                                <span className="flex items-center justify-center gap-2">
+                                  Analyzing with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600">{mInfo.name}</span>
+                                </span>
+                              );
+                            } catch (e) {
+                              return 'Analyzing Vault...';
+                            }
+                          })()
+                        ) : 'Analyzing Vault...'}
                       </p>
-                      <p className={`text-[9px] font-medium mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <p className={`text-[9px] font-medium mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         Consulting financial algorithms
                       </p>
                     </div>
@@ -943,8 +982,28 @@ export default function Savings() {
                       {formatAISummary(aiText, theme)}
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-                      <span className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-                        Model: {aiModelUsed?.split('/')[1] || aiModelUsed || 'Standard'}
+                      <span className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                        {aiModelUsed && (
+                          (() => {
+                            try {
+                              const mInfo = getModelInfo(aiModelUsed);
+                              const isUrl = mInfo.logo.startsWith('http');
+                              return (
+                                <>
+                                  {isUrl ? (
+                                    <img src={mInfo.logo} alt={mInfo.name} className="w-3 h-3 object-contain" />
+                                  ) : (
+                                    <span>{mInfo.logo}</span>
+                                  )}
+                                  <span>{mInfo.name}</span>
+                                </>
+                              );
+                            } catch (e) {
+                              return aiModelUsed.split('/')[1] || aiModelUsed;
+                            }
+                          })()
+                        )}
+                        {!aiModelUsed && "Standard Analysis"}
                       </span>
                       <button 
                         onClick={() => setAiText("")}
