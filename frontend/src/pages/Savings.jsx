@@ -32,7 +32,10 @@ import {
   Calendar,
   ChevronRight,
   History,
-  Bot
+  Bot,
+  Gem,
+  Banknote,
+  ArrowUpRight
 } from "lucide-react";
 import { formatAISummary, getModelInfo } from './DashboardUtils';
 import {
@@ -42,36 +45,49 @@ import {
 
 
 /* --------------------------------------------------------------- *
+ *  TRADINGVIEW CHART COMPONENT
+ * --------------------------------------------------------------- */
+const TradingViewChart = ({ symbol, isDark }) => (
+  <div className="w-full h-[240px] rounded-2xl overflow-hidden border border-slate-200/10 bg-slate-900/50">
+    <iframe
+      title="Market Chart"
+      src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_762ae&symbol=${symbol}&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=${isDark ? 'dark' : 'light'}&style=3&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=${symbol}`}
+      style={{ width: '100%', height: '100%', border: 'none' }}
+    />
+  </div>
+);
+
+/* --------------------------------------------------------------- *
  *  INVESTMENT MODAL
  * --------------------------------------------------------------- */
 const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) => {
-  const [type, setType] = useState('Gold');
+  const [activeTab, setActiveTab] = useState('gold'); // 'gold', 'silver', 'currency'
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [amount, setAmount] = useState('');
   const [buyDate, setBuyDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
 
-  const investmentOptions = useMemo(() => [
-    { id: 'Gold', name: 'Gold (24K)', icon: '✨', rate: rates?.gold },
-    { id: 'Silver', name: 'Silver (999)', icon: '⚪', rate: rates?.silver },
-    { id: 'USD', name: 'US Dollar', icon: '🇺🇸', rate: rates?.usd },
-    { id: 'EUR', name: 'Euro', icon: '🇪🇺', rate: rates?.eur },
-    { id: 'GBP', name: 'British Pound', icon: '🇬🇧', rate: rates?.gbp },
-    { id: 'SAR', name: 'Saudi Riyal', icon: '🇸🇦', rate: rates?.sar },
-    { id: 'AED', name: 'UAE Dirham', icon: '🇦🇪', rate: rates?.aed },
-    { id: 'KWD', name: 'Kuwaiti Dinar', icon: '🇰🇼', rate: rates?.kwd },
-    { id: 'QAR', name: 'Qatari Rial', icon: '🇶🇦', rate: rates?.qar },
-    { id: 'BHD', name: 'Bahraini Dinar', icon: '🇧🇭', rate: rates?.bhd },
-    { id: 'OMR', name: 'Omani Rial', icon: '🇴🇲', rate: rates?.omr },
-    { id: 'JOD', name: 'Jordanian Dinar', icon: '🇯🇴', rate: rates?.jod },
-    { id: 'CAD', name: 'Canadian Dollar', icon: '🇨🇦', rate: rates?.cad },
-    { id: 'AUD', name: 'Australian Dollar', icon: '🇦🇺', rate: rates?.aud },
-    { id: 'TRY', name: 'Turkish Lira', icon: '🇹🇷', rate: rates?.try },
-  ], [rates]);
+  const currencyOptions = useMemo(() => [
+    { id: 'USD', name: 'US Dollar', icon: '🇺🇸', symbol: 'FX:USDEGP' },
+    { id: 'EUR', name: 'Euro', icon: '🇪🇺', symbol: 'FX:EUREGP' },
+    { id: 'GBP', name: 'British Pound', icon: '🇬🇧', symbol: 'FX:GBPEGP' },
+    { id: 'SAR', name: 'Saudi Riyal', icon: '🇸🇦', symbol: 'FX:SAREGP' },
+    { id: 'AED', name: 'UAE Dirham', icon: '🇦🇪', symbol: 'FX:AEDEGP' },
+    { id: 'KWD', name: 'Kuwaiti Dinar', icon: '🇰🇼', symbol: 'FX:KWDEGP' },
+    { id: 'QAR', name: 'Qatari Rial', icon: '🇶🇦', symbol: 'FX:QAREGP' },
+    { id: 'BHD', name: 'Bahraini Dinar', icon: '🇧🇭', symbol: 'FX:BHDEGP' },
+    { id: 'OMR', name: 'Omani Rial', icon: '🇴🇲', symbol: 'FX:OMREGP' },
+    { id: 'JOD', name: 'Jordanian Dinar', icon: '🇯🇴', symbol: 'FX:JODEGP' },
+    { id: 'CAD', name: 'Canadian Dollar', icon: '🇨🇦', symbol: 'FX:CADEGP' },
+    { id: 'AUD', name: 'Australian Dollar', icon: '🇦🇺', symbol: 'FX:AUDEGP' },
+    { id: 'TRY', name: 'Turkish Lira', icon: '🇹🇷', symbol: 'FX:TRYEGP' },
+  ], []);
 
   const currentRate = useMemo(() => {
-    const selectedOption = investmentOptions.find(opt => opt.id === type);
-    return selectedOption ? selectedOption.rate : 0;
-  }, [type, investmentOptions]);
+    if (activeTab === 'gold') return rates?.gold || 0;
+    if (activeTab === 'silver') return rates?.silver || 0;
+    return rates?.[selectedCurrency.toLowerCase()] || 0;
+  }, [activeTab, selectedCurrency, rates]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,74 +97,230 @@ const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) =>
       setError('Please enter a valid amount.');
       return;
     }
-    if (!buyDate) {
-      setError('Please select a buy date.');
-      return;
-    }
 
+    const type = activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
     await onAddInvestment({ type, amount: numAmount, buy_date: buyDate });
     onClose();
-    // Reset form for next use
     setAmount('');
-    setType('Gold');
     setBuyDate(new Date().toISOString().split('T')[0]);
   };
 
   if (!isOpen) return null;
 
+  const activeTheme = useMemo(() => {
+    if (activeTab === 'gold') return {
+      primary: 'amber-500',
+      secondary: 'amber-600',
+      bg: isDark ? 'bg-amber-500/10' : 'bg-amber-50',
+      text: 'text-amber-500',
+      shadow: 'shadow-amber-500/20'
+    };
+    if (activeTab === 'silver') return {
+      primary: 'slate-400',
+      secondary: 'slate-500',
+      bg: isDark ? 'bg-slate-400/10' : 'bg-slate-50',
+      text: 'text-slate-400',
+      shadow: 'shadow-slate-400/20'
+    };
+    return {
+      primary: 'blue-600',
+      secondary: 'blue-700',
+      bg: isDark ? 'bg-blue-600/10' : 'bg-blue-50',
+      text: 'text-blue-600',
+      shadow: 'shadow-blue-600/20'
+    };
+  }, [activeTab, isDark]);
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-slate-950/40 animate-in fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 backdrop-blur-xl bg-slate-950/60 animate-in fade-in duration-300">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className={`relative w-full max-w-md card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-8 animate-in zoom-in-95 duration-300`}>
-        <div className="flex items-center justify-between mb-8">
-          <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Add New Investment</h3>
-          <button onClick={onClose} className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'} transition-all`}><X className="w-5 h-5" /></button>
+      
+      <div className={`relative w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col md:flex-row rounded-[2.5rem] border ${isDark ? 'bg-slate-900/90 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'} animate-in zoom-in-95 duration-500`}>
+        
+        {/* Decorative Background Gradients */}
+        <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 bg-${activeTheme.primary}`} />
+        <div className={`absolute bottom-0 left-0 w-64 h-64 blur-[100px] opacity-10 -z-10 bg-blue-600`} />
+
+        {/* Left Sidebar - Navigation & Quick Info */}
+        <div className={`w-full md:w-80 p-8 flex flex-col border-b md:border-b-0 md:border-r ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
+              <ArrowUpRight className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>New Asset</h3>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Investment Portal</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 flex-1">
+            <button 
+              onClick={() => setActiveTab('gold')}
+              className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'gold' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'gold' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-black uppercase tracking-wider">Gold</span>
+                <span className={`text-[10px] font-bold ${activeTab === 'gold' ? 'text-white/70' : 'text-slate-500'}`}>Precious Metal</span>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('silver')}
+              className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'silver' ? 'bg-slate-400 text-white shadow-lg shadow-slate-400/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'silver' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                <Gem className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-black uppercase tracking-wider">Silver</span>
+                <span className={`text-[10px] font-bold ${activeTab === 'silver' ? 'text-white/70' : 'text-slate-500'}`}>Precious Metal</span>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('currency')}
+              className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'currency' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'currency' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                <Banknote className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-black uppercase tracking-wider">Currency</span>
+                <span className={`text-[10px] font-bold ${activeTab === 'currency' ? 'text-white/70' : 'text-slate-500'}`}>Foreign Exchange</span>
+              </div>
+            </button>
+          </div>
+
+          <div className={`mt-8 p-6 rounded-3xl border ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-white border-slate-100 shadow-sm'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Live Market Rate</span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentRate.toLocaleString()}</span>
+              <span className="text-[10px] font-black text-blue-500">EGP</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2 text-emerald-500">
+              <TrendingUp className="w-3 h-3" />
+              <span className="text-[10px] font-black">+0.42% Today</span>
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl text-sm font-medium flex items-center gap-3">
-            <AlertCircle className="w-4 h-4" /> {error}
+        {/* Right Content - Form & Chart */}
+        <div className="flex-1 p-8 md:p-12 overflow-y-auto">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Add {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+              </h2>
+              <p className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Configure your new investment position</p>
+            </div>
+            <button onClick={onClose} className={`p-3 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
+              <X className="w-6 h-6" />
+            </button>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Investment Type</label>
-            <select 
-              value={type} 
-              onChange={(e) => setType(e.target.value)} 
-              className={`w-full input-unified-small ${isDark ? 'input-unified-small.dark' : 'input-unified-small.light'}`} 
-            >
-              {investmentOptions.map(option => (
-                <option key={option.id} value={option.id}>{option.icon} {option.name} {option.rate ? `(EGP ${option.rate.toLocaleString('en-EG', { maximumFractionDigits: 2 })})` : ''}</option>
-              ))}
-            </select>
-            <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-2`}>Current rate: EGP {currentRate.toLocaleString('en-EG', { maximumFractionDigits: 2 })}</p>
+          {error && (
+            <div className="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top-4">
+              <AlertCircle className="w-5 h-5" /> {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="space-y-8">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {activeTab === 'currency' && (
+                  <div>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Select Currency</label>
+                    <div className="grid grid-cols-3 gap-2 max-h-[180px] overflow-y-auto p-2 rounded-2xl border border-slate-200/10 bg-slate-900/20">
+                      {currencyOptions.map((curr) => (
+                        <button
+                          key={curr.id}
+                          type="button"
+                          onClick={() => setSelectedCurrency(curr.id)}
+                          className={`p-3 rounded-xl flex flex-col items-center gap-2 transition-all ${selectedCurrency === curr.id ? 'bg-blue-600 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+                        >
+                          <span className="text-xl">{curr.icon}</span>
+                          <span className="text-[10px] font-black">{curr.id}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Amount {['gold', 'silver'].includes(activeTab) ? '(Grams)' : `(${selectedCurrency})`}
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={amount} 
+                        onChange={(e) => setAmount(e.target.value)} 
+                        className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
+                        placeholder="0.00" 
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-500">
+                        {['gold', 'silver'].includes(activeTab) ? 'g' : selectedCurrency}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Date</label>
+                    <input 
+                      type="date" 
+                      value={buyDate} 
+                      onChange={(e) => setBuyDate(e.target.value)} 
+                      className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
+                    />
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-[2rem] border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transaction Summary</span>
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Market Price (1 {['gold', 'silver'].includes(activeTab) ? 'g' : selectedCurrency})</span>
+                      <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentRate.toLocaleString()} EGP</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-3 border-t border-slate-200/10">
+                      <span className={`text-sm font-black uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Value</span>
+                      <span className="text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" className={`w-full py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-blue-600/20 ${activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600' : activeTab === 'silver' ? 'bg-slate-500 hover:bg-slate-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                  Secure Investment
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-6">
+              <label className={`block text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Live Performance Chart</label>
+              <TradingViewChart 
+                isDark={isDark}
+                symbol={
+                  activeTab === 'gold' ? 'XAUUSD' : 
+                  activeTab === 'silver' ? 'XAGUSD' : 
+                  currencyOptions.find(c => c.id === selectedCurrency)?.symbol || 'FX:USDEGP'
+                } 
+              />
+              <div className={`p-6 rounded-3xl ${isDark ? 'bg-slate-800/30' : 'bg-slate-50'} border border-slate-200/10`}>
+                <h4 className={`text-[10px] font-black uppercase tracking-widest mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Market Intelligence</h4>
+                <p className={`text-xs leading-relaxed font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  The market for {activeTab === 'currency' ? selectedCurrency : activeTab} is currently showing high volatility. Our AI recommends dollar-cost averaging for long-term positions.
+                </p>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Amount ({['Gold', 'Silver'].includes(type) ? 'grams' : type})</label>
-            <input 
-              type="number" 
-              step="0.01" 
-              value={amount} 
-              onChange={(e) => setAmount(e.target.value)} 
-              className={`w-full input-unified-small ${isDark ? 'input-unified-small.dark' : 'input-unified-small.light'}`} 
-              placeholder="e.g. 10.5 or 500" 
-            />
-          </div>
-          <div>
-            <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Purchase Date</label>
-            <input 
-              type="date" 
-              value={buyDate} 
-              onChange={(e) => setBuyDate(e.target.value)} 
-              className={`w-full input-unified-small ${isDark ? 'input-unified-small.dark' : 'input-unified-small.light'}`} 
-            />
-          </div>
-          <button type="submit" className="btn-primary-unified w-full !py-3 !rounded-xl !text-sm !uppercase !tracking-[0.2em] !bg-blue-600 hover:!bg-blue-700">
-            <Plus className="w-4 h-4" /> Record Investment
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -613,7 +785,9 @@ export default function Savings() {
                                 type === 'silver' ? 'bg-slate-400/10 text-slate-400' : 
                                 'bg-blue-600/10 text-blue-600'
                               }`}>
-                                {type === 'gold' || type === 'silver' ? <Sparkles className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+                                {type === 'gold' ? <Sparkles className="w-5 h-5" /> : 
+                                 type === 'silver' ? <Gem className="w-5 h-5" /> : 
+                                 <Banknote className="w-5 h-5" />}
                               </div>
                               <div className="flex flex-col">
                                 <span className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
