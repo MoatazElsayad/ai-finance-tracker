@@ -979,7 +979,7 @@ export default function Savings() {
                 ) : (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className={`text-xs font-medium leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'} max-h-[300px] overflow-y-auto pr-2 custom-scrollbar`}>
-                      {formatAISummary(aiText, theme)}
+                      {formatAISummary(aiText, theme, true)}
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
                       <span className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>

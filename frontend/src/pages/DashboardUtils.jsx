@@ -1,7 +1,47 @@
 import React from 'react';
 
-export const formatAISummary = (text, theme) => {
+export const formatAISummary = (text, theme, isSimplified = false) => {
   if (!text) return null;
+
+  if (isSimplified) {
+    const isDark = theme === 'dark';
+    return (
+      <div className="space-y-4">
+        {text.split('\n').filter(line => line.trim()).map((line, idx) => {
+          const isHeader = line.startsWith('**') && line.endsWith('**');
+          const isListItem = line.trim().startsWith('•') || line.trim().startsWith('-');
+          
+          if (isHeader) {
+            const title = line.replace(/\*\*/g, '').trim();
+            return (
+              <h4 key={idx} className={`font-black text-[10px] uppercase tracking-[0.2em] mt-6 first:mt-0 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                {title}
+              </h4>
+            );
+          }
+          
+          if (isListItem) {
+            const cleanLine = line.replace(/^[•\-]\s*/, '').trim();
+            return (
+              <div key={idx} className="flex items-start gap-3 pl-2">
+                <span className={`mt-1.5 w-1 h-1 rounded-full flex-shrink-0 ${isDark ? 'bg-slate-600' : 'bg-slate-400'}`} />
+                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {cleanLine}
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <p key={idx} className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+              {line.replace(/\*\*/g, '').trim()}
+            </p>
+          );
+        })}
+      </div>
+    );
+  }
+
   const sections = text.split(/\*\*(.*?)\*\*/g);
   let currentSection = null;
   let sectionContent = [];
