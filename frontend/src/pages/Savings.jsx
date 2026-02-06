@@ -34,8 +34,129 @@ import {
   History,
   Bot
 } from "lucide-react";
-import { formatAISummary } from './DashboardUtils';
+import { formatAISummary, getModelInfo } from './DashboardUtils';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from "recharts";
 
+
+/* --------------------------------------------------------------- *
+ *  INVESTMENT MODAL
+ * --------------------------------------------------------------- */
+const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) => {
+  const [type, setType] = useState('Gold');
+  const [amount, setAmount] = useState('');
+  const [buyDate, setBuyDate] = useState(new Date().toISOString().split('T')[0]);
+  const [error, setError] = useState('');
+
+  const investmentOptions = useMemo(() => [
+    { id: 'Gold', name: 'Gold (24K)', icon: '✨', rate: rates?.gold_egp },
+    { id: 'Silver', name: 'Silver (999)', icon: '⚪', rate: rates?.silver_egp },
+    { id: 'USD', name: 'US Dollar', icon: '🇺🇸', rate: rates?.usd_egp },
+    { id: 'EUR', name: 'Euro', icon: '🇪🇺', rate: rates?.eur_egp },
+    { id: 'GBP', name: 'British Pound', icon: '🇬🇧', rate: rates?.gbp_egp },
+    { id: 'SAR', name: 'Saudi Riyal', icon: '🇸🇦', rate: rates?.sar_egp },
+    { id: 'AED', name: 'UAE Dirham', icon: '🇦🇪', rate: rates?.aed_egp },
+    { id: 'KWD', name: 'Kuwaiti Dinar', icon: '🇰🇼', rate: rates?.kwd_egp },
+    { id: 'QAR', name: 'Qatari Rial', icon: '🇶🇦', rate: rates?.qar_egp },
+    { id: 'BHD', name: 'Bahraini Dinar', icon: '🇧🇭', rate: rates?.bhd_egp },
+    { id: 'OMR', name: 'Omani Rial', icon: '🇴🇲', rate: rates?.omr_egp },
+    { id: 'JOD', name: 'Jordanian Dinar', icon: '🇯🇴', rate: rates?.jod_egp },
+    { id: 'CAD', name: 'Canadian Dollar', icon: '🇨🇦', rate: rates?.cad_egp },
+    { id: 'AUD', name: 'Australian Dollar', icon: '🇦🇺', rate: rates?.aud_egp },
+    { id: 'TRY', name: 'Turkish Lira', icon: '🇹🇷', rate: rates?.try_egp },
+  ], [rates]);
+
+  const currentRate = useMemo(() => {
+    const selectedOption = investmentOptions.find(opt => opt.id === type);
+    return selectedOption ? selectedOption.rate : 0;
+  }, [type, investmentOptions]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setError('Please enter a valid amount.');
+      return;
+    }
+    if (!buyDate) {
+      setError('Please select a buy date.');
+      return;
+    }
+
+    await onAddInvestment({ type, amount: numAmount, buy_date: buyDate });
+    onClose();
+    // Reset form for next use
+    setAmount('');
+    setType('Gold');
+    setBuyDate(new Date().toISOString().split('T')[0]);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-slate-950/40 animate-in fade-in">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className={`relative w-full max-w-md card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-8 animate-in zoom-in-95 duration-300`}>
+        <div className="flex items-center justify-between mb-8">
+          <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Add New Investment</h3>
+          <button onClick={onClose} className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'} transition-all`}><X className="w-5 h-5" /></button>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl text-sm font-medium flex items-center gap-3">
+            <AlertCircle className="w-4 h-4" /> {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Investment Type</label>
+            <select 
+              value={type} 
+              onChange={(e) => setType(e.target.value)} 
+              className={`w-full input-unified-small ${isDark ? 'input-unified-small.dark' : 'input-unified-small.light'}`} 
+            >
+              {investmentOptions.map(option => (
+                <option key={option.id} value={option.id}>{option.icon} {option.name} {option.rate ? `(EGP ${option.rate.toLocaleString('en-EG', { maximumFractionDigits: 2 })})` : ''}</option>
+              ))}
+            </select>
+            <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-2`}>Current rate: EGP {currentRate.toLocaleString('en-EG', { maximumFractionDigits: 2 })}</p>
+          </div>
+          <div>
+            <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Amount ({['Gold', 'Silver'].includes(type) ? 'grams' : type})</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)} 
+              className={`w-full input-unified-small ${isDark ? 'input-unified-small.dark' : 'input-unified-small.light'}`} 
+              placeholder="e.g. 10.5 or 500" 
+            />
+          </div>
+          <div>
+            <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Purchase Date</label>
+            <input 
+              type="date" 
+              value={buyDate} 
+              onChange={(e) => setBuyDate(e.target.value)} 
+              className={`w-full input-unified-small ${isDark ? 'input-unified-small.dark' : 'input-unified-small.light'}`} 
+            />
+          </div>
+          <button type="submit" className="btn-primary-unified w-full !py-3 !rounded-xl !text-sm !uppercase !tracking-[0.2em] !bg-blue-600 hover:!bg-blue-700">
+            <Plus className="w-4 h-4" /> Record Investment
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* --------------------------------------------------------------- *
+ *  MAIN SAVINGS PAGE COMPONENT
+ * --------------------------------------------------------------- */
 export default function Savings() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -68,6 +189,8 @@ export default function Savings() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModelUsed, setAiModelUsed] = useState(null);
   const [currentTryingModel, setCurrentTryingModel] = useState(null);
+  const [showInvestmentModal, setShowInvestmentModal] = useState(false);
+  const [selectedInvestmentType, setSelectedInvestmentType] = useState('Gold'); // Default to Gold
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -102,6 +225,51 @@ export default function Savings() {
   const monthlyGoal = (parseFloat(savings?.monthly_goal) || parseFloat(monthlyGoalInput)) || 0;
   const monthlyProgress = monthlyGoal ? Math.min(100, (monthlySaved / monthlyGoal) * 100) : 0;
 
+  // Wealth Change Indicator (copied from DashboardUI for consistency)
+  const WealthChangeIndicator = ({ change, percent, positive, label }) => (
+    <div
+      className={`flex flex-col items-center gap-1 ${
+        positive ? "text-emerald-500" : "text-rose-500"
+      }`}
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-1">
+        {positive ? (
+          <TrendingUp className="w-4 h-4" />
+        ) : (
+          <ArrowRight className="w-4 h-4" />
+        )}
+        <span className="text-sm font-black uppercase tracking-wider">
+          {positive ? "+" : ""}{fmtPrecise(change)} ({positive ? "+" : ""}{percent}%)
+        </span>
+      </div>
+      <p className="text-xs text-slate-500 uppercase tracking-widest">{label}</p>
+    </div>
+  );
+
+  // Mock/Example data for wealth changes if real-time rates are not integrated yet
+  const mockWealthChange = useMemo(() => {
+    // This would ideally come from backend analytics on `getSavingsData`
+    const dailyChange = totalWealth * 0.001 * (Math.random() > 0.5 ? 1 : -1);
+    const dailyPercent = totalWealth ? ((dailyChange / totalWealth) * 100).toFixed(2) : 0;
+
+    const weeklyChange = totalWealth * 0.005 * (Math.random() > 0.5 ? 1 : -1);
+    const weeklyPercent = totalWealth ? ((weeklyChange / totalWealth) * 100).toFixed(2) : 0;
+
+    return {
+      daily: {
+        change: dailyChange,
+        percent: parseFloat(dailyPercent),
+        positive: dailyChange >= 0,
+      },
+      weekly: {
+        change: weeklyChange,
+        percent: parseFloat(weeklyPercent),
+        positive: weeklyChange >= 0,
+      },
+    };
+  }, [totalWealth]); // Recalculate if totalWealth changes
+
   // Quick allocate into savings
   const handleAllocate = async (e) => {
     e?.preventDefault();
@@ -118,6 +286,16 @@ export default function Savings() {
     }
   };
 
+  const handleAddInvestment = async (investmentData) => {
+    try {
+      await createInvestment(investmentData);
+      await loadAll();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to add investment.");
+    }
+  };
+
   const removeInvestment = async (id) => {
     if (!confirm("Remove investment?")) return;
     try {
@@ -125,6 +303,7 @@ export default function Savings() {
       await loadAll();
     } catch (e) {
       console.error(e);
+      alert("Failed to remove investment.");
     }
   };
 
@@ -280,7 +459,7 @@ export default function Savings() {
               </button>
               <button 
                 className="btn-primary-unified !px-8 !bg-blue-600 hover:!bg-blue-700 relative overflow-hidden group" 
-                onClick={() => alert("Investment creation flow coming soon!")}
+                onClick={() => setShowInvestmentModal(true)}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity" />
                 <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
@@ -418,7 +597,7 @@ export default function Savings() {
                     <div className={`col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed ${isDark ? 'border-slate-800' : 'border-slate-100'} rounded-[2rem]`}>
                       <PieChartIcon className={`w-12 h-12 mb-4 ${isDark ? 'text-slate-700' : 'text-slate-200'}`} />
                       <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No investments tracked yet</p>
-                      <button className="mt-4 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] hover:underline">Start building your portfolio</button>
+                      <button onClick={() => setShowInvestmentModal(true)} className="mt-4 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] hover:underline">Start building your portfolio</button>
                     </div>
                   ) : (
                     investments.map((inv) => {
@@ -464,8 +643,7 @@ export default function Savings() {
                           </div>
                         </div>
                       );
-                    })
-                  )}
+                    })}
                 </div>
               </div>
 
@@ -510,8 +688,7 @@ export default function Savings() {
                           <span className={`text-[9px] font-black uppercase tracking-wider ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>Processed</span>
                         </div>
                       </div>
-                    ))
-                  )}
+                    ))}
                 </div>
               </div>
             </div>
@@ -634,6 +811,14 @@ export default function Savings() {
           </div>
         </div>
       </section>
+
+      <InvestmentModal
+        isOpen={showInvestmentModal}
+        onClose={() => setShowInvestmentModal(false)}
+        onAddInvestment={handleAddInvestment}
+        isDark={isDark}
+        rates={rates}
+      />
     </div>
   );
 }
