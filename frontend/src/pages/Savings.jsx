@@ -84,9 +84,10 @@ const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) =>
   ], []);
 
   const currentRate = useMemo(() => {
-    if (activeTab === 'gold') return rates?.gold || 0;
-    if (activeTab === 'silver') return rates?.silver || 0;
-    return rates?.[selectedCurrency.toLowerCase()] || 0;
+    if (!rates) return 0;
+    if (activeTab === 'gold') return rates.gold || 0;
+    if (activeTab === 'silver') return rates.silver || 0;
+    return rates[selectedCurrency.toLowerCase()] || 0;
   }, [activeTab, selectedCurrency, rates]);
 
   const handleSubmit = async (e) => {
@@ -113,36 +114,45 @@ const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) =>
       secondary: 'amber-600',
       bg: isDark ? 'bg-amber-500/10' : 'bg-amber-50',
       text: 'text-amber-500',
-      shadow: 'shadow-amber-500/20'
+      shadow: 'shadow-amber-500/20',
+      accent: 'amber'
     };
     if (activeTab === 'silver') return {
       primary: 'slate-400',
       secondary: 'slate-500',
       bg: isDark ? 'bg-slate-400/10' : 'bg-slate-50',
       text: 'text-slate-400',
-      shadow: 'shadow-slate-400/20'
+      shadow: 'shadow-slate-400/20',
+      accent: 'slate'
     };
     return {
       primary: 'blue-600',
       secondary: 'blue-700',
       bg: isDark ? 'bg-blue-600/10' : 'bg-blue-50',
       text: 'text-blue-600',
-      shadow: 'shadow-blue-600/20'
+      shadow: 'shadow-blue-600/20',
+      accent: 'blue'
     };
   }, [activeTab, isDark]);
 
+  const accentColor = activeTheme.accent;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 backdrop-blur-xl bg-slate-950/60 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/70 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       
-      <div className={`relative w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col md:flex-row rounded-[2.5rem] border ${isDark ? 'bg-slate-900/90 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'} animate-in zoom-in-95 duration-500`}>
+      <div className={`relative w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row rounded-[2.5rem] border ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-200 shadow-2xl'} z-10`}>
         
         {/* Decorative Background Gradients */}
-        <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 bg-${activeTheme.primary}`} />
-        <div className={`absolute bottom-0 left-0 w-64 h-64 blur-[100px] opacity-10 -z-10 bg-blue-600`} />
+        <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 ${
+          accentColor === 'amber' ? 'bg-amber-500' : 
+          accentColor === 'slate' ? 'bg-slate-400' : 
+          'bg-blue-600'
+        }`} />
+        <div className="absolute bottom-0 left-0 w-64 h-64 blur-[100px] opacity-10 -z-10 bg-blue-600" />
 
         {/* Left Sidebar - Navigation & Quick Info */}
-        <div className={`w-full md:w-80 p-8 flex flex-col border-b md:border-b-0 md:border-r ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
+        <div className={`w-full md:w-80 p-8 flex flex-col border-b md:border-b-0 md:border-r ${isDark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-100 bg-slate-50/50'}`}>
           <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
               <ArrowUpRight className="w-5 h-5 text-white" />
@@ -208,7 +218,7 @@ const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) =>
         </div>
 
         {/* Right Content - Form & Chart */}
-        <div className="flex-1 p-8 md:p-12 overflow-y-auto">
+        <div className={`flex-1 p-8 md:p-12 overflow-y-auto ${isDark ? 'bg-slate-900/50' : 'bg-white'}`}>
           <div className="flex items-center justify-between mb-10">
             <div>
               <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -1023,9 +1033,9 @@ export default function Savings() {
                 </h3>
                 <div className="space-y-4">
                   {[
-                    { label: 'Gold (24K)', value: rates?.gold_egp ? `EGP ${rates.gold_egp.toLocaleString()}` : 'EGP 3,850', trend: '+1.2%', icon: <Sparkles className="w-3 h-3 text-yellow-500" /> },
-                    { label: 'Silver (999)', value: rates?.silver_egp ? `EGP ${rates.silver_egp.toLocaleString()}` : 'EGP 48.50', trend: '-0.4%', icon: <Coins className="w-3 h-3 text-slate-400" /> },
-                    { label: 'USD/EGP', value: rates?.usd_egp ? `EGP ${rates.usd_egp.toLocaleString()}` : 'EGP 48.15', trend: '+0.1%', icon: <Landmark className="w-3 h-3 text-blue-600" /> },
+                    { label: 'Gold (24K)', value: rates?.gold ? `EGP ${rates.gold.toLocaleString()}` : 'EGP 3,850', trend: '+1.2%', icon: <Sparkles className="w-3 h-3 text-yellow-500" /> },
+                    { label: 'Silver (999)', value: rates?.silver ? `EGP ${rates.silver.toLocaleString()}` : 'EGP 48.50', trend: '-0.4%', icon: <Coins className="w-3 h-3 text-slate-400" /> },
+                    { label: 'USD/EGP', value: rates?.usd ? `EGP ${rates.usd.toLocaleString()}` : 'EGP 48.15', trend: '+0.1%', icon: <Landmark className="w-3 h-3 text-blue-600" /> },
                   ].map((rate, i) => (
                     <div key={i} className={`flex items-center justify-between p-3 rounded-xl transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                       <div className="flex items-center gap-2">
