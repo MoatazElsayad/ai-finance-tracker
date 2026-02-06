@@ -41,7 +41,12 @@ from datetime import date
 import re
 from typing import Any
 
-load_dotenv()
+load_dotenv(override=True)
+
+# Debug: Print key status (not the key itself)
+print(f"DEBUG: OPENROUTER_API_KEY present: {bool(os.getenv('OPENROUTER_API_KEY'))}")
+if os.getenv('OPENROUTER_API_KEY'):
+    print(f"DEBUG: Key starts with: {os.getenv('OPENROUTER_API_KEY')[:10]}...")
 
 FREE_MODELS = [
     # "openai/gpt-4o-mini",                      # OpenAI    - ChatGPT (Paid)
@@ -1043,20 +1048,21 @@ PROVIDE A CONCISE ANALYSIS (150-250 words max):
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
-    # TEMPORARY: Mock response for testing
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
+    # AI Model Loop
+    url = "https://openrouter.ai/api/v1/chat/completions"
+
+    # Use globally loaded key instead of re-fetching from os.getenv inside the generator
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    
+    if not api_key:
         print("⚠️  No OPENROUTER_API_KEY found - using mock response for testing")
         yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
         await asyncio.sleep(1)
         yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model-for-testing', 'summary': '**Financial Health Assessment**\n\nYour finances look solid with consistent income and reasonable spending patterns.\n\n**Key Achievement**\nYou have maintained good savings habits this month.\n\n**Area for Improvement**\nConsider reducing dining out expenses which are 15% higher than last month.\n\n**Recommended Actions**\n• Set a budget for entertainment expenses\n• Review your subscriptions for unused services', 'context': context})}\n\n"
         return
 
-    # AI Model Loop
-    url = "https://openrouter.ai/api/v1/chat/completions"
-
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": "http://localhost:8001",
         "X-Title": "Finance Tracker AI",
@@ -1186,17 +1192,20 @@ PROVIDE A CONCISE ANALYSIS (150-200 words max):
 
 Be professional, data-driven, and encouraging. Use 1-2 emojis."""
 
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
+    # AI Model Loop
+    url = "https://openrouter.ai/api/v1/chat/completions"
+
+    # Use globally loaded key instead of re-fetching from os.getenv inside the generator
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    
+    if not api_key:
         yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model'})}\n\n"
         await asyncio.sleep(1)
         yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model', 'summary': 'AI analysis is unavailable (No API Key). Your savings rate is ' + str(context['savings_rate']) + '%. Keep going!', 'context': context})}\n\n"
         return
 
-    # AI Model Loop
-    url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": "http://localhost:8001",
         "X-Title": "Finance Tracker Savings AI",
@@ -1401,9 +1410,10 @@ PROVIDE A CONCISE ANALYSIS (150-250 words max):
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
-    # TEMPORARY: Mock response for testing
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
+    # Use globally loaded key instead of re-fetching from os.getenv inside the generator
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    
+    if not api_key:
         print("⚠️  No OPENROUTER_API_KEY found - returning mock response for testing")
         return {
             "summary": "**Financial Health Assessment**\n\nYour finances look solid with consistent income and reasonable spending patterns.\n\n**Key Achievement**\nYou've maintained good savings habits this month.\n\n**Area for Improvement**\nConsider reducing dining out expenses which are 15% higher than last month.\n\n**Recommended Actions**\n• Set a budget for entertainment expenses\n• Review your subscriptions for unused services",
@@ -1415,7 +1425,7 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
     url = "https://openrouter.ai/api/v1/chat/completions"
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": "http://localhost:8001",
         "X-Title": "Finance Tracker AI",
