@@ -51,21 +51,21 @@ const InvestmentModal = ({ isOpen, onClose, onAddInvestment, isDark, rates }) =>
   const [error, setError] = useState('');
 
   const investmentOptions = useMemo(() => [
-    { id: 'Gold', name: 'Gold (24K)', icon: '✨', rate: rates?.gold_egp },
-    { id: 'Silver', name: 'Silver (999)', icon: '⚪', rate: rates?.silver_egp },
-    { id: 'USD', name: 'US Dollar', icon: '🇺🇸', rate: rates?.usd_egp },
-    { id: 'EUR', name: 'Euro', icon: '🇪🇺', rate: rates?.eur_egp },
-    { id: 'GBP', name: 'British Pound', icon: '🇬🇧', rate: rates?.gbp_egp },
-    { id: 'SAR', name: 'Saudi Riyal', icon: '🇸🇦', rate: rates?.sar_egp },
-    { id: 'AED', name: 'UAE Dirham', icon: '🇦🇪', rate: rates?.aed_egp },
-    { id: 'KWD', name: 'Kuwaiti Dinar', icon: '🇰🇼', rate: rates?.kwd_egp },
-    { id: 'QAR', name: 'Qatari Rial', icon: '🇶🇦', rate: rates?.qar_egp },
-    { id: 'BHD', name: 'Bahraini Dinar', icon: '🇧🇭', rate: rates?.bhd_egp },
-    { id: 'OMR', name: 'Omani Rial', icon: '🇴🇲', rate: rates?.omr_egp },
-    { id: 'JOD', name: 'Jordanian Dinar', icon: '🇯🇴', rate: rates?.jod_egp },
-    { id: 'CAD', name: 'Canadian Dollar', icon: '🇨🇦', rate: rates?.cad_egp },
-    { id: 'AUD', name: 'Australian Dollar', icon: '🇦🇺', rate: rates?.aud_egp },
-    { id: 'TRY', name: 'Turkish Lira', icon: '🇹🇷', rate: rates?.try_egp },
+    { id: 'Gold', name: 'Gold (24K)', icon: '✨', rate: rates?.gold },
+    { id: 'Silver', name: 'Silver (999)', icon: '⚪', rate: rates?.silver },
+    { id: 'USD', name: 'US Dollar', icon: '🇺🇸', rate: rates?.usd },
+    { id: 'EUR', name: 'Euro', icon: '🇪🇺', rate: rates?.eur },
+    { id: 'GBP', name: 'British Pound', icon: '🇬🇧', rate: rates?.gbp },
+    { id: 'SAR', name: 'Saudi Riyal', icon: '🇸🇦', rate: rates?.sar },
+    { id: 'AED', name: 'UAE Dirham', icon: '🇦🇪', rate: rates?.aed },
+    { id: 'KWD', name: 'Kuwaiti Dinar', icon: '🇰🇼', rate: rates?.kwd },
+    { id: 'QAR', name: 'Qatari Rial', icon: '🇶🇦', rate: rates?.qar },
+    { id: 'BHD', name: 'Bahraini Dinar', icon: '🇧🇭', rate: rates?.bhd },
+    { id: 'OMR', name: 'Omani Rial', icon: '🇴🇲', rate: rates?.omr },
+    { id: 'JOD', name: 'Jordanian Dinar', icon: '🇯🇴', rate: rates?.jod },
+    { id: 'CAD', name: 'Canadian Dollar', icon: '🇨🇦', rate: rates?.cad },
+    { id: 'AUD', name: 'Australian Dollar', icon: '🇦🇺', rate: rates?.aud },
+    { id: 'TRY', name: 'Turkish Lira', icon: '🇹🇷', rate: rates?.try },
   ], [rates]);
 
   const currentRate = useMemo(() => {
@@ -689,7 +689,8 @@ export default function Savings() {
                           <span className={`text-[9px] font-black uppercase tracking-wider ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>Processed</span>
                         </div>
                       </div>
-                    )))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

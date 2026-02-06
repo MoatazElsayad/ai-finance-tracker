@@ -95,6 +95,8 @@ export const formatAISummary = (text, theme) => {
   );
 };
 
+
+
 export const CHART_COLORS = {
   income: '#10b981', // emerald-500
   expense: '#ef4444', // red-500
