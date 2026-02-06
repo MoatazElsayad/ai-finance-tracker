@@ -643,7 +643,8 @@ export default function Savings() {
                           </div>
                         </div>
                       );
-                    })}
+                    })
+                  )}
                 </div>
               </div>
 
@@ -688,7 +689,7 @@ export default function Savings() {
                           <span className={`text-[9px] font-black uppercase tracking-wider ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>Processed</span>
                         </div>
                       </div>
-                    ))}
+                    )))}
                 </div>
               </div>
             </div>
