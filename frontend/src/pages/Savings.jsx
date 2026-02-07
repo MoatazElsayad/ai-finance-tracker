@@ -69,9 +69,9 @@ const TradingViewChart = ({ symbol, isDark, height = 300 }) => {
       "dateRange": "12M",
       "colorTheme": isDark ? "dark" : "light",
       "trendLineColor": "#3b82f6",
-      "underLineColor": isDark ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.15)",
+      "underLineColor": isDark ? "rgba(59, 130, 246, 0.15)" : "rgba(59, 130, 246, 0.1)",
       "underLineBottomColor": "rgba(59, 130, 246, 0)",
-      "isTransparent": true,
+      "isTransparent": false,
       "autosize": true,
       "largeChartUrl": ""
     });
@@ -79,7 +79,12 @@ const TradingViewChart = ({ symbol, isDark, height = 300 }) => {
   }, [symbol, isDark, height]);
 
   return (
-    <div className="tradingview-widget-container" ref={container} style={{ height: `${height}px`, width: '100%' }}>
+    <div 
+      key={`${symbol}-${isDark}`}
+      className="tradingview-widget-container rounded-2xl overflow-hidden" 
+      ref={container} 
+      style={{ height: `${height}px`, width: '100%' }}
+    >
       <div className="tradingview-widget-container__widget"></div>
     </div>
   );
@@ -97,19 +102,19 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
   const [success, setSuccess] = useState(false);
 
   const currencyOptions = useMemo(() => [
-    { id: 'USD', name: 'US Dollar', code: 'us', symbol: 'FX:USDEGP' },
-    { id: 'EUR', name: 'Euro', code: 'eu', symbol: 'FX:EUREGP' },
-    { id: 'GBP', name: 'British Pound', code: 'gb', symbol: 'FX:GBPEGP' },
-    { id: 'SAR', name: 'Saudi Riyal', code: 'sa', symbol: 'FX:SAREGP' },
-    { id: 'AED', name: 'UAE Dirham', code: 'ae', symbol: 'FX:AEDEGP' },
-    { id: 'KWD', name: 'Kuwaiti Dinar', code: 'kw', symbol: 'FX:KWDEGP' },
-    { id: 'QAR', name: 'Qatari Rial', code: 'qa', symbol: 'FX:QAREGP' },
-    { id: 'BHD', name: 'Bahraini Dinar', code: 'bh', symbol: 'FX:BHDEGP' },
-    { id: 'OMR', name: 'Omani Rial', code: 'om', symbol: 'FX:OMREGP' },
-    { id: 'JOD', name: 'Jordanian Dinar', code: 'jo', symbol: 'FX:JODEGP' },
-    { id: 'CAD', name: 'Canadian Dollar', code: 'ca', symbol: 'FX:CADEGP' },
-    { id: 'AUD', name: 'Australian Dollar', code: 'au', symbol: 'FX:AUDEGP' },
-    { id: 'TRY', name: 'Turkish Lira', code: 'tr', symbol: 'FX:TRYEGP' },
+    { id: 'USD', name: 'US Dollar', code: 'us', symbol: 'FX_IDC:USDEGP' },
+    { id: 'EUR', name: 'Euro', code: 'eu', symbol: 'FX_IDC:EUREGP' },
+    { id: 'GBP', name: 'British Pound', code: 'gb', symbol: 'FX_IDC:GBPEGP' },
+    { id: 'SAR', name: 'Saudi Riyal', code: 'sa', symbol: 'FX_IDC:SAREGP' },
+    { id: 'AED', name: 'UAE Dirham', code: 'ae', symbol: 'FX_IDC:AEDEGP' },
+    { id: 'KWD', name: 'Kuwaiti Dinar', code: 'kw', symbol: 'FX_IDC:KWDEGP' },
+    { id: 'QAR', name: 'Qatari Rial', code: 'qa', symbol: 'FX_IDC:QAREGP' },
+    { id: 'BHD', name: 'Bahraini Dinar', code: 'bh', symbol: 'FX_IDC:BHDEGP' },
+    { id: 'OMR', name: 'Omani Rial', code: 'om', symbol: 'FX_IDC:OMREGP' },
+    { id: 'JOD', name: 'Jordanian Dinar', code: 'jo', symbol: 'FX_IDC:JODEGP' },
+    { id: 'CAD', name: 'Canadian Dollar', code: 'ca', symbol: 'FX_IDC:CADEGP' },
+    { id: 'AUD', name: 'Australian Dollar', code: 'au', symbol: 'FX_IDC:AUDEGP' },
+    { id: 'TRY', name: 'Turkish Lira', code: 'tr', symbol: 'FX_IDC:TRYEGP' },
   ], []);
 
   const currentRate = useMemo(() => {
@@ -155,7 +160,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
       text: 'text-amber-500',
       shadow: 'shadow-amber-500/20',
       accent: 'amber',
-      symbol: 'OANDA:XAUUSD',
+      symbol: 'FX_IDC:XAUUSD',
       label: 'Gold Bullion',
       status: 'Bullish',
       statusColor: 'text-emerald-500',
@@ -169,7 +174,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
       text: 'text-slate-400',
       shadow: 'shadow-slate-400/20',
       accent: 'slate',
-      symbol: 'OANDA:XAGUSD',
+      symbol: 'FX_IDC:XAGUSD',
       label: 'Silver Bullion',
       status: 'Consolidating',
       statusColor: 'text-blue-400',
@@ -184,7 +189,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
       text: 'text-blue-600',
       shadow: 'shadow-blue-600/20',
       accent: 'blue',
-      symbol: curr?.symbol || 'FX:USDEGP',
+      symbol: curr?.symbol || 'FX_IDC:USDEGP',
       label: curr?.name || 'US Dollar',
       status: 'Volatile',
       statusColor: 'text-amber-500',
