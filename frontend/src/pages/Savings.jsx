@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import confetti from 'canvas-confetti';
 import { useTheme } from "../context/ThemeContext";
 import {
   getSavingsData,
@@ -69,19 +70,19 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
   const [success, setSuccess] = useState(false);
 
   const currencyOptions = useMemo(() => [
-    { id: 'USD', name: 'US Dollar', icon: '🇺🇸', symbol: 'FX:USDEGP' },
-    { id: 'EUR', name: 'Euro', icon: '🇪🇺', symbol: 'FX:EUREGP' },
-    { id: 'GBP', name: 'British Pound', icon: '🇬🇧', symbol: 'FX:GBPEGP' },
-    { id: 'SAR', name: 'Saudi Riyal', icon: '🇸🇦', symbol: 'FX:SAREGP' },
-    { id: 'AED', name: 'UAE Dirham', icon: '🇦🇪', symbol: 'FX:AEDEGP' },
-    { id: 'KWD', name: 'Kuwaiti Dinar', icon: '🇰🇼', symbol: 'FX:KWDEGP' },
-    { id: 'QAR', name: 'Qatari Rial', icon: '🇶🇦', symbol: 'FX:QAREGP' },
-    { id: 'BHD', name: 'Bahraini Dinar', icon: '🇧🇭', symbol: 'FX:BHDEGP' },
-    { id: 'OMR', name: 'Omani Rial', icon: '🇴🇲', symbol: 'FX:OMREGP' },
-    { id: 'JOD', name: 'Jordanian Dinar', icon: '🇯🇴', symbol: 'FX:JODEGP' },
-    { id: 'CAD', name: 'Canadian Dollar', icon: '🇨🇦', symbol: 'FX:CADEGP' },
-    { id: 'AUD', name: 'Australian Dollar', icon: '🇦🇺', symbol: 'FX:AUDEGP' },
-    { id: 'TRY', name: 'Turkish Lira', icon: '🇹🇷', symbol: 'FX:TRYEGP' },
+    { id: 'USD', name: 'US Dollar', code: 'us', symbol: 'FX:USDEGP' },
+    { id: 'EUR', name: 'Euro', code: 'eu', symbol: 'FX:EUREGP' },
+    { id: 'GBP', name: 'British Pound', code: 'gb', symbol: 'FX:GBPEGP' },
+    { id: 'SAR', name: 'Saudi Riyal', code: 'sa', symbol: 'FX:SAREGP' },
+    { id: 'AED', name: 'UAE Dirham', code: 'ae', symbol: 'FX:AEDEGP' },
+    { id: 'KWD', name: 'Kuwaiti Dinar', code: 'kw', symbol: 'FX:KWDEGP' },
+    { id: 'QAR', name: 'Qatari Rial', code: 'qa', symbol: 'FX:QAREGP' },
+    { id: 'BHD', name: 'Bahraini Dinar', code: 'bh', symbol: 'FX:BHDEGP' },
+    { id: 'OMR', name: 'Omani Rial', code: 'om', symbol: 'FX:OMREGP' },
+    { id: 'JOD', name: 'Jordanian Dinar', code: 'jo', symbol: 'FX:JODEGP' },
+    { id: 'CAD', name: 'Canadian Dollar', code: 'ca', symbol: 'FX:CADEGP' },
+    { id: 'AUD', name: 'Australian Dollar', code: 'au', symbol: 'FX:AUDEGP' },
+    { id: 'TRY', name: 'Turkish Lira', code: 'tr', symbol: 'FX:TRYEGP' },
   ], []);
 
   const currentRate = useMemo(() => {
@@ -105,9 +106,15 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
     try {
       await onAddInvestment({ type, amount: numAmount, buy_date: buyDate });
       setSuccess(true);
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#3b82f6', '#10b981', '#fbbf24']
+      });
       setAmount('');
       setBuyDate(new Date().toISOString().split('T')[0]);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
       setError('Failed to add investment. Please try again.');
     }
@@ -231,8 +238,19 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in zoom-in duration-300">
-            <Sparkles className="w-5 h-5" /> Investment added successfully!
+          <div className="mb-6 p-6 bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-500 rounded-3xl text-sm font-black flex items-center justify-between animate-in zoom-in slide-in-from-top-4 duration-500 shadow-lg shadow-emerald-500/10">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-emerald-500 rounded-xl text-white">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-lg">Success!</p>
+                <p className="text-xs opacity-70 font-bold uppercase tracking-widest">Investment secured in vault</p>
+              </div>
+            </div>
+            <button onClick={() => setSuccess(false)} className="p-2 hover:bg-emerald-500/20 rounded-xl transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
@@ -248,7 +266,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
                     onClick={() => setSelectedCurrency(curr.id)}
                     className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all min-w-[60px] ${selectedCurrency === curr.id ? 'bg-blue-600 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
                   >
-                    <span className="text-lg">{curr.icon}</span>
+                    <img 
+                      src={`https://flagcdn.com/w40/${curr.code}.png`} 
+                      alt={curr.name}
+                      className="w-6 h-4 object-cover rounded-sm shadow-sm"
+                    />
                     <span className="text-[10px] font-black">{curr.id}</span>
                   </button>
                 ))}
@@ -258,8 +280,17 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Amount {['gold', 'silver'].includes(activeTab) ? '(Grams)' : `(${selectedCurrency})`}
+              <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-2`}>
+                Amount {['gold', 'silver'].includes(activeTab) ? '(Grams)' : (
+                  <div className="flex items-center gap-2">
+                    <span>({selectedCurrency})</span>
+                    <img 
+                      src={`https://flagcdn.com/w20/${currencyOptions.find(c => c.id === selectedCurrency)?.code}.png`} 
+                      alt=""
+                      className="w-4 h-3 rounded-sm"
+                    />
+                  </div>
+                )}
               </label>
               <div className="relative">
                 <input 
@@ -339,6 +370,18 @@ export default function Savings() {
   const [aiModelUsed, setAiModelUsed] = useState(null);
   const [currentTryingModel, setCurrentTryingModel] = useState(null);
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
+  const [shouldRenderForm, setShouldRenderForm] = useState(false);
+
+  useEffect(() => {
+    if (showInvestmentForm) {
+      setShouldRenderForm(true);
+    }
+  }, [showInvestmentForm]);
+
+  const handleFormClose = () => {
+    setShowInvestmentForm(false);
+    setTimeout(() => setShouldRenderForm(false), 500); // Match transition duration
+  };
   const [selectedInvestmentType, setSelectedInvestmentType] = useState('Gold'); // Default to Gold
 
   const loadAll = useCallback(async () => {
@@ -608,7 +651,13 @@ export default function Savings() {
               </button>
               <button 
                 className="btn-primary-unified !px-8 !bg-blue-600 hover:!bg-blue-700 relative overflow-hidden group" 
-                onClick={() => setShowInvestmentForm(!showInvestmentForm)}
+                onClick={() => {
+                  if (showInvestmentForm) {
+                    handleFormClose();
+                  } else {
+                    setShowInvestmentForm(true);
+                  }
+                }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity" />
                 <Plus className={`w-5 h-5 transition-transform duration-500 ${showInvestmentForm ? 'rotate-45' : 'group-hover:rotate-90'}`} />
@@ -724,10 +773,14 @@ export default function Savings() {
             </div>
         </div>
 
-        {showInvestmentForm && (
-          <div className="mb-10 animate-in fade-in slide-in-from-top-8 duration-700">
+        {shouldRenderForm && (
+          <div className={`mb-10 transition-all duration-500 ease-in-out transform ${
+            showInvestmentForm 
+              ? 'opacity-100 translate-y-0 scale-100' 
+              : 'opacity-0 -translate-y-8 scale-95 pointer-events-none'
+          }`}>
             <InvestmentForm 
-              onClose={() => setShowInvestmentForm(false)}
+              onClose={handleFormClose}
               onAddInvestment={handleAddInvestment}
               isDark={isDark}
               rates={rates}
