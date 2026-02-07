@@ -66,6 +66,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
   const [amount, setAmount] = useState('');
   const [buyDate, setBuyDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const currencyOptions = useMemo(() => [
     { id: 'USD', name: 'US Dollar', icon: '🇺🇸', symbol: 'FX:USDEGP' },
@@ -93,6 +94,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       setError('Please enter a valid amount.');
@@ -100,10 +102,15 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
     }
 
     const type = activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
-    await onAddInvestment({ type, amount: numAmount, buy_date: buyDate });
-    onClose();
-    setAmount('');
-    setBuyDate(new Date().toISOString().split('T')[0]);
+    try {
+      await onAddInvestment({ type, amount: numAmount, buy_date: buyDate });
+      setSuccess(true);
+      setAmount('');
+      setBuyDate(new Date().toISOString().split('T')[0]);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError('Failed to add investment. Please try again.');
+    }
   };
 
   const activeTheme = useMemo(() => {
@@ -220,6 +227,12 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
         {error && (
           <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-bold flex items-center gap-3">
             <AlertCircle className="w-5 h-5" /> {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in zoom-in duration-300">
+            <Sparkles className="w-5 h-5" /> Investment added successfully!
           </div>
         )}
 
@@ -709,19 +722,23 @@ export default function Savings() {
               </div>
               <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-blue-600 blur-[80px] opacity-10" />
             </div>
-          </div>
+        </div>
 
+        {showInvestmentForm && (
+          <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-8 animate-in fade-in slide-in-from-top-8 duration-700">
+            <InvestmentForm 
+              onClose={() => setShowInvestmentForm(false)}
+              onAddInvestment={handleAddInvestment}
+              isDark={isDark}
+              rates={rates}
+            />
+          </div>
+        )}
+
+        <div className="max-w-[1400px] mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content Area - 2 columns */}
             <div className="lg:col-span-2 space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
-              {showInvestmentForm && (
-                <InvestmentForm 
-                  onClose={() => setShowInvestmentForm(false)}
-                  onAddInvestment={handleAddInvestment}
-                  isDark={isDark}
-                  rates={rates}
-                />
-              )}
               {/* Investments Section */}
               <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
                 <div className="flex items-center justify-between mb-8">
