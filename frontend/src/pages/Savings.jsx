@@ -48,15 +48,42 @@ import {
 /* --------------------------------------------------------------- *
  *  TRADINGVIEW CHART COMPONENT
  * --------------------------------------------------------------- */
-const TradingViewChart = ({ symbol, isDark }) => (
-  <div className="w-full h-[240px] rounded-2xl overflow-hidden border border-slate-200/10 bg-slate-900/50">
-    <iframe
-      title="Market Chart"
-      src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_762ae&symbol=${symbol}&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=${isDark ? 'dark' : 'light'}&style=3&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=${symbol}`}
-      style={{ width: '100%', height: '100%', border: 'none' }}
-    />
-  </div>
-);
+const TradingViewChart = ({ symbol, isDark, height = 300 }) => {
+  const container = React.useRef();
+
+  useEffect(() => {
+    if (!container.current) return;
+    
+    // Clear previous chart
+    container.current.innerHTML = '';
+    
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      "symbol": symbol,
+      "width": "100%",
+      "height": height,
+      "locale": "en",
+      "dateRange": "12M",
+      "colorTheme": isDark ? "dark" : "light",
+      "trendLineColor": "#3b82f6",
+      "underLineColor": isDark ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.15)",
+      "underLineBottomColor": "rgba(59, 130, 246, 0)",
+      "isTransparent": true,
+      "autosize": true,
+      "largeChartUrl": ""
+    });
+    container.current.appendChild(script);
+  }, [symbol, isDark, height]);
+
+  return (
+    <div className="tradingview-widget-container" ref={container} style={{ height: `${height}px`, width: '100%' }}>
+      <div className="tradingview-widget-container__widget"></div>
+    </div>
+  );
+};
 
 /* --------------------------------------------------------------- *
  *  INVESTMENT FORM (INLINE)
@@ -127,7 +154,13 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
       bg: isDark ? 'bg-amber-500/10' : 'bg-amber-50',
       text: 'text-amber-500',
       shadow: 'shadow-amber-500/20',
-      accent: 'amber'
+      accent: 'amber',
+      symbol: 'OANDA:XAUUSD',
+      label: 'Gold Bullion',
+      status: 'Bullish',
+      statusColor: 'text-emerald-500',
+      volume: 'High',
+      icon: <Sparkles className="w-5 h-5" />
     };
     if (activeTab === 'silver') return {
       primary: 'slate-400',
@@ -135,25 +168,38 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
       bg: isDark ? 'bg-slate-400/10' : 'bg-slate-50',
       text: 'text-slate-400',
       shadow: 'shadow-slate-400/20',
-      accent: 'slate'
+      accent: 'slate',
+      symbol: 'OANDA:XAGUSD',
+      label: 'Silver Bullion',
+      status: 'Consolidating',
+      statusColor: 'text-blue-400',
+      volume: 'Moderate',
+      icon: <Gem className="w-5 h-5" />
     };
+    const curr = currencyOptions.find(c => c.id === selectedCurrency);
     return {
       primary: 'blue-600',
       secondary: 'blue-700',
       bg: isDark ? 'bg-blue-600/10' : 'bg-blue-50',
       text: 'text-blue-600',
       shadow: 'shadow-blue-600/20',
-      accent: 'blue'
+      accent: 'blue',
+      symbol: curr?.symbol || 'FX:USDEGP',
+      label: curr?.name || 'US Dollar',
+      status: 'Volatile',
+      statusColor: 'text-amber-500',
+      volume: 'Very High',
+      icon: <Banknote className="w-5 h-5" />
     };
-  }, [activeTab, isDark]);
+  }, [activeTab, isDark, selectedCurrency, currencyOptions]);
 
   const accentColor = activeTheme.accent;
 
   return (
-    <div className={`relative w-full overflow-hidden flex flex-col lg:flex-row rounded-[2.5rem] border ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-200 shadow-xl'} z-10 animate-in fade-in slide-in-from-top-4 duration-500 mb-8`}>
+    <div className={`relative w-full overflow-hidden flex flex-col lg:flex-row rounded-[2.5rem] border ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-200 shadow-xl'} z-10 animate-in fade-in slide-in-from-top-8 duration-700 mb-8`}>
       
       {/* Decorative Background Gradients */}
-      <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 ${
+      <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 transition-colors duration-700 ${
         accentColor === 'amber' ? 'bg-amber-500' : 
         accentColor === 'slate' ? 'bg-slate-400' : 
         'bg-blue-600'
@@ -218,117 +264,148 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
         </div>
       </div>
 
-      {/* Right Content - Form */}
-      <div className={`flex-1 p-8 lg:p-10 ${isDark ? 'bg-slate-900/50' : 'bg-white'}`}>
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Add {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-            </h2>
+      {/* Right Content - Form and Chart */}
+      <div className={`flex-1 flex flex-col ${isDark ? 'bg-slate-900/50' : 'bg-white'}`}>
+        <div className="p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
+              {activeTheme.icon}
+            </div>
+            <div>
+              <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Add {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+              </h2>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Market Performance</p>
+            </div>
           </div>
           <button onClick={onClose} className={`p-3 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-bold flex items-center gap-3">
-            <AlertCircle className="w-5 h-5" /> {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6 p-6 bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-500 rounded-3xl text-sm font-black flex items-center justify-between animate-in zoom-in slide-in-from-top-4 duration-500 shadow-lg shadow-emerald-500/10">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-emerald-500 rounded-xl text-white">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-lg">Success!</p>
-                <p className="text-xs opacity-70 font-bold uppercase tracking-widest">Investment secured in vault</p>
-              </div>
-            </div>
-            <button onClick={() => setSuccess(false)} className="p-2 hover:bg-emerald-500/20 rounded-xl transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {activeTab === 'currency' && (
-            <div>
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Select Currency</label>
-              <div className="grid grid-cols-4 md:grid-cols-7 gap-2 p-2 rounded-2xl border border-slate-200/10 bg-slate-900/20 overflow-x-auto">
-                {currencyOptions.map((curr) => (
-                  <button
-                    key={curr.id}
-                    type="button"
-                    onClick={() => setSelectedCurrency(curr.id)}
-                    className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all min-w-[60px] ${selectedCurrency === curr.id ? 'bg-blue-600 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
-                  >
-                    <img 
-                      src={`https://flagcdn.com/w40/${curr.code}.png`} 
-                      alt={curr.name}
-                      className="w-6 h-4 object-cover rounded-sm shadow-sm"
-                    />
-                    <span className="text-[10px] font-black">{curr.id}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-2`}>
-                Amount {['gold', 'silver'].includes(activeTab) ? '(Grams)' : (
-                  <div className="flex items-center gap-2">
-                    <span>({selectedCurrency})</span>
-                    <img 
-                      src={`https://flagcdn.com/w20/${currencyOptions.find(c => c.id === selectedCurrency)?.code}.png`} 
-                      alt=""
-                      className="w-4 h-3 rounded-sm"
-                    />
+        <div className="flex-1 flex flex-col lg:flex-row">
+          {/* Chart Section */}
+          <div className={`lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'}`}>
+             <div className="rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-6">
+                <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={280} />
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className={`p-5 rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Status</span>
+                  <div className={`flex items-center gap-2 ${activeTheme.statusColor} font-black`}>
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-sm">{activeTheme.status}</span>
                   </div>
-                )}
-              </label>
-              <div className="relative">
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  value={amount} 
-                  onChange={(e) => setAmount(e.target.value)} 
-                  className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
-                  placeholder="0.00" 
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-500">
-                  {['gold', 'silver'].includes(activeTab) ? 'g' : selectedCurrency}
+                </div>
+                <div className={`p-5 rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Volume</span>
+                  <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeTheme.volume}</span>
+                </div>
+             </div>
+          </div>
+
+          {/* Form Section */}
+          <div className="lg:w-1/2 p-8 lg:p-10">
+            {error && (
+              <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in shake">
+                <AlertCircle className="w-5 h-5" /> {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-6 p-6 bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-500 rounded-3xl text-sm font-black flex items-center justify-between animate-in zoom-in slide-in-from-top-4 duration-500 shadow-lg shadow-emerald-500/10">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-emerald-500 rounded-xl text-white">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-lg">Success!</p>
+                    <p className="text-xs opacity-70 font-bold uppercase tracking-widest">Investment secured in vault</p>
+                  </div>
+                </div>
+                <button onClick={() => setSuccess(false)} className="p-2 hover:bg-emerald-500/20 rounded-xl transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {activeTab === 'currency' && (
+                <div>
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Select Currency</label>
+                  <div className="grid grid-cols-4 gap-2 p-2 rounded-2xl border border-slate-200/10 bg-slate-900/20 overflow-x-auto">
+                    {currencyOptions.map((curr) => (
+                      <button
+                        key={curr.id}
+                        type="button"
+                        onClick={() => setSelectedCurrency(curr.id)}
+                        className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all min-w-[60px] ${selectedCurrency === curr.id ? 'bg-blue-600 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+                      >
+                        <img 
+                          src={`https://flagcdn.com/w40/${curr.code}.png`} 
+                          alt={curr.name}
+                          className="w-6 h-4 object-cover rounded-sm shadow-sm"
+                        />
+                        <span className="text-[10px] font-black">{curr.id}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-2`}>
+                    Amount {['gold', 'silver'].includes(activeTab) ? '(Grams)' : (
+                      <div className="flex items-center gap-2">
+                        <span>({selectedCurrency})</span>
+                        <img 
+                          src={`https://flagcdn.com/w20/${currencyOptions.find(c => c.id === selectedCurrency)?.code}.png`} 
+                          alt=""
+                          className="w-4 h-3 rounded-sm"
+                        />
+                      </div>
+                    )}
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      value={amount} 
+                      onChange={(e) => setAmount(e.target.value)} 
+                      className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
+                      placeholder="0.00" 
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-500">
+                      {['gold', 'silver'].includes(activeTab) ? 'g' : selectedCurrency}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Date</label>
+                  <input 
+                    type="date" 
+                    value={buyDate} 
+                    onChange={(e) => setBuyDate(e.target.value)} 
+                    className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
+                  />
                 </div>
               </div>
-            </div>
-            <div>
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Date</label>
-              <input 
-                type="date" 
-                value={buyDate} 
-                onChange={(e) => setBuyDate(e.target.value)} 
-                className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
-              />
-            </div>
-          </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-6 pt-4">
-            <div className={`flex-1 p-5 rounded-2xl border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'}`}>
-              <div className="flex justify-between items-center">
-                <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Value</span>
-                <span className="text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
+              <div className="pt-4">
+                <div className={`p-5 rounded-2xl border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'} mb-6`}>
+                  <div className="flex justify-between items-center">
+                    <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Value</span>
+                    <span className="text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
+                  </div>
+                </div>
+                <button type="submit" className={`w-full px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-blue-600/20 ${activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                  Secure Investment
+                </button>
               </div>
-            </div>
-            <button type="submit" className={`w-full md:w-auto px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-blue-600/20 ${activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600' : activeTab === 'silver' ? 'bg-slate-500 hover:bg-slate-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
-              Secure Investment
-            </button>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
