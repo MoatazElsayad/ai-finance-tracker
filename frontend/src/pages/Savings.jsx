@@ -725,7 +725,7 @@ export default function Savings() {
         </div>
 
         {showInvestmentForm && (
-          <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-8 animate-in fade-in slide-in-from-top-8 duration-700">
+          <div className="mb-10 animate-in fade-in slide-in-from-top-8 duration-700">
             <InvestmentForm 
               onClose={() => setShowInvestmentForm(false)}
               onAddInvestment={handleAddInvestment}
@@ -735,8 +735,7 @@ export default function Savings() {
           </div>
         )}
 
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content Area - 2 columns */}
             <div className="lg:col-span-2 space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
               {/* Investments Section */}
