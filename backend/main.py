@@ -49,14 +49,13 @@ if os.getenv('OPENROUTER_API_KEY'):
     print(f"DEBUG: Key starts with: {os.getenv('OPENROUTER_API_KEY')[:10]}...")
 
 FREE_MODELS = [
+    "google/gemini-2.0-flash-exp:free",
     "meta-llama/llama-3.2-3b-instruct:free",
-    "google/gemma-3-27b-it:free",
+    "google/gemma-2-9b-it:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "nvidia/nemotron-nano-12b-v2-vl:free",
-    "openai/gpt-oss-120b:free",
-    "deepseek/deepseek-r1-0528:free",
-    "qwen/qwen3-coder:free",
-    "z-ai/glm-4.5-air:free"
+    "qwen/qwen-2.5-72b-instruct:free",
+    "microsoft/phi-3-mini-128k-instruct:free",
+    "openai/gpt-3.5-turbo:free"
 ]
 
 SECRET_KEY = os.getenv("SECRET_KEY")

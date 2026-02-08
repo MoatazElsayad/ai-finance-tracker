@@ -184,41 +184,60 @@ function Transactions() {
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) return [];
     let filtered = [...transactions];
 
     if (debouncedSearchQuery) {
-      filtered = filtered.filter(txn =>
-        txn.description?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        txn.category_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-      );
+      filtered = filtered.filter(txn => {
+        if (!txn) return false;
+        const desc = (txn.description || "").toLowerCase();
+        const cat = (txn.category_name || "").toLowerCase();
+        const query = debouncedSearchQuery.toLowerCase();
+        return desc.includes(query) || cat.includes(query);
+      });
     }
 
     if (filterType === 'income') {
-      filtered = filtered.filter(t => t.amount > 0);
+      filtered = filtered.filter(t => t && t.amount > 0);
     } else if (filterType === 'expense') {
-      filtered = filtered.filter(t => t.amount < 0);
+      filtered = filtered.filter(t => t && t.amount < 0);
     }
 
     if (filterCategory !== 'all') {
-      filtered = filtered.filter(t => t.category_id === parseInt(filterCategory));
+      filtered = filtered.filter(t => t && t.category_id === parseInt(filterCategory));
     }
 
     // Apply date range filter based on viewMode and selectedMonth
     const { startDate, endDate } = getDateRange();
     filtered = filtered.filter(t => {
-      const dateStr = t.date.split('T')[0];
-      return dateStr >= startDate && dateStr <= endDate;
+      if (!t || !t.date || typeof t.date !== 'string') return false;
+      try {
+        const dateStr = t.date.split('T')[0];
+        return dateStr >= startDate && dateStr <= endDate;
+      } catch (e) {
+        console.error("Error filtering transaction date:", e, t);
+        return false;
+      }
     });
 
     // Sort transactions
     filtered.sort((a, b) => {
+      if (!a || !b) return 0;
       let comparison = 0;
-      if (sortBy === 'date') {
-        comparison = new Date(a.date) - new Date(b.date);
-      } else if (sortBy === 'amount') {
-        comparison = Math.abs(a.amount) - Math.abs(b.amount);
-      } else if (sortBy === 'category') {
-        comparison = (a.category_name || '').localeCompare(b.category_name || '');
+      try {
+        const dateA = a.date ? new Date(a.date) : new Date(0);
+        const dateB = b.date ? new Date(b.date) : new Date(0);
+        
+        if (sortBy === 'date') {
+          comparison = dateA - dateB;
+        } else if (sortBy === 'amount') {
+          comparison = Math.abs(a.amount || 0) - Math.abs(b.amount || 0);
+        } else if (sortBy === 'category') {
+          comparison = (a.category_name || '').localeCompare(b.category_name || '');
+        }
+      } catch (e) {
+        console.error("Error sorting transactions:", e);
+        comparison = 0;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -228,26 +247,19 @@ function Transactions() {
 
   // Calculate totals based on current filters
   const totals = useMemo(() => {
-    if (!filteredTransactions) return { income: 0, expenses: 0, net: 0, count: 0 };
-    const income = filteredTransactions
-      .filter(t => t && t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0);
-    const expenses = Math.abs(
-      filteredTransactions
-        .filter(t => t && t.amount < 0)
-        .reduce((sum, t) => sum + t.amount, 0)
-    );
-    return {
-      income,
-      expenses,
-      net: income - expenses,
-      count: filteredTransactions.length
-    };
+    if (!Array.isArray(filteredTransactions)) return { income: 0, expenses: 0, net: 0, count: 0 };
+    return filteredTransactions.reduce((acc, t) => {
+      if (!t || typeof t.amount !== 'number') return acc;
+      if (t.amount > 0) acc.income += t.amount;
+      else acc.expenses += Math.abs(t.amount);
+      acc.net = acc.income - acc.expenses;
+      return acc;
+    }, { income: 0, expenses: 0, net: 0, count: filteredTransactions.length });
   }, [filteredTransactions]);
-
 
   // Filter to first 5 if not showing all
   const displayTransactions = useMemo(() => {
+    if (!Array.isArray(filteredTransactions)) return [];
     if (showAllTransactions) return filteredTransactions;
     return filteredTransactions.slice(0, 5);
   }, [filteredTransactions, showAllTransactions]);
@@ -255,39 +267,49 @@ function Transactions() {
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
     const groups = {};
+    if (!Array.isArray(displayTransactions)) return groups;
     displayTransactions.forEach(txn => {
-      const dateParts = txn.date.split('T')[0].split('-');
-      const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-      const dateKey = dateObj.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
+      if (!txn || !txn.date || typeof txn.date !== 'string') return;
+      try {
+        const dateParts = txn.date.split('T')[0].split('-');
+        if (dateParts.length !== 3) return;
+        const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+        if (isNaN(dateObj.getTime())) return;
+        
+        const dateKey = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(txn);
+      } catch (e) {
+        console.error("Error grouping transaction:", e);
       }
-      groups[dateKey].push(txn);
     });
     return groups;
   }, [displayTransactions]);
 
   // Filter categories by type
-  const filteredCategories = categories.filter(
-    cat => cat.type === (isExpense ? 'expense' : 'income') || (cat.name && cat.name.toLowerCase().includes('savings'))
-  );
+  const filteredCategories = Array.isArray(categories) ? categories.filter(
+    cat => cat && (cat.type === (isExpense ? 'expense' : 'income') || (cat?.name && cat.name.toLowerCase().includes('savings')))
+  ) : [];
 
   // Get recent categories (last 5 used)
   const recentCategories = useMemo(() => {
+    if (!Array.isArray(transactions) || !Array.isArray(categories)) return [];
     const categoryCounts = {};
     transactions.slice(0, 20).forEach(txn => {
-      if (txn.category_id) {
+      if (txn && txn.category_id) {
         categoryCounts[txn.category_id] = (categoryCounts[txn.category_id] || 0) + 1;
       }
     });
     return Object.entries(categoryCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([id]) => categories.find(c => c.id === parseInt(id)))
+      .map(([id]) => categories.find(c => c && c.id === parseInt(id)))
       .filter(Boolean);
   }, [transactions, categories]);
 
@@ -689,24 +711,26 @@ function Transactions() {
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-slate-800/5">
-              {Object.entries(groupedTransactions).map(([dateLabel, txns]) => (
-                <React.Fragment key={dateLabel}>
-                  <tr className={`${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/30'} backdrop-blur-sm sticky top-[84px] z-10`}>
-                    <td colSpan="5" className="px-10 py-4 border-y border-slate-800/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
-                        <span className={`text-sm font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>
-                          {dateLabel}
-                        </span>
-                        <div className={`ml-auto px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] ${theme === 'dark' ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-500'}`}>
-                          {txns.length} {txns.length === 1 ? 'Transaction' : 'Transactions'}
+              {groupedTransactions && Object.entries(groupedTransactions).length > 0 ? (
+                Object.entries(groupedTransactions).map(([dateLabel, txns]) => (
+                  <React.Fragment key={dateLabel}>
+                    <tr className={`${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-100/30'} backdrop-blur-sm sticky top-[84px] z-10`}>
+                      <td colSpan="5" className="px-10 py-4 border-y border-slate-800/10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
+                          <span className={`text-sm font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>
+                            {dateLabel}
+                          </span>
+                          <div className={`ml-auto px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] ${theme === 'dark' ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-500'}`}>
+                            {txns?.length || 0} {txns?.length === 1 ? 'Transaction' : 'Transactions'}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                  {txns.map((txn) => {
-                    const isNote = txn.description.includes('||notes||');
-                    const [desc, note] = isNote ? txn.description.split('||notes||') : [txn.description, ''];
+                      </td>
+                    </tr>
+                    {Array.isArray(txns) && txns.map((txn) => {
+                    const description = txn.description || '';
+                    const isNote = description.includes('||notes||');
+                    const [desc, note] = isNote ? description.split('||notes||') : [description, ''];
                     const isExpanded = expanded.has(txn.id);
                     const isSavings = txn.category_name && txn.category_name.toLowerCase().includes('savings');
                     
@@ -750,20 +774,28 @@ function Transactions() {
                         <td className="px-10 py-8">
                           <span className={`font-black uppercase tracking-[0.1em] text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                             {(() => {
-                              const dateParts = txn.date.split('T')[0].split('-');
-                              const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                              return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                              try {
+                                if (!txn.date || typeof txn.date !== 'string') return 'No Date';
+                                const dateParts = txn.date.split('T')[0].split('-');
+                                if (dateParts.length !== 3) return txn.date;
+                                const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                                if (isNaN(dateObj.getTime())) return txn.date;
+                                return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                              } catch (e) {
+                                console.error("Error formatting date in table:", e, txn);
+                                return 'Invalid Date';
+                              }
                             })()}
                           </span>
                         </td>
                         <td className={`px-10 py-8 text-right font-black text-2xl ${
                           isSavings 
                             ? 'text-blue-500' 
-                            : (txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500')
+                            : ((txn.amount || 0) > 0 ? 'text-emerald-500' : 'text-rose-500')
                         }`}>
                           <div className="flex items-center justify-end gap-2">
-                            <span>{txn.amount > 0 ? '+' : '-'}</span>
-                            <span>EGP {Math.abs(txn.amount).toLocaleString()}</span>
+                            <span>{(txn.amount || 0) > 0 ? '+' : '-'}</span>
+                            <span>EGP {Math.abs(txn.amount || 0).toLocaleString()}</span>
                           </div>
                         </td>
                         <td className="px-10 py-8 text-center">
@@ -779,9 +811,19 @@ function Transactions() {
                         </td>
                       </tr>
                     );
-                  })}
-                </React.Fragment>
-              ))}
+                    })}
+                  </React.Fragment>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-10 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4 opacity-50">
+                      <Hash className="w-12 h-12" />
+                      <p className="text-xl font-bold uppercase tracking-widest">No transactions found</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
