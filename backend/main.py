@@ -49,22 +49,14 @@ if os.getenv('OPENROUTER_API_KEY'):
     print(f"DEBUG: Key starts with: {os.getenv('OPENROUTER_API_KEY')[:10]}...")
 
 FREE_MODELS = [
-    # "openai/gpt-4o-mini",                      # OpenAI    - ChatGPT (Paid)
-    # "openai/chatgpt-4o-latest",                # OpenAI    - ChatGPT (paid)
-    "openai/gpt-oss-120b:free",
-    "google/gemini-2.0-flash-exp:free",          # Google    - Gemini
+    "meta-llama/llama-3.2-3b-instruct:free",
     "google/gemma-3-27b-it:free",
-    "deepseek/deepseek-r1-0528:free",            # DeepSeek  - DeepSeek
-    "tngtech/deepseek-r1t2-chimera:free",
-    "meta-llama/llama-3.3-70b-instruct:free",    # Meta      - Llama
-    "mistralai/mistral-7b-instruct:free",        # MistralAI - Mistral
-    "mistralai/devstral-2512:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",       # Nvidia    - Nemotron
-    "qwen/qwen-2.5-vl-7b-instruct:free",
-    "qwen/qwen3-coder:free",                     # Alibaba   - Qwen 3 Coder
-    "xiaomi/mimo-v2-flash:free",
-    "z-ai/glm-4.5-air:free",                     # Z-AI      - GLM 4.5 Air
-    "tngtech/tng-r1t-chimera:free"
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
+    "openai/gpt-oss-120b:free",
+    "deepseek/deepseek-r1-0528:free",
+    "qwen/qwen3-coder:free",
+    "z-ai/glm-4.5-air:free"
 ]
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -2539,8 +2531,10 @@ async def upload_receipt(
 
 @app.post("/ocr/confirm-receipt")
 def confirm_receipt(
+    request: Request,
     data: ReceiptData,
-    token: str,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -2548,7 +2542,7 @@ def confirm_receipt(
     Called after user reviews and confirms OCR extraction
     """
     try:
-        user = get_current_user(token, db)
+        user = get_current_user(request, authorization, token, db)
         
         # Validate category exists and belongs to user or is default
         category = db.query(Category).filter(
@@ -2581,6 +2575,7 @@ def confirm_receipt(
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Error confirming receipt: {str(e)}")
         db.rollback()
         return {
             "success": False,

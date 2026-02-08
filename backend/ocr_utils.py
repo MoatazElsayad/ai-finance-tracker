@@ -13,18 +13,22 @@ import random
 
 # Vision-capable models
 VISION_MODELS = [
-    "google/gemini-2.0-flash-exp:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
     "qwen/qwen-2.5-vl-7b-instruct:free",
-    "meta-llama/llama-3.2-11b-vision-instruct:free"
+    "meta-llama/llama-3.2-11b-vision-instruct:free",
+    "google/gemini-2.0-flash-exp:free"
 ]
 
 # Models list (synced with main.py)
 FREE_MODELS = [
-    "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-r1-distill-llama-70b:free",
-    "qwen/qwen-2.5-vl-7b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
+    "openai/gpt-oss-120b:free",
+    "deepseek/deepseek-r1-0528:free",
+    "qwen/qwen3-coder:free",
+    "z-ai/glm-4.5-air:free"
 ]
 
 # Try to use EasyOCR, fallback to pytesseract or online API
@@ -321,26 +325,24 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
     
     prompt = f"""
-    Analyze this receipt image and extract structured data with extreme precision (90%+ confidence target).
+    Analyze this receipt image and extract structured data with extreme precision (Target: 90%+ Confidence).
     
-    Task:
-    1. Identify the EXACT Merchant Name (business name at the top).
-    2. Identify the TOTAL FINAL AMOUNT (including tax and tip, ignore subtotal).
-    3. Identify the EXACT Date (YYYY-MM-DD).
-    4. SELECT THE BEST CATEGORY from the provided list below based on the merchant and items.
-    
-    Available Categories (ID: Name - Type):
+    EXTRACT THESE FIELDS:
+    1. MERCHANT: The exact business name (e.g., "Starbucks", "Walmart").
+    2. AMOUNT: The total final amount paid (numerical value only, e.g., 45.99).
+    3. DATE: The date of transaction in YYYY-MM-DD format.
+    4. CATEGORY_ID: Choose the most appropriate ID from the list below.
+
+    AVAILABLE CATEGORIES:
     {categories_str}
     
-    Instructions:
-    - You MUST choose one Category ID from the list above.
-    - If the merchant is a restaurant/cafe/supermarket, choose 'Food & Dining'.
-    - If it's a gas station/uber/parking, choose 'Transportation'.
-    - If it's for house/rent/utilities, choose 'Housing'.
-    - If it's for medicine/doctor, choose 'Health & Wellness'.
-    - If unsure, choose 'Other Expense'.
-    - Return ONLY a valid JSON object.
-    - Keys: "merchant", "amount", "date", "category_id".
+    RULES:
+    - Output ONLY valid JSON.
+    - If a field is missing, use null.
+    - For CATEGORY_ID, prioritize 'Food & Dining' for restaurants, 'Transportation' for gas/travel, etc.
+    
+    JSON FORMAT:
+    {{"merchant": "Name", "amount": 0.00, "date": "YYYY-MM-DD", "category_id": 0}}
     """
     
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -353,62 +355,72 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     
     # Try vision models
     models = VISION_MODELS.copy()
-    random.shuffle(models)
+    # Prioritize working vision models
+    priority_model = "nvidia/nemotron-nano-12b-v2-vl:free"
+    if priority_model in models:
+        models.remove(priority_model)
+        models.insert(0, priority_model)
     
-    for model in models:
-        try:
-            print(f"Attempting Vision AI parsing with {model}...")
-            payload = {
-                "model": model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
+    async with httpx.AsyncClient(verify=False) as client:
+        for model in models:
+            try:
+                print(f"Attempting Vision AI parsing with {model}...")
+                payload = {
+                    "model": model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{base64_image}"
+                                    }
                                 }
-                            }
-                        ]
-                    }
-                ],
-                "temperature": 0.1,
-            }
-            
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+                            ]
+                        }
+                    ],
+                    "temperature": 0.1,
+                }
+                
+                response = await client.post(url, headers=headers, json=payload, timeout=45.0)
                 
                 if response.status_code == 200:
-                    content = response.json()['choices'][0]['message']['content']
-                    # Clean up markdown
-                    content = content.replace("```json", "").replace("```", "").strip()
-                    
-                    try:
+                    resp_json = response.json()
+                    if 'choices' in resp_json and len(resp_json['choices']) > 0:
+                        content = resp_json['choices'][0]['message']['content']
+                        # Clean up markdown
+                        content = content.replace("```json", "").replace("```", "").strip()
+                        
                         # Extract JSON from potential chatter
                         match = re.search(r'\{.*\}', content, re.DOTALL)
                         if match:
                             data = json.loads(match.group(0))
-                        else:
-                            data = json.loads(content)
                             
-                        # Basic validation
-                        if "merchant" in data and "amount" in data:
-                            if data.get("amount"):
-                                data["amount"] = float(str(data["amount"]).replace("$", "").replace(",", ""))
-                            if data.get("category_id"):
-                                data["category_id"] = int(data["category_id"])
-                            print(f"Vision AI success with {model}")
-                            return data
-                    except:
-                        print(f"Vision AI JSON parse failed for {model}")
-                        continue
+                            # Basic validation
+                            if data.get("merchant") or data.get("amount"):
+                                if data.get("amount"):
+                                    # Handle string amounts with currency symbols
+                                    amt_str = str(data["amount"]).replace("$", "").replace("£", "").replace("€", "").replace(",", "").strip()
+                                    try:
+                                        data["amount"] = float(amt_str)
+                                    except:
+                                        pass
+                                
+                                if data.get("category_id"):
+                                    try:
+                                        data["category_id"] = int(data["category_id"])
+                                    except:
+                                        pass
+                                        
+                                print(f"Vision AI success with {model}")
+                                return data
                 else:
-                    print(f"Vision AI API error {response.status_code} for {model}")
-        except Exception as e:
-            print(f"Vision AI parsing failed with model {model}: {e}")
-            continue
+                    print(f"Vision AI API error {response.status_code} for {model}: {response.text[:200]}")
+            except Exception as e:
+                print(f"Vision AI parsing failed with model {model}: {str(e)}")
+                continue
             
     return None
 
@@ -416,6 +428,9 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     """
     Use AI to parse receipt text into structured data
     """
+    if not text or len(text.strip()) < 10:
+        return None
+
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         print("No OpenRouter API key found, skipping AI parsing")
@@ -424,32 +439,28 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
     
     prompt = f"""
-    Analyze the following receipt text and extract structured data with high accuracy (90%+ target).
+    Analyze this receipt text and extract structured data with extreme precision.
     
-    Receipt Text:
+    TEXT:
     \"\"\"
     {text}
     \"\"\"
     
-    Task:
-    1. Identify the EXACT Merchant Name.
-    2. Identify the TOTAL FINAL AMOUNT (ignore subtotal, include tax).
-    3. Identify the EXACT Date (YYYY-MM-DD).
-    4. SELECT THE BEST CATEGORY from the provided list below based on the merchant and items.
+    EXTRACT:
+    1. MERCHANT: Exact business name.
+    2. AMOUNT: Total amount paid (numerical).
+    3. DATE: YYYY-MM-DD.
+    4. CATEGORY_ID: Most appropriate ID from list.
     
-    Available Categories (ID: Name - Type):
+    CATEGORIES:
     {categories_str}
     
-    Instructions:
-    - You MUST choose one Category ID from the list above. Do not invent new categories.
-    - If the merchant is a restaurant/cafe/supermarket, choose 'Food & Dining'.
-    - If it's a gas station/uber/parking, choose 'Transportation'.
-    - If it's for house/rent/utilities, choose 'Housing'.
-    - If it's for medicine/doctor, choose 'Health & Wellness'.
-    - If unsure, choose the closest match or 'Other Expense'.
+    RULES:
+    - Output ONLY valid JSON.
+    - If unsure, use null.
     
-    Return ONLY a valid JSON object with these keys: "merchant", "amount", "date", "category_id".
-    Example: {{"merchant": "Walmart", "amount": 45.20, "date": "2023-05-12", "category_id": 3}}
+    FORMAT:
+    {{"merchant": "Name", "amount": 0.00, "date": "YYYY-MM-DD", "category_id": 0}}
     """
     
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -460,56 +471,58 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
         "X-Title": "Finance Tracker AI",
     }
     
-    # Try a few models
+    # Use models from the synced FREE_MODELS list
     models = FREE_MODELS.copy()
-    random.shuffle(models)
+    # Prioritize working text models
+    priority_model = "meta-llama/llama-3.2-3b-instruct:free"
+    if priority_model in models:
+        models.remove(priority_model)
+        models.insert(0, priority_model)
     
-    # Limit to top 3 to save time
-    for model in models[:3]:
-        try:
-            payload = {
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "You are a receipt parser. Output valid JSON only."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.1, # Low temperature for consistent formatting
-            }
-            
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.post(url, headers=headers, json=payload, timeout=15.0)
+    async with httpx.AsyncClient(verify=False) as client:
+        for model in models:
+            try:
+                payload = {
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": "You are a receipt parsing expert. Respond only with JSON."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.1,
+                }
+                
+                response = await client.post(url, headers=headers, json=payload, timeout=25.0)
                 
                 if response.status_code == 200:
-                    content = response.json()['choices'][0]['message']['content']
-                    # Clean up markdown code blocks if present
-                    content = content.replace("```json", "").replace("```", "").strip()
-                    
-                    try:
-                        data = json.loads(content)
-                    except json.JSONDecodeError:
-                        # Try to find JSON object in text
+                    resp_json = response.json()
+                    if 'choices' in resp_json and len(resp_json['choices']) > 0:
+                        content = resp_json['choices'][0]['message']['content']
+                        content = content.replace("```json", "").replace("```", "").strip()
+                        
                         match = re.search(r'\{.*\}', content, re.DOTALL)
                         if match:
                             data = json.loads(match.group(0))
-                        else:
-                            continue
-                    
-                    # Validate keys
-                    if "merchant" in data and "amount" in data:
-                        # Ensure types
-                        try:
-                            if data.get("amount"):
-                                data["amount"] = float(str(data["amount"]).replace("$", "").replace(",", ""))
-                            
-                            if data.get("category_id"):
-                                data["category_id"] = int(data["category_id"])
+                            if data.get("merchant") or data.get("amount"):
+                                # Clean up amount
+                                if data.get("amount"):
+                                    amt_str = str(data["amount"]).replace("$", "").replace("£", "").replace("€", "").replace(",", "").strip()
+                                    try:
+                                        data["amount"] = float(amt_str)
+                                    except:
+                                        pass
                                 
-                            return data
-                        except:
-                            continue
-        except Exception as e:
-            print(f"AI parsing failed with model {model}: {e}")
-            continue
+                                if data.get("category_id"):
+                                    try:
+                                        data["category_id"] = int(data["category_id"])
+                                    except:
+                                        pass
+                                        
+                                return data
+                else:
+                    print(f"Text AI API error {response.status_code} for {model}")
+            except Exception as e:
+                print(f"Text AI parsing failed with model {model}: {str(e)}")
+                continue
             
     return None
 

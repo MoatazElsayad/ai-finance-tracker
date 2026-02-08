@@ -218,7 +218,7 @@ function Transactions() {
       } else if (sortBy === 'amount') {
         comparison = Math.abs(a.amount) - Math.abs(b.amount);
       } else if (sortBy === 'category') {
-        comparison = a.category_name.localeCompare(b.category_name);
+        comparison = (a.category_name || '').localeCompare(b.category_name || '');
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });

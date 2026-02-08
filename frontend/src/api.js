@@ -278,6 +278,35 @@ export const deleteGoal = async (goalId) => {
 };
 
 // ============================================
+// OCR / RECEIPT SCANNING
+// ============================================
+
+export const uploadReceipt = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = getToken();
+  const response = await fetch(`${API_URL}/ocr/upload-receipt?token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  return handleResponse(response);
+};
+
+export const confirmReceipt = async (data) => {
+  const response = await authFetch(`/ocr/confirm-receipt`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+  return handleResponse(response);
+};
+
+// ============================================
 // BUDGETS
 // ============================================
 

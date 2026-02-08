@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Upload, Camera, Check, AlertTriangle, Loader, ArrowRight, RefreshCw, ScanLine, Calendar, Tag, FileText, X } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+import { getCategories, uploadReceipt, confirmReceipt } from '../api';
 
 export default function ReceiptUpload() {
   const { theme } = useTheme();
@@ -29,8 +28,7 @@ export default function ReceiptUpload() {
 
   // Fetch categories on mount
   useEffect(() => {
-    fetch(`${API_URL}/categories?token=${localStorage.getItem('token')}`)
-      .then(res => res.json().catch(() => []))
+    getCategories()
       .then(data => setCategories(data || []))
       .catch(err => console.error('Failed to fetch categories:', err));
   }, []);
@@ -55,18 +53,7 @@ export default function ReceiptUpload() {
     reader.readAsDataURL(file);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${API_URL}/ocr/upload-receipt?token=${localStorage.getItem('token')}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      const result = await response.json().catch(() => null);
+      const result = await uploadReceipt(file);
 
       if (result && result.success) {
         setExtractedData(result.data);
@@ -95,22 +82,14 @@ export default function ReceiptUpload() {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${API_URL}/ocr/confirm-receipt?token=${localStorage.getItem('token')}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          merchant: editData.merchant,
-          amount: parseFloat(editData.amount),
-          date: editData.date,
-          category_id: parseInt(editData.category_id),
-          description: editData.description
-        })
+      const result = await confirmReceipt({
+        merchant: editData.merchant,
+        amount: parseFloat(editData.amount),
+        date: editData.date,
+        category_id: parseInt(editData.category_id),
+        description: editData.description
       });
 
-      const result = await response.json().catch(() => null);
       if (result.success) {
         // Reset form
         setExtractedData(null);
