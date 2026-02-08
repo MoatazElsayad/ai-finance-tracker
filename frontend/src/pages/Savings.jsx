@@ -36,7 +36,8 @@ import {
   Bot,
   Gem,
   Banknote,
-  ArrowUpRight
+  ArrowUpRight,
+  Flag
 } from "lucide-react";
 import { formatAISummary, getModelInfo } from './DashboardUtils';
 import {
@@ -887,65 +888,99 @@ export default function Savings() {
               <div className="absolute -right-12 -bottom-12 w-32 h-32 rounded-full bg-blue-600 blur-[60px] opacity-10" />
             </div>
 
+            {/* Quick Deposit - Moved to Top */}
+            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} relative overflow-hidden group border-2 ${isDark ? 'border-blue-600/20 hover:border-blue-600/40' : 'border-blue-100 hover:border-blue-200'} transition-all duration-500 shadow-xl`}>
+              <div className="flex items-center justify-between mb-4">
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  Quick Deposit
+                </span>
+                <div className={`p-2 rounded-lg ${isDark ? 'bg-blue-600/10' : 'bg-blue-50'} text-blue-600`}>
+                  <Plus className="w-4 h-4" />
+                </div>
+              </div>
+              <form onSubmit={handleAllocate} className="relative z-10 space-y-3">
+                <div className="relative">
+                  <input 
+                    type="number"
+                    value={monthlyInput} 
+                    onChange={(e)=>setMonthlyInput(e.target.value)} 
+                    placeholder="0.00" 
+                    className={`w-full rounded-xl pl-8 pr-4 py-2.5 text-lg font-black ${isDark ? 'bg-slate-900/50 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border-2 outline-none focus:border-blue-600 transition-all`} 
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500">£</span>
+                </div>
+                <button type="submit" className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all active:scale-95">
+                  Add to Vault
+                </button>
+              </form>
+              <div className="absolute -right-8 -bottom-8 w-24 h-24 rounded-full bg-blue-600 blur-[40px] opacity-5" />
+            </div>
+
             {/* Monthly Goal Card */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} md:col-span-2 relative overflow-hidden group border-2 ${isDark ? 'hover:border-blue-500/30 shadow-blue-900/20' : 'hover:border-blue-200 shadow-blue-600/10'} transition-all duration-500 shadow-xl`}>
-              <div className="flex items-center justify-between mb-6">
+            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} relative overflow-hidden group border-2 ${isDark ? 'hover:border-blue-500/30 shadow-blue-900/20' : 'hover:border-blue-200 shadow-blue-600/10'} transition-all duration-500 shadow-xl`}>
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex flex-col">
                   <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    Monthly Savings Goal
+                    Monthly Goal
                   </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {fmt(monthlySaved)} / {fmt(monthlyGoal)}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {Math.round(monthlyProgress)}%
                     </span>
                     <button 
                       onClick={() => setIsEditingGoal(!isEditingGoal)}
-                      className={`p-1.5 rounded-lg transition-all ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+                      className={`p-1 rounded-md transition-all ${isDark ? 'hover:bg-slate-700 text-slate-500' : 'hover:bg-slate-100 text-slate-400'}`}
                     >
-                      <Target className="w-4 h-4" />
+                      <Target className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className={`text-2xl font-black ${monthlyProgress >= 100 ? 'text-emerald-500' : 'text-blue-600'} animate-in zoom-in duration-500`}>
-                    {Math.round(monthlyProgress)}%
-                  </span>
-                  <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {monthlyProgress >= 100 ? 'Goal Reached!' : 'Achieved'}
-                  </span>
+                <div className="p-3 bg-blue-600/10 rounded-2xl border border-blue-600/20 text-blue-600">
+                  <Flag className="w-6 h-6" />
                 </div>
               </div>
 
-              <div className="relative pt-2">
-                <div className={`w-full h-4 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col">
+                  <span className={`text-[9px] font-black uppercase tracking-wider ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Progress</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(monthlySaved)}</span>
+                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>/ {fmt(monthlyGoal)}</span>
+                  </div>
+                </div>
+
+                <div className="relative h-2.5 w-full rounded-full overflow-hidden bg-slate-800/20">
                   <div 
-                    className={`h-full transition-all duration-1000 ease-out rounded-full shadow-lg ${
+                    className={`h-full transition-all duration-1000 ease-out rounded-full ${
                       monthlyProgress >= 100 ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 shadow-blue-600/20'
                     }`}
-                    style={{ width: `${monthlyProgress}%` }}
+                    style={{ width: `${Math.min(100, monthlyProgress)}%` }}
                   />
                 </div>
-                {isEditingGoal && (
-                  <div className="absolute inset-0 flex items-center gap-2 bg-inherit animate-in fade-in duration-300">
-                    <form onSubmit={saveMonthlyGoal} className="flex-1 flex items-center gap-2">
-                      <input 
-                        autoFocus
-                        value={monthlyGoalInput} 
-                        onChange={(e)=>setMonthlyGoalInput(e.target.value)} 
-                        placeholder="Set target EGP" 
-                        className={`flex-1 rounded-xl px-4 py-2 text-sm font-bold ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'} border-2 outline-none focus:border-blue-600 transition-all`} 
-                      />
-                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-lg shadow-blue-600/20 transition-all active:scale-95">
-                        Update
-                      </button>
-                    </form>
-                    <button type="button" onClick={() => setIsEditingGoal(false)} className={`p-2 rounded-xl ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'}`}>
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
               </div>
-              <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-blue-600 blur-[80px] opacity-10" />
+
+              {isEditingGoal && (
+                <div className="absolute inset-0 z-20 flex items-center px-4 bg-slate-900/95 animate-in fade-in duration-300">
+                  <form onSubmit={saveMonthlyGoal} className="flex-1 flex flex-col gap-2">
+                    <input 
+                      autoFocus
+                      value={monthlyGoalInput} 
+                      onChange={(e)=>setMonthlyGoalInput(e.target.value)} 
+                      placeholder="Target EGP" 
+                      className="w-full rounded-xl px-3 py-2 text-xs font-bold bg-slate-800 border-2 border-slate-700 text-white outline-none focus:border-blue-600 transition-all" 
+                    />
+                    <div className="flex gap-2">
+                      <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider">
+                        Save
+                      </button>
+                      <button type="button" onClick={() => setIsEditingGoal(false)} className="p-2 rounded-lg bg-slate-700 text-slate-300">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+              <div className="absolute -right-12 -bottom-12 w-32 h-32 rounded-full bg-blue-600 blur-[60px] opacity-10" />
             </div>
         </div>
 
@@ -1287,31 +1322,6 @@ export default function Savings() {
 
             {/* Sidebar Widgets - 1 column */}
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000">
-              {/* Quick Deposit */}
-              <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} border-2 ${isDark ? 'border-blue-500/20' : 'border-blue-100'}`}>
-                <h3 className={`text-sm font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                  <Wallet className="w-4 h-4" /> Quick Deposit
-                </h3>
-                <form onSubmit={handleAllocate} className="space-y-4">
-                  <div className="relative">
-                    <input 
-                      type="number"
-                      value={monthlyInput} 
-                      onChange={(e)=>setMonthlyInput(e.target.value)} 
-                      placeholder="0.00" 
-                      className={`w-full rounded-[1.5rem] pl-12 pr-6 py-4 text-2xl font-black ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'} border-2 outline-none focus:border-blue-600 transition-all`} 
-                    />
-                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-slate-500">£</span>
-                  </div>
-                  <button type="submit" className="btn-primary-unified w-full !py-4 !rounded-[1.5rem] !text-xs !uppercase !tracking-[0.2em] !bg-blue-600 hover:!bg-blue-700 shadow-xl shadow-blue-600/20">
-                    Allocate to Vault
-                  </button>
-                  <p className={`text-[10px] text-center font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    Instantly updates your monthly goals and balance.
-                  </p>
-                </form>
-              </div>
-
               {/* AI Suggestions Card */}
               <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} bg-gradient-to-br ${isDark ? 'from-slate-900/90 to-blue-600/5' : 'from-white to-blue-50'}`}>
                 <div className="flex items-center justify-between mb-6">
