@@ -321,12 +321,12 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
     
     prompt = f"""
-    Analyze this receipt image and extract structured data.
+    Analyze this receipt image and extract structured data with extreme precision (90%+ confidence target).
     
     Task:
-    1. Identify the Merchant Name (business name at the top).
-    2. Identify the Total Amount.
-    3. Identify the Date (YYYY-MM-DD).
+    1. Identify the EXACT Merchant Name (business name at the top).
+    2. Identify the TOTAL FINAL AMOUNT (including tax and tip, ignore subtotal).
+    3. Identify the EXACT Date (YYYY-MM-DD).
     4. SELECT THE BEST CATEGORY from the provided list below based on the merchant and items.
     
     Available Categories (ID: Name - Type):
@@ -334,6 +334,11 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     
     Instructions:
     - You MUST choose one Category ID from the list above.
+    - If the merchant is a restaurant/cafe/supermarket, choose 'Food & Dining'.
+    - If it's a gas station/uber/parking, choose 'Transportation'.
+    - If it's for house/rent/utilities, choose 'Housing'.
+    - If it's for medicine/doctor, choose 'Health & Wellness'.
+    - If unsure, choose 'Other Expense'.
     - Return ONLY a valid JSON object.
     - Keys: "merchant", "amount", "date", "category_id".
     """
@@ -419,7 +424,7 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     categories_str = "\n".join([f"- {c['id']}: {c['name']} ({c['type']})" for c in categories])
     
     prompt = f"""
-    Analyze the following receipt text and extract structured data.
+    Analyze the following receipt text and extract structured data with high accuracy (90%+ target).
     
     Receipt Text:
     \"\"\"
@@ -427,9 +432,9 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     \"\"\"
     
     Task:
-    1. Identify the Merchant Name.
-    2. Identify the Total Amount.
-    3. Identify the Date (YYYY-MM-DD).
+    1. Identify the EXACT Merchant Name.
+    2. Identify the TOTAL FINAL AMOUNT (ignore subtotal, include tax).
+    3. Identify the EXACT Date (YYYY-MM-DD).
     4. SELECT THE BEST CATEGORY from the provided list below based on the merchant and items.
     
     Available Categories (ID: Name - Type):
@@ -437,8 +442,10 @@ async def parse_receipt_with_ai(text: str, categories: List[Dict]) -> Optional[D
     
     Instructions:
     - You MUST choose one Category ID from the list above. Do not invent new categories.
-    - If the merchant is a restaurant/cafe, choose 'Food & Dining'.
-    - If it's a gas station/uber, choose 'Transportation'.
+    - If the merchant is a restaurant/cafe/supermarket, choose 'Food & Dining'.
+    - If it's a gas station/uber/parking, choose 'Transportation'.
+    - If it's for house/rent/utilities, choose 'Housing'.
+    - If it's for medicine/doctor, choose 'Health & Wellness'.
     - If unsure, choose the closest match or 'Other Expense'.
     
     Return ONLY a valid JSON object with these keys: "merchant", "amount", "date", "category_id".

@@ -103,13 +103,18 @@ function Transactions() {
         setLoading(true);
       }
       
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please login again.');
+      }
+
       const [txnsData, cats] = await Promise.all([
         getTransactions(page, 50),
         getCategories()
       ]);
       
-      const txns = txnsData.transactions || txnsData;
-      const paginationData = txnsData.pagination || { page: 1, limit: txns.length, total: txns.length, pages: 1 };
+      const txns = (txnsData && txnsData.transactions) ? txnsData.transactions : (Array.isArray(txnsData) ? txnsData : []);
+      const paginationData = (txnsData && txnsData.pagination) ? txnsData.pagination : { page: 1, limit: txns.length, total: txns.length, pages: 1 };
       
       if (append) {
         setTransactions(prev => [...prev, ...txns]);
@@ -117,10 +122,13 @@ function Transactions() {
         setTransactions(txns);
       }
       setPagination(paginationData);
-      setCategories(cats);
+      setCategories(Array.isArray(cats) ? cats : []);
     } catch (error) {
       console.error('Failed to load:', error);
-      alert(error.message || 'Failed to load transactions. Please try again.');
+      // Only show alert if it's not a background refresh
+      if (!append) {
+        alert(error.message || 'Failed to load transactions. Please try again.');
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -220,12 +228,13 @@ function Transactions() {
 
   // Calculate totals based on current filters
   const totals = useMemo(() => {
+    if (!filteredTransactions) return { income: 0, expenses: 0, net: 0, count: 0 };
     const income = filteredTransactions
-      .filter(t => t.amount > 0)
+      .filter(t => t && t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
     const expenses = Math.abs(
       filteredTransactions
-        .filter(t => t.amount < 0)
+        .filter(t => t && t.amount < 0)
         .reduce((sum, t) => sum + t.amount, 0)
     );
     return {
