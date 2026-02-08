@@ -346,7 +346,7 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     
     EXTRACT THESE FIELDS:
     1. MERCHANT: The exact business name (e.g., "Starbucks", "Walmart"). Look for the largest text at the top.
-    2. AMOUNT: The total final amount paid (numerical value only, e.g., 45.99). Look for "Total", "Grand Total", "Total Due", or "Amount Paid".
+    2. AMOUNT: The total final amount paid (numerical value only, e.g., 45.99). Look for "Total", "Grand Total", "Total Due", or "Amount Paid". This is the MOST IMPORTANT field.
     3. DATE: The date of transaction in YYYY-MM-DD format. If multiple dates, use the transaction date, not the print date.
     4. CATEGORY_ID: Choose the most appropriate ID from the list below based on the merchant and items.
     5. CONFIDENCE: Your confidence score from 0 to 100 based on data clarity. MUST BE AT LEAST 90 if data is clear.
@@ -361,6 +361,7 @@ async def parse_receipt_image_with_ai(image_path: str, categories: List[Dict]) -
     - For CATEGORY_ID, analyze the merchant. For example, 'McDonalds' -> Food & Dining, 'Shell' -> Transportation, etc.
     - If the receipt is in a foreign currency, extract the number but note the currency in reasoning.
     - If the confidence is high, please set it to 90 or above.
+    - If you see a currency like EGP, LE, or £, treat it as the main amount.
     
     JSON FORMAT:
     {{"merchant": "Name", "amount": 0.00, "date": "YYYY-MM-DD", "category_id": 0, "confidence": 95, "reasoning": "Reasoning here"}}

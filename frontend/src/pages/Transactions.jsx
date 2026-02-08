@@ -108,9 +108,16 @@ function Transactions() {
         throw new Error('No authentication token found. Please login again.');
       }
 
+      // Ensure api.js functions are used properly
       const [txnsData, cats] = await Promise.all([
-        getTransactions(page, 50),
-        getCategories()
+        getTransactions(page, 50).catch(err => {
+          console.error("Error in getTransactions:", err);
+          return { transactions: [], pagination: { page: 1, limit: 50, total: 0, pages: 1 } };
+        }),
+        getCategories().catch(err => {
+          console.error("Error in getCategories:", err);
+          return [];
+        })
       ]);
       
       const txns = (txnsData && txnsData.transactions) ? txnsData.transactions : (Array.isArray(txnsData) ? txnsData : []);
@@ -125,15 +132,17 @@ function Transactions() {
       setCategories(Array.isArray(cats) ? cats : []);
     } catch (error) {
       console.error('Failed to load:', error);
-      // Only show alert if it's not a background refresh
       if (!append) {
-        alert(error.message || 'Failed to load transactions. Please try again.');
+        // Only alert on serious errors, not background failures
+        if (error.message !== 'Unauthorized') {
+          alert(error.message || 'Failed to load transactions. Please try again.');
+        }
       }
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, []); // Keep dependencies empty to avoid loop, but ensure functions are stable from api.js
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -316,9 +325,15 @@ function Transactions() {
   if (loading) {
     return (
       <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400 border-t-transparent mx-auto mb-4"></div>
-          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg`}>Loading transactions...</p>
+        <div className="text-center p-12 card-unified bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] shadow-2xl">
+          <div className="relative mb-8">
+            <div className="animate-spin rounded-full h-24 w-24 border-b-4 border-amber-500 mx-auto"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <CreditCard className="w-8 h-8 text-amber-500 animate-pulse" />
+            </div>
+          </div>
+          <h2 className={`text-2xl font-black mb-2 uppercase tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Loading Transactions</h2>
+          <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} font-bold`}>Crunching your financial data...</p>
         </div>
       </div>
     );
