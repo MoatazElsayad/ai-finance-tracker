@@ -147,7 +147,8 @@ function BudgetPlanning() {
         getCurrentUser()
       ]);
 
-      const allTransactions = transactionsData;
+      // Handle both old format (array) and new format (object with pagination)
+      const allTransactions = transactionsData?.transactions || (Array.isArray(transactionsData) ? transactionsData : []);
       
       // Calculate filtered transactions for current view period
       const { startDate, endDate } = getDateRange();

@@ -260,7 +260,7 @@ function Dashboard() {
       ]);
 
       // Handle both old format (array) and new format (object with pagination)
-      const txns = txnsData.transactions || txnsData;
+      const txns = txnsData?.transactions || (Array.isArray(txnsData) ? txnsData : []);
 
       setUser(userData);
       console.log('🔄 Dashboard categories updated, checking for savings category...');

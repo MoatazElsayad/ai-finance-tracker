@@ -82,19 +82,7 @@ function Transactions() {
     setSelectedMonth(prev => ({ ...prev, year: prev.year + offset }));
   };
 
-  useEffect(() => {
-    loadData(1, false);
-  }, [loadData]);
-  
-  // Load more transactions when scrolling (optional infinite scroll)
-  const loadMore = useCallback(() => {
-    if (!loadingMore && currentPage < pagination.pages) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
-      loadData(nextPage, true);
-    }
-  }, [currentPage, pagination.pages, loadingMore, loadData]);
-
+  // Load data function defined before use
   const loadData = useCallback(async (page = 1, append = false) => {
     try {
       if (append) {
@@ -135,14 +123,28 @@ function Transactions() {
       if (!append) {
         // Only alert on serious errors, not background failures
         if (error.message !== 'Unauthorized') {
-          alert(error.message || 'Failed to load transactions. Please try again.');
+          // If the page is already rendered, showing an alert is fine, but during initial load it might be annoying
+          // However, we need some feedback
         }
       }
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []); // Keep dependencies empty to avoid loop, but ensure functions are stable from api.js
+  }, []);
+
+  useEffect(() => {
+    loadData(1, false);
+  }, [loadData]);
+  
+  // Load more transactions when scrolling (optional infinite scroll)
+  const loadMore = useCallback(() => {
+    if (!loadingMore && currentPage < pagination.pages) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      loadData(nextPage, true);
+    }
+  }, [currentPage, pagination.pages, loadingMore, loadData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

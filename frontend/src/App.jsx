@@ -94,24 +94,27 @@ function Layout() {
     // Get current user info and calculate balance
     const loadUserData = async () => {
       try {
-        const [userData, transactionsData] = await Promise.all([
+        const [userData, txnsResponse] = await Promise.all([
           getCurrentUser(),
           getTransactions()
         ]);
 
-        if (userData && transactionsData) {
+        if (userData && txnsResponse) {
+          // Handle both old format (array) and new format (object with transactions key)
+          const transactionsData = txnsResponse.transactions || (Array.isArray(txnsResponse) ? txnsResponse : []);
+          
           // Calculate Available Balance (Net Savings)
           const totalIncome = transactionsData
-            .filter(t => t.amount > 0)
-            .reduce((sum, t) => sum + t.amount, 0);
+            .filter(t => t && t.amount > 0)
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
           const totalOutflow = Math.abs(
             transactionsData
-              .filter(t => t.amount < 0)
-              .reduce((sum, t) => sum + t.amount, 0)
+              .filter(t => t && t.amount < 0)
+              .reduce((sum, t) => sum + (t.amount || 0), 0)
           );
           const totalSavingsTx = transactionsData
-              .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
-              .reduce((sum, t) => sum + (-t.amount), 0);
+              .filter(t => t && t.category_name && t.category_name.toLowerCase().includes('savings'))
+              .reduce((sum, t) => sum + (-(t.amount || 0)), 0);
           const actualSpending = totalOutflow - totalSavingsTx;
           const netSavings = totalIncome - actualSpending;
 
