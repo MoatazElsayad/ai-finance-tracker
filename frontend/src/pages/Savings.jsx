@@ -48,7 +48,7 @@ import {
 /* --------------------------------------------------------------- *
  *  TRADINGVIEW CHART COMPONENT
  * --------------------------------------------------------------- */
-const TradingViewChart = ({ symbol, isDark, height = 300 }) => {
+const TradingViewChart = ({ symbol, isDark, height = 300, dateRange = "12M" }) => {
   const container = React.useRef();
 
   useEffect(() => {
@@ -66,7 +66,7 @@ const TradingViewChart = ({ symbol, isDark, height = 300 }) => {
       "width": "100%",
       "height": height,
       "locale": "en",
-      "dateRange": "12M",
+      "dateRange": dateRange,
       "colorTheme": isDark ? "dark" : "light",
       "trendLineColor": "#3b82f6",
       "underLineColor": isDark ? "rgba(59, 130, 246, 0.15)" : "rgba(59, 130, 246, 0.1)",
@@ -76,11 +76,11 @@ const TradingViewChart = ({ symbol, isDark, height = 300 }) => {
       "largeChartUrl": ""
     });
     container.current.appendChild(script);
-  }, [symbol, isDark, height]);
+  }, [symbol, isDark, height, dateRange]);
 
   return (
     <div 
-      key={`${symbol}-${isDark}`}
+      key={`${symbol}-${isDark}-${dateRange}`}
       className="tradingview-widget-container rounded-2xl overflow-hidden" 
       ref={container} 
       style={{ height: `${height}px`, width: '100%' }}
@@ -100,6 +100,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
   const [buyDate, setBuyDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [chartRange, setChartRange] = useState('12M');
 
   const currencyOptions = useMemo(() => [
     { id: 'USD', name: 'US Dollar', code: 'us', symbol: 'FX_IDC:USDEGP' },
@@ -291,8 +292,32 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates }) => {
         <div className="flex-1 flex flex-col lg:flex-row">
           {/* Chart Section */}
           <div className={`lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'}`}>
+             <div className="flex items-center justify-between mb-4">
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Performance</span>
+                <div className="flex gap-1.5">
+                  {[
+                    { label: '1M', value: '1M' },
+                    { label: '3M', value: '3M' },
+                    { label: '12M', value: '12M' },
+                    { label: '60M', value: '60M' },
+                    { label: 'ALL', value: 'ALL' }
+                  ].map((range) => (
+                    <button
+                      key={range.value}
+                      onClick={() => setChartRange(range.value)}
+                      className={`text-[9px] font-black px-2.5 py-1 rounded-lg transition-all active:scale-95 ${
+                        chartRange === range.value 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                          : isDark ? 'bg-slate-800 text-slate-500 hover:text-slate-300' : 'bg-white text-slate-400 hover:text-slate-600 shadow-sm'
+                      }`}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+             </div>
              <div className="rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-6">
-                <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={280} />
+                <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={280} dateRange={chartRange} />
              </div>
              <div className="grid grid-cols-2 gap-4">
                 <div className={`p-5 rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -447,6 +472,8 @@ export default function Savings() {
   const [monthlyInput, setMonthlyInput] = useState("");
   const [monthlyGoalInput, setMonthlyGoalInput] = useState("");
   const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [growthRange, setGrowthRange] = useState('7D');
+  const [isPortfolioExpanded, setIsPortfolioExpanded] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModelUsed, setAiModelUsed] = useState(null);
@@ -567,21 +594,49 @@ export default function Savings() {
   }, [savings, investments]);
 
   const growthData = useMemo(() => {
-    // Generate some mock historical data points leading to current totalWealth
-    const points = 7;
+    // Generate some mock historical data points leading to current totalWealth based on selected range
+    const rangeMap = {
+      '7D': 7,
+      '1M': 30,
+      '3M': 90,
+      '1Y': 365
+    };
+    const points = rangeMap[growthRange] || 7;
     const data = [];
-    let current = totalWealth * 0.85;
-    for (let i = 0; i < points; i++) {
+    let startVal = totalWealth * (growthRange === '7D' ? 0.95 : growthRange === '1M' ? 0.85 : growthRange === '3M' ? 0.75 : 0.6);
+    let current = startVal;
+    
+    // To avoid too many points in Recharts, we sample
+    const sampleSize = growthRange === '1Y' ? 12 : growthRange === '3M' ? 10 : 7;
+    
+    for (let i = 0; i < sampleSize; i++) {
+      const date = new Date();
+      if (growthRange === '1Y') {
+        date.setMonth(date.getMonth() - (sampleSize - 1 - i));
+      } else {
+        const daysAgo = points - 1 - (i * (points / sampleSize));
+        date.setDate(date.getDate() - daysAgo);
+      }
+      
       data.push({
-        date: new Date(Date.now() - (points - 1 - i) * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: growthRange === '1Y' ? undefined : 'numeric' 
+        }),
         value: Math.round(current)
       });
-      current += (totalWealth - (totalWealth * 0.85)) / (points - 1) + (Math.random() - 0.5) * (totalWealth * 0.02);
+      
+      current += (totalWealth - startVal) / (sampleSize - 1) + (Math.random() - 0.5) * (totalWealth * 0.02);
     }
+    
     // Ensure last point is exactly totalWealth
-    data[points - 1].value = Math.round(totalWealth);
+    if (data.length > 0) {
+      data[data.length - 1].value = Math.round(totalWealth);
+      data[data.length - 1].date = 'Now';
+    }
+    
     return data;
-  }, [totalWealth]);
+  }, [totalWealth, growthRange]);
 
   // Quick allocate into savings
   const handleAllocate = async (e) => {
@@ -977,7 +1032,15 @@ export default function Savings() {
               </h3>
               <div className="flex gap-2">
                 {['7D', '1M', '3M', '1Y'].map(t => (
-                  <span key={t} className={`text-[9px] font-black px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-95 ${t === '7D' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : isDark ? 'bg-slate-800 text-slate-500 hover:text-slate-300' : 'bg-slate-100 text-slate-400 hover:text-slate-600'}`}>
+                  <span 
+                    key={t} 
+                    onClick={() => setGrowthRange(t)}
+                    className={`text-[9px] font-black px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-95 ${
+                      growthRange === t 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                        : isDark ? 'bg-slate-800 text-slate-500 hover:text-slate-300' : 'bg-slate-100 text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
                     {t}
                   </span>
                 ))}
@@ -1042,104 +1105,135 @@ export default function Savings() {
                     </div>
                     <span className="uppercase tracking-[0.2em]">Asset Portfolio</span>
                   </h3>
-                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
-                    {investments.length} Active Assets
+                  <div className="flex items-center gap-4">
+                    <div className={`hidden md:block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                      {investments.length} Active Assets
+                    </div>
+                    {investments.length > 4 && (
+                      <button 
+                        onClick={() => setIsPortfolioExpanded(!isPortfolioExpanded)}
+                        className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl transition-all ${
+                          isDark 
+                            ? 'bg-blue-600/10 text-blue-400 hover:bg-blue-600/20' 
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                        }`}
+                      >
+                        {isPortfolioExpanded ? 'Show Less' : 'View All'}
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {investments.length === 0 ? (
-                    <div className={`col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed ${isDark ? 'border-slate-800' : 'border-slate-100'} rounded-[2rem]`}>
-                      <PieChartIcon className={`w-12 h-12 mb-4 ${isDark ? 'text-slate-700' : 'text-slate-200'}`} />
-                      <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No investments tracked yet</p>
-                      <button onClick={() => setShowInvestmentForm(true)} className="mt-4 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] hover:underline">Start building your portfolio</button>
-                    </div>
-                  ) : (
-                    investments.map((inv) => {
-                      if (!inv) return null;
-                      const type = (inv.type || "Investment").toLowerCase();
-                      const isMetal = ["gold", "silver"].includes(type);
-                      return (
-                        <div key={inv.id} className={`group p-6 rounded-[2rem] border-2 transition-all duration-300 ${
-                          isDark 
-                            ? `bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 shadow-xl ${
-                                type === 'gold' ? 'shadow-amber-500/5' : 
-                                type === 'silver' ? 'shadow-slate-400/5' : 
-                                'shadow-blue-600/5'
-                              }` 
-                            : `bg-white border-slate-100 hover:border-blue-200 hover:shadow-2xl ${
-                                type === 'gold' ? 'shadow-amber-500/10' : 
-                                type === 'silver' ? 'shadow-slate-400/10' : 
-                                'shadow-blue-600/10'
-                              }`
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
-                                type === 'gold' ? 'bg-amber-500/10 text-amber-500 shadow-amber-500/10' : 
-                                type === 'silver' ? 'bg-slate-400/10 text-slate-400 shadow-slate-400/10' : 
-                                'bg-blue-600/10 text-blue-600 shadow-blue-600/10'
-                              }`}>
-                                {type === 'gold' ? <Sparkles className="w-6 h-6" /> : 
-                                 type === 'silver' ? <Gem className="w-6 h-6" /> : 
-                                 <Banknote className="w-6 h-6" />}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                  {inv.name || inv.type}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                    {inv.amount} {isMetal ? 'grams' : 'units'}
+                <div className="relative">
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-700 ease-in-out ${
+                    !isPortfolioExpanded && investments.length > 4 ? 'max-h-[600px] overflow-hidden' : 'max-h-[2000px]'
+                  }`}>
+                    {investments.length === 0 ? (
+                      <div className={`col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed ${isDark ? 'border-slate-800' : 'border-slate-100'} rounded-[2rem]`}>
+                        <PieChartIcon className={`w-12 h-12 mb-4 ${isDark ? 'text-slate-700' : 'text-slate-200'}`} />
+                        <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No investments tracked yet</p>
+                        <button onClick={() => setShowInvestmentForm(true)} className="mt-4 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] hover:underline">Start building your portfolio</button>
+                      </div>
+                    ) : (
+                      (isPortfolioExpanded ? investments : investments.slice(0, 4)).map((inv) => {
+                        if (!inv) return null;
+                        const type = (inv.type || "Investment").toLowerCase();
+                        const isMetal = ["gold", "silver"].includes(type);
+                        return (
+                          <div key={inv.id} className={`group p-6 rounded-[2rem] border-2 transition-all duration-300 ${
+                            isDark 
+                              ? `bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 shadow-xl ${
+                                  type === 'gold' ? 'shadow-amber-500/5' : 
+                                  type === 'silver' ? 'shadow-slate-400/5' : 
+                                  'shadow-blue-600/5'
+                                }` 
+                              : `bg-white border-slate-100 hover:border-blue-200 hover:shadow-2xl ${
+                                  type === 'gold' ? 'shadow-amber-500/10' : 
+                                  type === 'silver' ? 'shadow-slate-400/10' : 
+                                  'shadow-blue-600/10'
+                                }`
+                          }`}>
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+                                  type === 'gold' ? 'bg-amber-500/10 text-amber-500 shadow-amber-500/10' : 
+                                  type === 'silver' ? 'bg-slate-400/10 text-slate-400 shadow-slate-400/10' : 
+                                  'bg-blue-600/10 text-blue-600 shadow-blue-600/10'
+                                }`}>
+                                  {type === 'gold' ? <Sparkles className="w-6 h-6" /> : 
+                                   type === 'silver' ? <Gem className="w-6 h-6" /> : 
+                                   <Banknote className="w-6 h-6" />}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    {inv.name || inv.type}
                                   </span>
-                                  <span className="w-1 h-1 rounded-full bg-slate-700" />
-                                  <span className={`text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                                    {type}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                      {inv.amount} {isMetal ? 'grams' : 'units'}
+                                    </span>
+                                    <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                    <span className={`text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                                      {type}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <div className="flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3 text-emerald-500" />
-                                <span className="text-[10px] font-black text-emerald-500">+{(Math.random() * 5 + 1).toFixed(1)}%</span>
+                              <div className="flex flex-col items-end">
+                                <div className="flex items-center gap-1">
+                                  <TrendingUp className="w-3 h-3 text-emerald-500" />
+                                  <span className="text-[10px] font-black text-emerald-500">+{(Math.random() * 5 + 1).toFixed(1)}%</span>
+                                </div>
+                                <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Total Return</span>
                               </div>
-                              <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Total Return</span>
                             </div>
-                          </div>
 
-                          <div className="grid grid-cols-2 gap-3 mb-6">
-                            <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
-                              <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Value</p>
-                              <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(inv.current_value)}</p>
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                              <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
+                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Value</p>
+                                <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(inv.current_value)}</p>
+                              </div>
+                              <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
+                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Avg Price</p>
+                                <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                  EGP {((inv.current_value || 0) / (inv.amount || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
                             </div>
-                            <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
-                              <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Avg Price</p>
-                              <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                EGP {((inv.current_value || 0) / (inv.amount || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                          </div>
 
-                          <div className="flex items-center justify-between pt-4 border-t border-slate-700/20">
-                            <div className="flex gap-2">
-                              <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                                Active
-                              </span>
-                              <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-                                {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                              </span>
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-700/20">
+                              <div className="flex gap-2">
+                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                                  Active
+                                </span>
+                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                                  {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                </span>
+                              </div>
+                              <button 
+                                onClick={() => removeInvestment(inv.id)}
+                                className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-rose-500/10 text-slate-600 hover:text-rose-500' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                            <button 
-                              onClick={() => removeInvestment(inv.id)}
-                              className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-rose-500/10 text-slate-600 hover:text-rose-500' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })
+                    )}
+                  </div>
+                  
+                  {!isPortfolioExpanded && investments.length > 4 && (
+                    <div className={`absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t ${
+                      isDark ? 'from-slate-900 via-slate-900/80' : 'from-white via-white/80'
+                    } to-transparent pointer-events-none flex items-end justify-center pb-4`}>
+                      <button 
+                        onClick={() => setIsPortfolioExpanded(true)}
+                        className="pointer-events-auto btn-primary-unified !px-8 !py-3 !text-[11px] shadow-2xl animate-bounce"
+                      >
+                        View Full Portfolio
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
