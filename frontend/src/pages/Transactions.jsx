@@ -7,7 +7,7 @@ import { getTransactions, createTransaction, deleteTransaction, getCategories } 
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
 import { useDebounce } from '../utils/debounce';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft, Filter, ArrowDownAZ, SortDesc, Type } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
@@ -706,30 +706,30 @@ function Transactions() {
         type={isExpense ? 'expense' : 'income'}
       />
 
-      {/* Filters and Search */}
-      <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-400`}>
-        <div className="flex flex-col lg:flex-row gap-10 items-end">
-          <div className="flex-1 space-y-4 w-full">
-            <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Search Transactions</label>
-            <div className="relative group">
-              <Search className={`absolute left-6 top-1/2 -translate-y-1/2 w-7 h-7 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} group-focus-within:text-amber-500 transition-all duration-500 group-focus-within:scale-110`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by description or category..."
-                className="input-unified w-full !pl-16"
-              />
-            </div>
+      {/* Transactions History Card */}
+      <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500 shadow-2xl relative`}>
+        {/* Integrated Minimal Filter */}
+        <div className={`px-10 py-8 border-b-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'} flex flex-col lg:flex-row items-center gap-8 ${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-50/50'} backdrop-blur-md`}>
+          {/* Search with Aa icon */}
+          <div className="flex-1 w-full relative group">
+            <Type className={`absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} group-focus-within:text-amber-500 transition-all duration-300`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search history..."
+              className={`w-full pl-16 pr-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
+            />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full lg:w-auto">
-            <div className="space-y-4">
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Type</label>
+          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+            {/* Type Filter */}
+            <div className="relative group flex-1 md:flex-none">
+              <Filter className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} pointer-events-none`} />
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="input-unified w-full"
+                className={`w-full pl-11 pr-10 py-4 rounded-2xl border-2 appearance-none text-xs font-black uppercase tracking-widest outline-none cursor-pointer transition-all ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
               >
                 <option value="all">All Types</option>
                 <option value="income">Income</option>
@@ -737,26 +737,13 @@ function Transactions() {
               </select>
             </div>
 
-            <div className="space-y-4">
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Category</label>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="input-unified w-full"
-              >
-                <option value="all">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Sort By</label>
+            {/* Sort By with A-Z icon */}
+            <div className="relative group flex-1 md:flex-none">
+              <ArrowDownAZ className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'} pointer-events-none`} />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="input-unified w-full"
+                className={`w-full pl-12 pr-10 py-4 rounded-2xl border-2 appearance-none text-xs font-black uppercase tracking-widest outline-none cursor-pointer transition-all ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
               >
                 <option value="date">Date</option>
                 <option value="amount">Amount</option>
@@ -764,22 +751,16 @@ function Transactions() {
               </select>
             </div>
 
-            <div className="space-y-4">
-              <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Order</label>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className={`w-full px-8 py-4 rounded-[1.5rem] font-black transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-white'} border-2 flex items-center justify-between group shadow-sm`}
-              >
-                <span className="uppercase tracking-[0.1em] text-xs">{sortOrder === 'asc' ? 'Ascending' : 'Descending'}</span>
-                <ArrowLeftRight className={`w-5 h-5 transition-transform duration-500 ${sortOrder === 'asc' ? '' : 'rotate-180'} text-amber-500`} />
-              </button>
-            </div>
+            {/* Sort Order with Descending icon */}
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className={`p-4 rounded-2xl border-2 transition-all group ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+            >
+              <SortDesc className={`w-6 h-6 transition-all duration-500 ${sortOrder === 'asc' ? 'rotate-180 text-amber-500' : 'text-amber-500'}`} />
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Transactions Table/List */}
-      <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500 shadow-2xl relative`}>
         <div className={`overflow-x-auto transition-all duration-700 ${!showAllTransactions ? 'max-h-[600px]' : 'max-h-[1200px]'} overflow-y-auto custom-scrollbar`}>
           <table className="w-full text-left border-collapse">
             <thead>
