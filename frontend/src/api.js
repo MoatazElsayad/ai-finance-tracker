@@ -140,6 +140,25 @@ export const createTransaction = async (categoryId, amount, description, date) =
   }
 };
 
+export const updateTransaction = async (id, categoryId, amount, description, date) => {
+  try {
+    const response = await authFetch(`/transactions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        category_id: categoryId,
+        amount: parseFloat(amount),
+        description: description || '',
+        date,
+      }),
+    });
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    throw new Error(error.message || 'Failed to update transaction. Please try again.');
+  }
+};
+
 export const deleteTransaction = async (id) => {
   try {
     const response = await authFetch(`/transactions/${id}`, {
@@ -150,6 +169,20 @@ export const deleteTransaction = async (id) => {
   } catch (error) {
     console.error('Error deleting transaction:', error);
     throw new Error(error.message || 'Failed to delete transaction. Please try again.');
+  }
+};
+
+export const bulkDeleteTransactions = async (ids) => {
+  try {
+    const response = await authFetch(`/transactions/bulk-delete`, {
+      method: 'POST',
+      body: JSON.stringify(ids),
+    });
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error bulk deleting transactions:', error);
+    throw new Error(error.message || 'Failed to delete transactions. Please try again.');
   }
 };
 

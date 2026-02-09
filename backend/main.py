@@ -611,6 +611,110 @@ def delete_transaction(
     return {"message": "Transaction deleted"}
 
 
+@app.put("/transactions/{transaction_id}")
+def update_transaction(
+    request: Request,
+    transaction_id: int,
+    data: TransactionCreate,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing transaction
+    """
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
+    
+    # Find transaction
+    transaction = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == user.id
+    ).first()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Handle goal updates (reverse old, add new)
+    # Reverse old
+    old_category = transaction.category
+    old_linked_goals = db.query(Goal).filter(
+        Goal.user_id == user.id,
+        Goal.categories.any(id=transaction.category_id)
+    ).all()
+    
+    for goal in old_linked_goals:
+        if old_category and old_category.name.lower() == 'savings':
+            goal.current_amount -= abs(transaction.amount)
+        else:
+            goal.current_amount -= transaction.amount
+
+    # Update fields
+    transaction.category_id = data.category_id
+    transaction.amount = data.amount
+    transaction.description = data.description
+    transaction.date = datetime.fromisoformat(data.date)
+    
+    # Add new
+    new_category = db.query(Category).filter(Category.id == data.category_id).first()
+    new_linked_goals = db.query(Goal).filter(
+        Goal.user_id == user.id,
+        Goal.categories.any(id=transaction.category_id)
+    ).all()
+    
+    for goal in new_linked_goals:
+        if new_category and new_category.name.lower() == 'savings':
+            goal.current_amount += abs(transaction.amount)
+        else:
+            goal.current_amount += transaction.amount
+            
+    db.commit()
+    db.refresh(transaction)
+    
+    return {"message": "Transaction updated", "id": transaction.id}
+
+
+@app.post("/transactions/bulk-delete")
+def bulk_delete_transactions(
+    request: Request,
+    transaction_ids: List[int],
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete multiple transactions at once
+    """
+    check_rate_limit(request)
+    user = get_current_user(request, authorization, token, db)
+    
+    transactions = db.query(Transaction).filter(
+        Transaction.id.in_(transaction_ids),
+        Transaction.user_id == user.id
+    ).all()
+    
+    deleted_count = 0
+    for transaction in transactions:
+        # Reverse goal effects
+        linked_goals = db.query(Goal).filter(
+            Goal.user_id == user.id,
+            Goal.categories.any(id=transaction.category_id)
+        ).all()
+        
+        for goal in linked_goals:
+            if transaction.category and transaction.category.name.lower() == 'savings':
+                goal.current_amount -= abs(transaction.amount)
+            else:
+                goal.current_amount -= transaction.amount
+        
+        db.delete(transaction)
+        deleted_count += 1
+        
+    db.commit()
+    
+    return {"message": f"Deleted {deleted_count} transactions"}
+
+
 @app.get("/categories")
 def get_categories(
     request: Request,
