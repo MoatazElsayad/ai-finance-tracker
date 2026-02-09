@@ -61,6 +61,14 @@ def init_database():
     # Add default categories if they don't exist
     db = SessionLocal()
     try:
+        # First, remove existing default categories that are not in the new list
+        allowed_ids = [cat["id"] for cat in DEFAULT_CATEGORIES]
+        db.query(Category).filter(
+            Category.user_id == None,
+            ~Category.id.in_(allowed_ids)
+        ).delete(synchronize_session=False)
+        print("Cleaned up old default categories.")
+
         # Check for missing default categories and add them
         for cat_data in DEFAULT_CATEGORIES:
             # Check by ID first since these are fixed default categories

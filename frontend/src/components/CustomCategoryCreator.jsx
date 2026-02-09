@@ -8,38 +8,39 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
   const isDark = theme === 'dark';
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [suggesting, setSuggesting] = useState(false);
   const suggestTimer = useRef(null);
   const lastNameRef = useRef('');
-  const lastEmojiRef = useRef('');
+  const lastSuggestionsRef = useRef([]);
 
   const localSuggestEmoji = (text) => {
     const t = (text || '').toLowerCase();
     const map = [
-      [/food|restaurant|coffee|cafe|meal|grocery|pizza|burger/, '🍔'],
-      [/transport|car|uber|taxi|bus|train|fuel|gas|parking/, '🚗'],
-      [/shop|shopping|mall|clothes|fashion|store|retail/, '🛍️'],
-      [/bill|utility|electric|water|internet|phone|wifi/, '💡'],
-      [/health|doctor|hospital|medicine|pharmacy|fitness|gym/, '🏥'],
-      [/entertain|movie|cinema|netflix|game|games|fun/, '🎮'],
-      [/travel|flight|hotel|trip|vacation|holiday/, '✈️'],
-      [/education|school|course|book|books|study|tuition/, '🎓'],
-      [/rent|house|home|mortgage|apartment/, '🏠'],
-      [/salary|pay|income|bonus|freelance|cash/, '💰'],
-      [/gift|present/, '🎁'],
-      [/interest|investment|stock|crypto|bitcoin/, '📈'],
-      [/refund|return/, '🏷️'],
-      [/pet|dog|cat/, '🐶'],
-      [/kids|baby|child|children/, '🍼'],
-      [/beauty|salon|makeup|hair|spa/, '💄'],
-      [/clean|laundry|wash|soap/, '🧽'],
+      [/food|restaurant|coffee|cafe|meal|grocery|pizza|burger/, ['🍔', '🍕', '🥗']],
+      [/transport|car|uber|taxi|bus|train|fuel|gas|parking/, ['🚗', '🚌', '⛽']],
+      [/shop|shopping|mall|clothes|fashion|store|retail/, ['🛍️', '👕', '👠']],
+      [/bill|utility|electric|water|internet|phone|wifi/, ['💡', '🚰', '📱']],
+      [/health|doctor|hospital|medicine|pharmacy|fitness|gym/, ['🏥', '💊', '💪']],
+      [/entertain|movie|cinema|netflix|game|games|fun/, ['🎮', '🎬', '🍿']],
+      [/travel|flight|hotel|trip|vacation|holiday/, ['✈️', '🏨', '🏝️']],
+      [/education|school|course|book|books|study|tuition/, ['🎓', '📚', '📝']],
+      [/rent|house|home|mortgage|apartment/, ['🏠', '🔑', '🏢']],
+      [/salary|pay|income|bonus|freelance|cash/, ['💰', '💵', '💸']],
+      [/gift|present/, ['🎁', '🎈', '🎉']],
+      [/interest|investment|stock|crypto|bitcoin/, ['📈', '📊', '🪙']],
+      [/refund|return/, ['🏷️', '🔄', '🔙']],
+      [/pet|dog|cat/, ['🐶', '🐱', '🐾']],
+      [/kids|baby|child|children/, ['🍼', '🧸', '👶']],
+      [/beauty|salon|makeup|hair|spa/, ['💄', '💅', '💆']],
+      [/clean|laundry|wash|soap/, ['🧽', '🧼', '🧺']],
     ];
-    for (const [regex, emoji] of map) {
-      if (regex.test(t)) return emoji;
+    for (const [regex, emojis] of map) {
+      if (regex.test(t)) return emojis;
     }
-    return '📦';
+    return ['📦', '🏷️', '📝'];
   };
 
   const handleSubmit = async (e) => {
@@ -54,12 +55,13 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
     setLoading(true);
 
     try {
-      const chosenIcon = icon || localSuggestEmoji(name);
+      const chosenIcon = icon || (suggestions.length > 0 ? suggestions[0] : localSuggestEmoji(name)[0]);
       await createCategory(name.trim(), type, chosenIcon);
       
       // Reset form
       setName('');
       setIcon('');
+      setSuggestions([]);
       onSuccess();
       onClose();
     } catch (err) {
@@ -76,6 +78,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
     const text = name.trim();
     if (!text) {
       setIcon('');
+      setSuggestions([]);
       return;
     }
     suggestTimer.current = setTimeout(async () => {
@@ -84,12 +87,20 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
         const token = localStorage.getItem('token');
         const normalized = text.toLowerCase();
         if (normalized.length < 3) {
-          setIcon(localSuggestEmoji(text));
+          const fallbacks = localSuggestEmoji(text);
+          setSuggestions(fallbacks);
+          setIcon(fallbacks[0]);
           return;
         }
         if (lastNameRef.current === normalized) {
-          if (lastEmojiRef.current) setIcon(lastEmojiRef.current);
-          else setIcon(localSuggestEmoji(text));
+          if (lastSuggestionsRef.current.length > 0) {
+            setSuggestions(lastSuggestionsRef.current);
+            if (!icon) setIcon(lastSuggestionsRef.current[0]);
+          } else {
+            const fallbacks = localSuggestEmoji(text);
+            setSuggestions(fallbacks);
+            setIcon(fallbacks[0]);
+          }
           return;
         }
         if (token) {
@@ -97,22 +108,30 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
           const { answer } = await askAIQuestion(
             now.getFullYear(),
             now.getMonth() + 1,
-            `What is a single emoji that best represents the financial category: "${text}"? Return ONLY the emoji and nothing else.`
+            `What are 3 different emojis that best represent the financial category: "${text}"? Return ONLY the 3 emojis separated by spaces and nothing else.`
           );
-          const emoji = (answer || '').trim();
-          if (emoji && emoji.length <= 2) {
-            setIcon(emoji);
+          
+          // Improved emoji extraction logic
+          const emojiMatches = (answer || '').match(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g) || [];
+          const extractedEmojis = [...new Set(emojiMatches)].slice(0, 3);
+          
+          if (extractedEmojis.length > 0) {
+            setSuggestions(extractedEmojis);
+            setIcon(extractedEmojis[0]);
             lastNameRef.current = normalized;
-            lastEmojiRef.current = emoji;
+            lastSuggestionsRef.current = extractedEmojis;
           } else {
-            setIcon(localSuggestEmoji(text));
+            const fallbacks = localSuggestEmoji(text);
+            setSuggestions(fallbacks);
+            setIcon(fallbacks[0]);
           }
         }
       } catch {
-        const fallback = localSuggestEmoji(text);
-        setIcon(fallback);
+        const fallbacks = localSuggestEmoji(text);
+        setSuggestions(fallbacks);
+        setIcon(fallbacks[0]);
         lastNameRef.current = text.toLowerCase();
-        lastEmojiRef.current = fallback;
+        lastSuggestionsRef.current = fallbacks;
       } finally {
         setSuggesting(false);
       }
@@ -184,29 +203,56 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
               />
             </div>
 
-            <div className="flex items-center gap-6">
-              <div className="flex-1">
-                <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Smart Icon
-                </label>
+            <div className="space-y-6">
+              <label className={`block text-[10px] font-black uppercase tracking-[0.2em] ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Choose an Icon
+              </label>
+              
+              <div className="flex flex-col items-center gap-6">
+                {/* Selected Icon Display */}
                 <div
-                  className={`w-24 h-24 rounded-3xl border-2 flex items-center justify-center text-4xl shadow-sm transition-all duration-500 ${
+                  className={`w-28 h-28 rounded-[2rem] border-4 flex items-center justify-center text-5xl shadow-2xl transition-all duration-500 ${
                     icon
-                      ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/5'
+                      ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/10'
                       : isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   {suggesting ? (
-                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
+                    <RefreshCw className="w-10 h-10 text-amber-500 animate-spin" />
                   ) : (
                     <span className="animate-in zoom-in duration-300">{icon || '🔖'}</span>
                   )}
                 </div>
-              </div>
-              <div className="flex-1">
-                <p className={`text-[10px] font-bold leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  AI will automatically suggest an icon based on your category name.
-                </p>
+
+                {/* AI Suggestions Row */}
+                <div className="w-full">
+                  <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-center mb-4 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {suggesting ? 'Finding perfect emojis...' : 'AI Recommended Emojis'}
+                  </p>
+                  <div className="flex justify-center gap-4">
+                    {suggestions.map((s, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setIcon(s)}
+                        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl transition-all duration-300 ${
+                          icon === s
+                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110'
+                            : isDark 
+                              ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white' 
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                    {!suggesting && suggestions.length === 0 && (
+                      <div className={`w-full py-4 text-center text-[10px] font-bold italic ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                        Start typing to see suggestions...
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

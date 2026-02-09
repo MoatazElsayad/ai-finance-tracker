@@ -192,15 +192,6 @@ class MarketRatesCache(Base):
 
 # Pre-defined categories to insert when app starts
 DEFAULT_CATEGORIES = [
-    # Expenses
-    {"id": 1, "name": "Food & Dining", "type": "expense", "icon": "🍔"},
-    {"id": 2, "name": "Transportation", "type": "expense", "icon": "🚗"},
-    {"id": 3, "name": "Shopping", "type": "expense", "icon": "🛍️"},
-    {"id": 4, "name": "Bills", "type": "expense", "icon": "💡"},
-    {"id": 5, "name": "Other Expense", "type": "expense", "icon": "📦"},
-    
-    # Income
-    {"id": 6, "name": "Salary", "type": "income", "icon": "💰"},
-    {"id": 7, "name": "Freelance", "type": "income", "icon": "💼"},
-    {"id": 8, "name": "Other Income", "type": "income", "icon": "💵"},
+    # Only Savings remains as a default system category
+    {"id": 100, "name": "Savings", "type": "expense", "icon": "🏦"},
 ]

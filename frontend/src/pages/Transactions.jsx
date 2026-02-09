@@ -3,11 +3,11 @@
  * Professional transaction management with advanced filtering and insights
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { getTransactions, createTransaction, deleteTransaction, getCategories } from '../api';
+import { getTransactions, createTransaction, deleteTransaction, getCategories, createCategory, askAIQuestion } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
 import { useDebounce } from '../utils/debounce';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft, Filter, ArrowDownAZ, SortDesc, Type } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft, Filter, ArrowDownAZ, SortDesc, Type, Sparkles } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
 
 function Transactions() {
@@ -25,6 +25,68 @@ function Transactions() {
   });
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(new Set());
+  const [showInitialSetup, setShowInitialSetup] = useState(false);
+  const [initialCategories, setInitialCategories] = useState([
+    { name: '', type: 'expense', icon: '🛍️' },
+    { name: '', type: 'expense', icon: '🍔' },
+    { name: '', type: 'income', icon: '💰' }
+  ]);
+
+  const handleInitialSetupSubmit = async () => {
+    try {
+      setLoading(true);
+      // Filter out empty names and create categories
+      const categoriesToCreate = initialCategories.filter(cat => cat.name.trim() !== '');
+      
+      for (const cat of categoriesToCreate) {
+        await createCategory(cat.name.trim(), cat.type, cat.icon);
+      }
+      
+      localStorage.setItem('initial_setup_completed', 'true');
+      setShowInitialSetup(false);
+      await loadData(1, false);
+    } catch (error) {
+      console.error(error);
+      alert('Failed to save categories. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateInitialCategory = (index, field, value) => {
+    const newCats = [...initialCategories];
+    newCats[index][field] = value;
+    setInitialCategories(newCats);
+  };
+
+  // AI Emoji suggestions for initial setup
+  useEffect(() => {
+    if (!showInitialSetup) return;
+
+    const timers = initialCategories.map((cat, idx) => {
+      if (!cat.name.trim() || cat.name.length < 2) return null;
+
+      return setTimeout(async () => {
+        try {
+          const now = new Date();
+          const { answer } = await askAIQuestion(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            `What is a single emoji that best represents the financial category: "${cat.name}"? Return ONLY the emoji and nothing else.`
+          );
+          
+          const emojiMatch = (answer || '').match(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g);
+          if (emojiMatch && emojiMatch[0]) {
+            updateInitialCategory(idx, 'icon', emojiMatch[0]);
+          }
+        } catch (err) {
+          console.error('AI Suggestion failed for initial setup:', err);
+        }
+      }, 1000);
+    });
+
+    return () => timers.forEach(t => t && clearTimeout(t));
+  }, [showInitialSetup, initialCategories[0].name, initialCategories[1].name, initialCategories[2].name]);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -147,7 +209,15 @@ function Transactions() {
       }
       
       setPagination(paginationData);
-      setCategories(Array.isArray(cats) ? cats : []);
+      const fetchedCategories = Array.isArray(cats) ? cats : [];
+      setCategories(fetchedCategories);
+
+      // Trigger initial setup if user has only "Savings" category (which is system default)
+      // or no categories at all. System categories usually have id 100 or user_id null.
+      const userCategories = fetchedCategories.filter(c => c && c.user_id !== null && c.name !== 'Savings');
+      if (userCategories.length === 0 && !localStorage.getItem('initial_setup_completed')) {
+        setShowInitialSetup(true);
+      }
     } catch (error) {
       console.error('[Transactions] Failed to load data:', error);
     } finally {
@@ -387,6 +457,94 @@ function Transactions() {
       .map(([id]) => categories.find(c => c && c.id === parseInt(id)))
       .filter(Boolean);
   }, [transactions, categories]);
+
+  // --- Initial Setup Modal ---
+  if (showInitialSetup) {
+    return (
+      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-6 ${theme === 'dark' ? 'bg-[#0a0e27]/95' : 'bg-slate-900/90'} backdrop-blur-xl animate-in fade-in duration-500`}>
+        <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative border-2 ${theme === 'dark' ? 'border-amber-500/30' : 'border-amber-500/20'}`}>
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600"></div>
+          
+          <div className="p-10">
+            <div className="flex items-center gap-6 mb-12">
+              <div className="p-5 bg-amber-500 rounded-[2rem] shadow-2xl shadow-amber-500/20 rotate-3">
+                <Sparkles className="w-10 h-10 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h2 className={`text-4xl md:text-5xl font-black tracking-tight mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  Welcome to Your Tracker
+                </h2>
+                <p className={`text-lg font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Let's set up your first few categories to get started.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              {initialCategories.map((cat, idx) => (
+                <div key={idx} className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${
+                  theme === 'dark' 
+                    ? 'bg-slate-800/40 border-slate-700/50 hover:border-amber-500/30' 
+                    : 'bg-slate-50 border-slate-200 hover:border-amber-500/20'
+                }`}>
+                  <div className="flex flex-col items-center gap-6">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest ${
+                      cat.type === 'expense' 
+                        ? 'bg-rose-500/10 text-rose-500' 
+                        : 'bg-emerald-500/10 text-emerald-500'
+                    }`}>
+                      {cat.type}
+                    </div>
+
+                    <div className={`w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-xl ${
+                      theme === 'dark' ? 'bg-slate-700/50' : 'bg-white'
+                    }`}>
+                      {cat.icon}
+                    </div>
+
+                    <div className="w-full space-y-4">
+                      <label className={`block text-[10px] font-black uppercase tracking-[0.2em] text-center ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Category Name
+                      </label>
+                      <input
+                        type="text"
+                        value={cat.name}
+                        onChange={(e) => updateInitialCategory(idx, 'name', e.target.value)}
+                        placeholder={idx === 2 ? "e.g., Salary" : "e.g., Food"}
+                        className={`input-unified text-center text-sm font-bold ${theme === 'dark' ? 'input-unified-dark' : 'input-unified-light'}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center gap-8">
+              <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border ${theme === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                <Sparkles className="w-5 h-5" />
+                <span className="text-sm font-bold tracking-tight">AI will suggest emojis as you type!</span>
+              </div>
+
+              <button
+                onClick={handleInitialSetupSubmit}
+                disabled={loading || initialCategories.some(c => !c.name.trim())}
+                className="btn-primary-unified w-full max-w-md py-6 text-lg uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                {loading ? (
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto" />
+                ) : (
+                  <div className="flex items-center justify-center gap-4">
+                    <span>Start Tracking Now</span>
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                  </div>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
