@@ -488,7 +488,7 @@ def get_transactions(
     # Get paginated transactions
     transactions = db.query(Transaction).filter(
         Transaction.user_id == user.id
-    ).order_by(Transaction.date.desc()).offset(offset).limit(limit).all()
+    ).order_by(Transaction.date.desc(), Transaction.id.desc()).offset(offset).limit(limit).all()
     
     # Format response
     result = []

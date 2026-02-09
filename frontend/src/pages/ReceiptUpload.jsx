@@ -91,20 +91,24 @@ export default function ReceiptUpload() {
       });
 
       if (result.success) {
-        // Reset form
-        setExtractedData(null);
-        setEditData({
-          merchant: '',
-          amount: '',
-          date: '',
-          category_id: '',
-          description: ''
-        });
-        setPreviewImage(null);
-        setShowSuccess(true);
-        
         // Trigger a custom event to notify other components (like Layout) that data has changed
         window.dispatchEvent(new CustomEvent('transaction-added'));
+        
+        // Show success screen
+        setShowSuccess(true);
+        
+        // Reset form data after showing success screen to avoid flicker
+        setTimeout(() => {
+          setExtractedData(null);
+          setEditData({
+            merchant: '',
+            amount: '',
+            date: '',
+            category_id: '',
+            description: ''
+          });
+          setPreviewImage(null);
+        }, 100);
       } else {
         setError(result.error || 'Failed to save transaction');
       }

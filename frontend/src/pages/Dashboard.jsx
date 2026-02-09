@@ -98,16 +98,20 @@ function Dashboard() {
   }, [isChatWidgetOpen]);
 
   const getDateRange = () => {
+    const pad = (num) => String(num).padStart(2, '0');
+    
     if (viewMode === 'monthly') {
-      const startDate = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
-      const endDate = new Date(selectedMonth.year, selectedMonth.month, 0);
-      return { startDate, endDate };
+      const start = `${selectedMonth.year}-${pad(selectedMonth.month)}-01`;
+      const lastDay = new Date(selectedMonth.year, selectedMonth.month, 0).getDate();
+      const end = `${selectedMonth.year}-${pad(selectedMonth.month)}-${pad(lastDay)}`;
+      return { startDateStr: start, endDateStr: end };
     } else if (viewMode === 'yearly') {
-      const startDate = new Date(selectedMonth.year, 0, 1);
-      const endDate = new Date(selectedMonth.year, 11, 31);
-      return { startDate, endDate };
+      return { 
+        startDateStr: `${selectedMonth.year}-01-01`, 
+        endDateStr: `${selectedMonth.year}-12-31` 
+      };
     } else {
-      return { startDate: new Date(1900, 0, 1), endDate: new Date(2100, 11, 31) };
+      return { startDateStr: '1900-01-01', endDateStr: '2100-12-31' };
     }
   };
   
@@ -140,10 +144,10 @@ function Dashboard() {
         clearInterval(timer);
         return;
       }
-      const { startDate, endDate } = getDateRange();
+      const { startDateStr, endDateStr } = getDateRange();
       const payload = {
-        startDate: startDate.toISOString().slice(0, 10),
-        endDate: endDate.toISOString().slice(0, 10),
+        startDate: startDateStr,
+        endDate: endDateStr,
         format,
       };
       setReportStatus('Generating');
@@ -282,21 +286,12 @@ function Dashboard() {
       // Log state changes for debugging
       console.log('💎 Dashboard hasSavingsAccount state set to:', !!savingsCat);
 
-      let periodStart, periodEnd;
-      if (viewMode === 'monthly') {
-        periodStart = new Date(selectedMonth.year, selectedMonth.month - 1, 1);
-        periodEnd = new Date(selectedMonth.year, selectedMonth.month, 0);
-      } else if (viewMode === 'yearly') {
-        periodStart = new Date(selectedMonth.year, 0, 1);
-        periodEnd = new Date(selectedMonth.year, 11, 31);
-      } else {
-        periodStart = new Date(1900, 0, 1);
-        periodEnd = new Date(2100, 11, 31);
-      }
+      const { startDateStr, endDateStr } = getDateRange();
 
       const periodTransactions = txns.filter(txn => {
-        const txnDate = new Date(txn.date);
-        return txnDate >= periodStart && txnDate <= periodEnd;
+        if (!txn || !txn.date) return false;
+        const txnDateStr = typeof txn.date === 'string' ? txn.date.split('T')[0] : new Date(txn.date).toISOString().split('T')[0];
+        return txnDateStr >= startDateStr && txnDateStr <= endDateStr;
       });
 
       // separation of regular expenses and special savings

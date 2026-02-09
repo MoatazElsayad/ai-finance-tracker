@@ -21,7 +21,7 @@ function Transactions() {
   const [viewMode, setViewMode] = useState('monthly'); // 'monthly', 'yearly', or 'overall'
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(new Set());
@@ -59,10 +59,12 @@ function Transactions() {
 
   // Get date range based on view mode (using YYYY-MM-DD strings for safe comparison)
   const getDateRange = () => {
+    const pad = (num) => String(num).padStart(2, '0');
+    
     if (viewMode === 'monthly') {
-      const start = `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, '0')}-01`;
-      const lastDay = new Date(selectedMonth.year, selectedMonth.month + 1, 0).getDate();
-      const end = `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      const start = `${selectedMonth.year}-${pad(selectedMonth.month)}-01`;
+      const lastDay = new Date(selectedMonth.year, selectedMonth.month, 0).getDate();
+      const end = `${selectedMonth.year}-${pad(selectedMonth.month)}-${pad(lastDay)}`;
       return { startDate: start, endDate: end };
     } else if (viewMode === 'yearly') {
       const start = `${selectedMonth.year}-01-01`;
@@ -74,8 +76,18 @@ function Transactions() {
   };
 
   const changeMonth = (offset) => {
-    const newDate = new Date(selectedMonth.year, selectedMonth.month + offset, 1);
-    setSelectedMonth({ year: newDate.getFullYear(), month: newDate.getMonth() });
+    let newMonth = selectedMonth.month + offset;
+    let newYear = selectedMonth.year;
+    
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear++;
+    } else if (newMonth < 1) {
+      newMonth = 12;
+      newYear--;
+    }
+    
+    setSelectedMonth({ year: newYear, month: newMonth });
   };
 
   const changeYear = (offset) => {
@@ -458,7 +470,7 @@ function Transactions() {
                   <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <span className={`text-xl font-black tracking-[0.1em] uppercase min-w-[200px] text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                  {new Date(selectedMonth.year, selectedMonth.month, 1).toLocaleDateString('en-US', {
+                  {new Date(selectedMonth.year, selectedMonth.month - 1, 1).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long'
                   })}
