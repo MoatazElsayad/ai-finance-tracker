@@ -96,37 +96,48 @@ function Transactions() {
         throw new Error('No authentication token found. Please login again.');
       }
 
+      console.log(`[Transactions] Fetching transactions page ${page}...`);
+      
       // Ensure api.js functions are used properly
       const [txnsData, cats] = await Promise.all([
         getTransactions(page, 50).catch(err => {
-          console.error("Error in getTransactions:", err);
+          console.error("[Transactions] Error in getTransactions:", err);
           return { transactions: [], pagination: { page: 1, limit: 50, total: 0, pages: 1 } };
         }),
         getCategories().catch(err => {
-          console.error("Error in getCategories:", err);
+          console.error("[Transactions] Error in getCategories:", err);
           return [];
         })
       ]);
       
-      const txns = (txnsData && txnsData.transactions) ? txnsData.transactions : (Array.isArray(txnsData) ? txnsData : []);
-      const paginationData = (txnsData && txnsData.pagination) ? txnsData.pagination : { page: 1, limit: txns.length, total: txns.length, pages: 1 };
+      console.log('[Transactions] Received data:', { 
+        txnsCount: txnsData?.transactions?.length || (Array.isArray(txnsData) ? txnsData.length : 0), 
+        catsCount: cats?.length 
+      });
+
+      // Robust parsing of transactions
+      let txns = [];
+      if (txnsData && txnsData.transactions) {
+        txns = txnsData.transactions;
+      } else if (Array.isArray(txnsData)) {
+        txns = txnsData;
+      }
+      
+      // Robust parsing of pagination
+      const paginationData = (txnsData && txnsData.pagination) 
+        ? txnsData.pagination 
+        : { page: 1, limit: txns.length || 50, total: txns.length || 0, pages: 1 };
       
       if (append) {
-        setTransactions(prev => [...prev, ...txns]);
+        setTransactions(prev => [...(Array.isArray(prev) ? prev : []), ...txns]);
       } else {
         setTransactions(txns);
       }
+      
       setPagination(paginationData);
       setCategories(Array.isArray(cats) ? cats : []);
     } catch (error) {
-      console.error('Failed to load:', error);
-      if (!append) {
-        // Only alert on serious errors, not background failures
-        if (error.message !== 'Unauthorized') {
-          // If the page is already rendered, showing an alert is fine, but during initial load it might be annoying
-          // However, we need some feedback
-        }
-      }
+      console.error('[Transactions] Failed to load data:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -134,7 +145,26 @@ function Transactions() {
   }, []);
 
   useEffect(() => {
-    loadData(1, false);
+    let mounted = true;
+    
+    const initLoad = async () => {
+      if (mounted) {
+        await loadData(1, false);
+      }
+    };
+    
+    initLoad();
+
+    // Listen for transaction-added event (e.g., from Receipt Upload)
+    const handleTransactionAdded = () => {
+      loadData(1, false);
+    };
+    window.addEventListener('transaction-added', handleTransactionAdded);
+    
+    return () => {
+      mounted = false;
+      window.removeEventListener('transaction-added', handleTransactionAdded);
+    };
   }, [loadData]);
   
   // Load more transactions when scrolling (optional infinite scroll)
@@ -195,112 +225,134 @@ function Transactions() {
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
-    if (!Array.isArray(transactions)) return [];
-    let filtered = [...transactions];
+    try {
+      if (!Array.isArray(transactions)) return [];
+      let filtered = [...transactions];
 
-    if (debouncedSearchQuery) {
-      filtered = filtered.filter(txn => {
-        if (!txn) return false;
-        const desc = (txn.description || "").toLowerCase();
-        const cat = (txn.category_name || "").toLowerCase();
+      if (debouncedSearchQuery && typeof debouncedSearchQuery === 'string') {
         const query = debouncedSearchQuery.toLowerCase();
-        return desc.includes(query) || cat.includes(query);
-      });
-    }
-
-    if (filterType === 'income') {
-      filtered = filtered.filter(t => t && t.amount > 0);
-    } else if (filterType === 'expense') {
-      filtered = filtered.filter(t => t && t.amount < 0);
-    }
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(t => t && t.category_id === parseInt(filterCategory));
-    }
-
-    // Apply date range filter based on viewMode and selectedMonth
-    const { startDate, endDate } = getDateRange();
-    filtered = filtered.filter(t => {
-      if (!t || !t.date || typeof t.date !== 'string') return false;
-      try {
-        const dateStr = t.date.split('T')[0];
-        return dateStr >= startDate && dateStr <= endDate;
-      } catch (e) {
-        console.error("Error filtering transaction date:", e, t);
-        return false;
+        filtered = filtered.filter(txn => {
+          if (!txn) return false;
+          const desc = (txn.description || "").toLowerCase();
+          const cat = (txn.category_name || "").toLowerCase();
+          return desc.includes(query) || cat.includes(query);
+        });
       }
-    });
 
-    // Sort transactions
-    filtered.sort((a, b) => {
-      if (!a || !b) return 0;
-      let comparison = 0;
-      try {
-        const dateA = a.date ? new Date(a.date) : new Date(0);
-        const dateB = b.date ? new Date(b.date) : new Date(0);
-        
-        if (sortBy === 'date') {
-          comparison = dateA - dateB;
-        } else if (sortBy === 'amount') {
-          comparison = Math.abs(a.amount || 0) - Math.abs(b.amount || 0);
-        } else if (sortBy === 'category') {
-          comparison = (a.category_name || '').localeCompare(b.category_name || '');
+      if (filterType === 'income') {
+        filtered = filtered.filter(t => t && t.amount > 0);
+      } else if (filterType === 'expense') {
+        filtered = filtered.filter(t => t && t.amount < 0);
+      }
+
+      if (filterCategory !== 'all') {
+        filtered = filtered.filter(t => t && t.category_id === parseInt(filterCategory));
+      }
+
+      // Apply date range filter based on viewMode and selectedMonth
+      const range = getDateRange();
+      const startDate = range?.startDate || '1900-01-01';
+      const endDate = range?.endDate || '2100-12-31';
+      
+      filtered = filtered.filter(t => {
+        if (!t || !t.date) return false;
+        try {
+          const dateStr = typeof t.date === 'string' ? t.date.split('T')[0] : new Date(t.date).toISOString().split('T')[0];
+          return dateStr >= startDate && dateStr <= endDate;
+        } catch (e) {
+          return false;
         }
-      } catch (e) {
-        console.error("Error sorting transactions:", e);
-        comparison = 0;
-      }
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+      });
 
-    return filtered;
+      // Sort transactions
+      filtered.sort((a, b) => {
+        if (!a || !b) return 0;
+        let comparison = 0;
+        try {
+          if (sortBy === 'date') {
+            const dateA = a.date ? new Date(a.date) : new Date(0);
+            const dateB = b.date ? new Date(b.date) : new Date(0);
+            comparison = dateA - dateB;
+          } else if (sortBy === 'amount') {
+            comparison = Math.abs(a.amount || 0) - Math.abs(b.amount || 0);
+          } else if (sortBy === 'category') {
+            comparison = (a.category_name || '').localeCompare(b.category_name || '');
+          }
+        } catch (e) {
+          comparison = 0;
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+
+      return filtered;
+    } catch (error) {
+      console.error("[Transactions] Error in filteredTransactions useMemo:", error);
+      return [];
+    }
   }, [transactions, debouncedSearchQuery, filterType, filterCategory, viewMode, selectedMonth, sortBy, sortOrder]);
 
   // Calculate totals based on current filters
   const totals = useMemo(() => {
-    if (!Array.isArray(filteredTransactions)) return { income: 0, expenses: 0, net: 0, count: 0 };
-    return filteredTransactions.reduce((acc, t) => {
-      if (!t || typeof t.amount !== 'number') return acc;
-      if (t.amount > 0) acc.income += t.amount;
-      else acc.expenses += Math.abs(t.amount);
-      acc.net = acc.income - acc.expenses;
-      return acc;
-    }, { income: 0, expenses: 0, net: 0, count: filteredTransactions.length });
+    try {
+      if (!Array.isArray(filteredTransactions)) return { income: 0, expenses: 0, net: 0, count: 0 };
+      const res = filteredTransactions.reduce((acc, t) => {
+        if (!t || typeof t.amount !== 'number') return acc;
+        if (t.amount > 0) acc.income += t.amount;
+        else acc.expenses += Math.abs(t.amount);
+        return acc;
+      }, { income: 0, expenses: 0, net: 0, count: filteredTransactions.length });
+      res.net = res.income - res.expenses;
+      return res;
+    } catch (error) {
+      console.error("[Transactions] Error in totals useMemo:", error);
+      return { income: 0, expenses: 0, net: 0, count: 0 };
+    }
   }, [filteredTransactions]);
 
   // Filter to first 5 if not showing all
   const displayTransactions = useMemo(() => {
-    if (!Array.isArray(filteredTransactions)) return [];
-    if (showAllTransactions) return filteredTransactions;
-    return filteredTransactions.slice(0, 5);
+    try {
+      if (!Array.isArray(filteredTransactions)) return [];
+      if (showAllTransactions) return filteredTransactions;
+      return filteredTransactions.slice(0, 5);
+    } catch (error) {
+      console.error("[Transactions] Error in displayTransactions useMemo:", error);
+      return [];
+    }
   }, [filteredTransactions, showAllTransactions]);
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
-    const groups = {};
-    if (!Array.isArray(displayTransactions)) return groups;
-    displayTransactions.forEach(txn => {
-      if (!txn || !txn.date || typeof txn.date !== 'string') return;
-      try {
-        const dateParts = txn.date.split('T')[0].split('-');
-        if (dateParts.length !== 3) return;
-        const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-        if (isNaN(dateObj.getTime())) return;
-        
-        const dateKey = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-        if (!groups[dateKey]) {
-          groups[dateKey] = [];
+    try {
+      const groups = {};
+      if (!Array.isArray(displayTransactions)) return groups;
+      displayTransactions.forEach(txn => {
+        if (!txn || !txn.date) return;
+        try {
+          const dateStr = typeof txn.date === 'string' ? txn.date.split('T')[0] : new Date(txn.date).toISOString().split('T')[0];
+          const dateParts = dateStr.split('-');
+          if (dateParts.length !== 3) return;
+          const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+          if (isNaN(dateObj.getTime())) return;
+          
+          const dateKey = dateObj.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          if (!groups[dateKey]) {
+            groups[dateKey] = [];
+          }
+          groups[dateKey].push(txn);
+        } catch (e) {
+          // Skip malformed dates
         }
-        groups[dateKey].push(txn);
-      } catch (e) {
-        console.error("Error grouping transaction:", e);
-      }
-    });
-    return groups;
+      });
+      return groups;
+    } catch (error) {
+      console.error("[Transactions] Error in groupedTransactions useMemo:", error);
+      return {};
+    }
   }, [displayTransactions]);
 
   // Filter categories by type

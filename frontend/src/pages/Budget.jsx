@@ -102,6 +102,16 @@ function BudgetPlanning() {
 
   useEffect(() => {
     loadData();
+
+    // Listen for transaction-added event to refresh data
+    const handleTransactionAdded = () => {
+      loadData(false); // Load without full screen loading state
+    };
+    window.addEventListener('transaction-added', handleTransactionAdded);
+
+    return () => {
+      window.removeEventListener('transaction-added', handleTransactionAdded);
+    };
   }, [selectedMonth, viewMode]);
 
   // Generate AI insights when budgets or transactions change

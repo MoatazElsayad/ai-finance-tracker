@@ -69,6 +69,16 @@ const Goals = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Listen for transaction-added event to refresh data
+    const handleTransactionAdded = () => {
+      fetchData();
+    };
+    window.addEventListener('transaction-added', handleTransactionAdded);
+
+    return () => {
+      window.removeEventListener('transaction-added', handleTransactionAdded);
+    };
   }, []);
 
   const fetchData = async () => {

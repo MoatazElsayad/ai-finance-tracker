@@ -61,6 +61,16 @@ function Dashboard() {
 
   useEffect(() => {
     loadDashboard();
+
+    // Listen for transaction-added event to refresh data
+    const handleTransactionAdded = () => {
+      loadDashboard();
+    };
+    window.addEventListener('transaction-added', handleTransactionAdded);
+
+    return () => {
+      window.removeEventListener('transaction-added', handleTransactionAdded);
+    };
   }, [selectedMonth, viewMode]);
 
   useEffect(() => {

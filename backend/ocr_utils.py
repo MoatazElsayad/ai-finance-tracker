@@ -174,50 +174,59 @@ def extract_text_from_image(image_path: str) -> str:
 def extract_amount_from_text(text: str) -> Optional[float]:
     """
     Extract monetary amount from OCR text
-    Looks for patterns like $10.99, 10.99, 10,99, etc.
+    Looks for patterns like $10.99, 10.99, 10,99, EGP 10.99 etc.
     """
-    # Pattern for currency amounts: $10.99 or 10.99 or 10,99
+    # Pattern for currency amounts
     patterns = [
         r'\$\s*(\d+[.,]\d{2})',  # $10.99
-        r'(?:total|amount|total\s*amount|price|due)[\s:]*\$?(\d+[.,]\d{2})',  # Total: $10.99
-        r'(\d+[.,]\d{2})\s*(?:usd|eur|gbp|cad)',  # 10.99 USD
+        r'(?:total|amount|total\s*amount|price|due|egp|le|l\.e)[\s:]*[\$£€]?\s*(\d+[.,]\d{2})',  # Total: $10.99 or EGP 10.99
+        r'(\d+[.,]\d{2})\s*(?:usd|eur|gbp|cad|egp|le|l\.e)',  # 10.99 USD or 10.99 EGP
+        r'(\d+[.,]\d{2})',  # Any number with 2 decimal places (fallback)
     ]
     
     text_lower = text.lower()
     
+    found_amounts = []
     for pattern in patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         if matches:
-            # Take the largest amount found (likely the total)
-            amounts = []
             for match in matches:
                 amount_str = match.replace(',', '.')
                 try:
-                    amounts.append(float(amount_str))
+                    found_amounts.append(float(amount_str))
                 except:
                     continue
-            if amounts:
-                return max(amounts)  # Return largest amount
+    
+    if found_amounts:
+        # Take the largest amount found (likely the total)
+        return max(found_amounts)
     
     return None
 
-def extract_merchant_from_text(text: str) -> Optional[str]:
+def extract_merchant_from_text(text: str) -> str:
     """
-    Extract merchant/business name from OCR text
-    Usually appears at the top of the receipt
+    Extract merchant name from OCR text
+    Typically the first non-numeric line
     """
     lines = text.split('\n')
     
     # First few non-empty lines are likely merchant name
     for line in lines[:10]:
         line = line.strip()
-        if len(line) > 3 and not any(c.isdigit() for c in line):  # Avoid lines with numbers
-            # Skip common receipt headers
-            if not any(skip in line.lower() for skip in ['receipt', 'invoice', 'order', 'date', 'time', 'total']):
-                if len(line) < 50:  # Reasonable length for business name
+        # Look for lines that look like a business name (no digits, reasonable length)
+        if len(line) > 2 and not any(c.isdigit() for c in line):
+            # Skip common receipt headers and common noise
+            if not any(skip in line.lower() for skip in ['receipt', 'invoice', 'order', 'date', 'time', 'total', 'welcome', 'thank you', 'tax', 'cashier']):
+                if len(line) < 60:  # Reasonable length for business name
                     return line
     
-    return "Unnamed Merchant"
+    # Fallback: search for common merchants in text
+    common_merchants = ['starbucks', 'mcdonald', 'walmart', 'amazon', 'uber', 'careem', 'shell', 'total', 'kfc', 'pizza hut']
+    for merchant in common_merchants:
+        if merchant in text.lower():
+            return merchant.title()
+            
+    return "Unknown Merchant"
 
 def extract_date_from_text(text: str) -> Optional[str]:
     """

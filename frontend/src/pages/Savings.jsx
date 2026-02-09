@@ -519,6 +519,16 @@ export default function Savings() {
 
   useEffect(() => {
     loadAll();
+
+    // Listen for transaction-added event to refresh data
+    const handleTransactionAdded = () => {
+      loadAll();
+    };
+    window.addEventListener('transaction-added', handleTransactionAdded);
+
+    return () => {
+      window.removeEventListener('transaction-added', handleTransactionAdded);
+    };
   }, [loadAll]);
 
   const investments = useMemo(() => savings?.investments || [], [savings]);

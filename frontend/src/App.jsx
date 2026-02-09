@@ -133,6 +133,16 @@ function Layout() {
     if (isAuthenticated()) {
       loadUserData();
     }
+
+    // Listen for transaction-added event to refresh data
+    const handleTransactionAdded = () => {
+      loadUserData();
+    };
+    window.addEventListener('transaction-added', handleTransactionAdded);
+
+    return () => {
+      window.removeEventListener('transaction-added', handleTransactionAdded);
+    };
   }, [location.pathname]); // Re-calculate on route change to keep it fresh
 
   const isDark = theme === 'dark';

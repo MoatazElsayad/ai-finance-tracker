@@ -102,6 +102,9 @@ export default function ReceiptUpload() {
         });
         setPreviewImage(null);
         setShowSuccess(true);
+        
+        // Trigger a custom event to notify other components (like Layout) that data has changed
+        window.dispatchEvent(new CustomEvent('transaction-added'));
       } else {
         setError(result.error || 'Failed to save transaction');
       }
@@ -124,39 +127,44 @@ export default function ReceiptUpload() {
       <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} flex items-center justify-center px-6 py-12 transition-colors duration-500`}>
         <div className="max-w-xl w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
           <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-12 text-center shadow-2xl relative overflow-hidden`}>
-            {/* Decorative element */}
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-              <Check className="w-32 h-32" />
-            </div>
+            {/* Background Decoration */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
 
-            <div className="inline-flex items-center justify-center p-6 bg-emerald-500 rounded-3xl mb-8 shadow-xl shadow-emerald-500/20 rotate-3">
-              <Check className="w-12 h-12 text-white" strokeWidth={3} />
-            </div>
-            
-            <h2 className={`text-4xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'} mb-4`}>
-              Transaction <span className="text-emerald-500">Saved!</span>
-            </h2>
-            
-            <p className={`text-lg font-bold tracking-tight ${isDark ? 'text-slate-400' : 'text-slate-600'} mb-10`}>
-              Your receipt has been successfully processed and added to your intelligent hub.
-            </p>
-            
-            <div className="flex flex-col gap-4 relative z-10">
-              <button
-                onClick={() => navigate('/transactions')}
-                className="w-full py-5 bg-amber-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all flex items-center justify-center gap-3 shadow-xl shadow-amber-500/10 group"
-              >
-                <span>View Transactions</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+            <div className="relative z-10">
+              <div className="w-24 h-24 bg-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/40 rotate-6">
+                <Check className="w-12 h-12 text-white" strokeWidth={4} />
+              </div>
+              <h2 className={`text-4xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'} mb-4`}>
+                Intelligence <span className="text-emerald-500">Stored</span>
+              </h2>
+              <p className={`text-lg font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'} mb-10 max-w-sm mx-auto leading-relaxed`}>
+                Receipt data has been successfully analyzed and integrated into your financial history.
+              </p>
               
-              <button
-                onClick={handleReset}
-                className={`w-full py-5 ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'} rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm transition-all flex items-center justify-center gap-3 group`}
-              >
-                <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                <span>Upload Another</span>
-              </button>
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={() => navigate('/transactions')}
+                  className="w-full py-5 bg-amber-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all shadow-xl shadow-amber-500/10"
+                >
+                  View Transactions
+                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={handleReset}
+                    className={`py-5 ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2`}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Scan Another
+                  </button>
+                  <button
+                    onClick={() => navigate('/')}
+                    className={`py-5 ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] transition-all`}
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
