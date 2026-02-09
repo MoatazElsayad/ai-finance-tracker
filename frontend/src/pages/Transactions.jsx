@@ -309,17 +309,17 @@ function Transactions() {
     }
   }, [filteredTransactions]);
 
-  // Filter to first 5 if not showing all
+  // Display transactions
   const displayTransactions = useMemo(() => {
     try {
       if (!Array.isArray(filteredTransactions)) return [];
-      if (showAllTransactions) return filteredTransactions;
-      return filteredTransactions.slice(0, 5);
+      // Always show all filtered transactions, the limit: 5 was confusing for users
+      return filteredTransactions;
     } catch (error) {
       console.error("[Transactions] Error in displayTransactions useMemo:", error);
       return [];
     }
-  }, [filteredTransactions, showAllTransactions]);
+  }, [filteredTransactions]);
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {

@@ -440,6 +440,10 @@ def get_me(
     """
     check_rate_limit(request)
     user = get_current_user(request, authorization, token, db)
+    # Calculate balance
+    from sqlalchemy import func
+    balance = db.query(func.sum(Transaction.amount)).filter(Transaction.user_id == user.id).scalar() or 0.0
+    
     return {
         "id": user.id,
         "email": user.email,
@@ -449,6 +453,7 @@ def get_me(
         "phone": user.phone,
         "gender": user.gender,
         "avatar_seed": user.avatar_seed,
+        "available_balance": float(balance),
         "createdAt": user.created_at.isoformat() if user.created_at else None
     }
 
@@ -2562,6 +2567,23 @@ def confirm_receipt(
         )
         
         db.add(transaction)
+        
+        # Update linked savings goals
+        linked_goals = db.query(Goal).filter(
+            Goal.user_id == user.id,
+            Goal.categories.any(id=transaction.category_id)
+        ).all()
+        
+        for goal in linked_goals:
+            # If it's a Savings category, we treat the absolute value as progress 
+            # (since savings is an expense but increases the goal balance)
+            if category and category.name.lower() == 'savings':
+                goal.current_amount += abs(transaction.amount)
+            else:
+                # amount is positive for income, negative for expense
+                # so adding it correctly handles both (adds income, subtracts expense)
+                goal.current_amount += transaction.amount
+                
         db.commit()
         db.refresh(transaction)
         
