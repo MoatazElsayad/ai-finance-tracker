@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, RefreshCw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { createCategory, askAIQuestion } from '../api';
+import { createCategory, suggestEmoji } from '../api';
 
 function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' }) {
   const { theme } = useTheme();
@@ -76,70 +76,38 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       clearTimeout(suggestTimer.current);
     }
     const text = name.trim();
-    if (!text) {
-      setIcon('');
+    if (!text || text.length < 2) {
       setSuggestions([]);
       return;
     }
     suggestTimer.current = setTimeout(async () => {
       setSuggesting(true);
       try {
-        const token = localStorage.getItem('token');
-        const normalized = text.toLowerCase();
-        if (normalized.length < 3) {
+        const { suggestions: suggested } = await suggestEmoji(text);
+        
+        if (suggested && suggested.length > 0) {
+          setSuggestions(suggested);
+          if (!icon || !suggested.includes(icon)) {
+            setIcon(suggested[0]);
+          }
+        } else {
           const fallbacks = localSuggestEmoji(text);
           setSuggestions(fallbacks);
-          setIcon(fallbacks[0]);
-          return;
+          if (!icon) setIcon(fallbacks[0]);
         }
-        if (lastNameRef.current === normalized) {
-          if (lastSuggestionsRef.current.length > 0) {
-            setSuggestions(lastSuggestionsRef.current);
-            if (!icon) setIcon(lastSuggestionsRef.current[0]);
-          } else {
-            const fallbacks = localSuggestEmoji(text);
-            setSuggestions(fallbacks);
-            setIcon(fallbacks[0]);
-          }
-          return;
-        }
-        if (token) {
-          const now = new Date();
-          const { answer } = await askAIQuestion(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            `What are 3 different emojis that best represent the financial category: "${text}"? Return ONLY the 3 emojis separated by spaces and nothing else.`
-          );
-          
-          // Improved emoji extraction logic
-          const emojiMatches = (answer || '').match(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g) || [];
-          const extractedEmojis = [...new Set(emojiMatches)].slice(0, 3);
-          
-          if (extractedEmojis.length > 0) {
-            setSuggestions(extractedEmojis);
-            setIcon(extractedEmojis[0]);
-            lastNameRef.current = normalized;
-            lastSuggestionsRef.current = extractedEmojis;
-          } else {
-            const fallbacks = localSuggestEmoji(text);
-            setSuggestions(fallbacks);
-            setIcon(fallbacks[0]);
-          }
-        }
-      } catch {
+      } catch (err) {
+        console.error('Emoji suggestion error:', err);
         const fallbacks = localSuggestEmoji(text);
         setSuggestions(fallbacks);
-        setIcon(fallbacks[0]);
-        lastNameRef.current = text.toLowerCase();
-        lastSuggestionsRef.current = fallbacks;
+        if (!icon) setIcon(fallbacks[0]);
       } finally {
         setSuggesting(false);
       }
-    }, 1000);
+    }, 400); // Faster response for better UX
     return () => {
       if (suggestTimer.current) clearTimeout(suggestTimer.current);
     };
-  }, [name, type]);
+  }, [name]);
 
   if (!isOpen) return null;
 

@@ -723,19 +723,14 @@ def get_categories(
     db: Session = Depends(get_db)
 ):
     """
-    Get all available categories (default + user's custom ones)
+    Get all available categories for the current user.
+    Includes only user-specific categories.
     """
     check_rate_limit(request)
     user = get_current_user(request, authorization, token, db)
     
-    # Get default categories (user_id is NULL)
-    default_categories = db.query(Category).filter(Category.user_id == None).all()
-    
     # Get user's custom categories
     custom_categories = db.query(Category).filter(Category.user_id == user.id).all()
-    
-    # Combine both
-    all_categories = default_categories + custom_categories
     
     return [
         {
@@ -743,10 +738,102 @@ def get_categories(
             "name": c.name,
             "type": c.type,
             "icon": c.icon,
-            "is_custom": c.user_id is not None
+            "is_custom": True
         }
-        for c in all_categories
+        for c in custom_categories
     ]
+
+
+@app.get("/categories/suggest-emoji")
+def suggest_emoji(name: str):
+    """
+    Suggest emojis based on category name using simple keyword mapping
+    """
+    name_lower = name.lower().strip()
+    
+    # Keyword mapping for common categories
+    mapping = {
+        "food": ["🍔", "🍕", "🥗"],
+        "eat": ["🍽️", "🍜", "🍕"],
+        "drink": ["☕", "🥤", "🍺"],
+        "coffee": ["☕", "🥐", "🧁"],
+        "restaurant": ["🍴", "🍷", "🍝"],
+        "grocer": ["🛒", "🍎", "🥦"],
+        "market": ["🏪", "🛍️", "🍎"],
+        "transport": ["🚗", "🚌", "🚇"],
+        "travel": ["✈️", "🧳", "🌍"],
+        "car": ["🚗", "⛽", "🔧"],
+        "fuel": ["⛽", "⚡", "🚗"],
+        "gas": ["⛽", "🔥", "🚗"],
+        "taxi": ["🚕", "🚕", "🚗"],
+        "bus": ["🚌", "🚍", "🚏"],
+        "train": ["🚆", "🚇", "🚄"],
+        "rent": ["🏠", "🔑", "🏘️"],
+        "home": ["🏠", "🛋️", "🪴"],
+        "house": ["🏡", "🏘️", "🏗️"],
+        "bill": ["🧾", "📑", "💸"],
+        "utilit": ["💡", "🚰", "🔌"],
+        "electric": ["⚡", "💡", "🔌"],
+        "water": ["🚰", "💧", "🚿"],
+        "internet": ["🌐", "💻", "📡"],
+        "phone": ["📱", "📞", "📶"],
+        "mobile": ["📱", "📲", "📡"],
+        "salary": ["💰", "💵", "🏦"],
+        "income": ["📈", "💰", "💸"],
+        "pay": ["💸", "💳", "🏦"],
+        "wage": ["💵", "💰", "🏦"],
+        "work": ["💼", "💻", "🏢"],
+        "freelance": ["💻", "👨‍💻", "🚀"],
+        "bonus": ["🎁", "🎊", "💰"],
+        "gift": ["🎁", "💝", "🎈"],
+        "shop": ["🛍️", "👗", "👟"],
+        "clothes": ["👕", "👗", "👟"],
+        "shoe": ["👟", "👞", "👠"],
+        "health": ["🏥", "💊", "🍎"],
+        "medical": ["💊", "🩺", "🚑"],
+        "doctor": ["👨‍⚕️", "👩‍⚕️", "🏥"],
+        "pharmacy": ["💊", "🧪", "🩹"],
+        "gym": ["💪", "🏋️‍♂️", "👟"],
+        "sport": ["⚽", "🏀", "🎾"],
+        "fitness": ["🏃‍♂️", "🧘‍♀️", "💪"],
+        "education": ["📚", "🎓", "✏️"],
+        "school": ["🏫", "🎒", "📚"],
+        "learn": ["🧠", "💡", "📖"],
+        "book": ["📖", "📚", "🔖"],
+        "enterta": ["🍿", "🎮", "🎭"],
+        "movie": ["🎬", "🍿", "🎟️"],
+        "game": ["🎮", "🕹️", "👾"],
+        "music": ["🎵", "🎧", "🎸"],
+        "hobby": ["🎨", "📸", "🧶"],
+        "pet": ["🐾", "🐕", "🐈"],
+        "dog": ["🐕", "🐩", "🦴"],
+        "cat": ["🐈", "🐾", "🧶"],
+        "subscr": ["📅", "💳", "📺"],
+        "netflix": ["📺", "🎬", "🍿"],
+        "spotify": ["🎵", "🎧", "🟢"],
+        "insurance": ["🛡️", "📜", "🏥"],
+        "tax": ["📝", "🏛️", "💸"],
+        "invest": ["📈", "📊", "🚀"],
+        "stock": ["📉", "💹", "🏢"],
+        "crypto": ["₿", "🚀", "⛓️"],
+        "saving": ["🏦", "🐷", "💰"],
+        "emergency": ["🚨", "🆘", "🩹"],
+        "family": ["👨‍👩‍👧‍👦", "🏠", "❤️"],
+        "kid": ["👶", "🧸", "🎈"],
+        "baby": ["👶", "🍼", "🧸"],
+        "charity": ["🤝", "❤️", "🕊️"],
+        "donat": ["🤲", "💝", "✨"],
+        "other": ["📦", "🏷️", "📝"],
+        "misc": ["🖇️", "📦", "🧩"],
+    }
+    
+    # Check for keyword matches
+    for keyword, emojis in mapping.items():
+        if keyword in name_lower:
+            return {"suggestions": emojis}
+            
+    # Default fallback
+    return {"suggestions": ["💰", "📊", "🛍️"]}
 
 
 @app.post("/categories")

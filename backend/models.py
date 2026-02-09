@@ -191,7 +191,4 @@ class MarketRatesCache(Base):
 
 
 # Pre-defined categories to insert when app starts
-DEFAULT_CATEGORIES = [
-    # Only Savings remains as a default system category
-    {"id": 100, "name": "Savings", "type": "expense", "icon": "🏦"},
-]
+DEFAULT_CATEGORIES = []

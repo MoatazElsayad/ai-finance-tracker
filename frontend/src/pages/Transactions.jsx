@@ -3,7 +3,7 @@
  * Professional transaction management with advanced filtering and insights
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { getTransactions, createTransaction, deleteTransaction, getCategories, createCategory, askAIQuestion } from '../api';
+import { getTransactions, createTransaction, deleteTransaction, getCategories, createCategory, suggestEmoji } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
 import { useDebounce } from '../utils/debounce';
@@ -68,21 +68,14 @@ function Transactions() {
 
       return setTimeout(async () => {
         try {
-          const now = new Date();
-          const { answer } = await askAIQuestion(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            `What is a single emoji that best represents the financial category: "${cat.name}"? Return ONLY the emoji and nothing else.`
-          );
-          
-          const emojiMatch = (answer || '').match(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g);
-          if (emojiMatch && emojiMatch[0]) {
-            updateInitialCategory(idx, 'icon', emojiMatch[0]);
+          const { suggestions } = await suggestEmoji(cat.name.trim());
+          if (suggestions && suggestions.length > 0) {
+            updateInitialCategory(idx, 'icon', suggestions[0]);
           }
         } catch (err) {
-          console.error('AI Suggestion failed for initial setup:', err);
+          console.error('Emoji Suggestion failed for initial setup:', err);
         }
-      }, 1000);
+      }, 400);
     });
 
     return () => timers.forEach(t => t && clearTimeout(t));
@@ -459,92 +452,79 @@ function Transactions() {
   }, [transactions, categories]);
 
   // --- Initial Setup Modal ---
-  if (showInitialSetup) {
+  const renderInitialSetupModal = () => {
+    if (!showInitialSetup) return null;
+
     return (
-      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-6 ${theme === 'dark' ? 'bg-[#0a0e27]/95' : 'bg-slate-900/90'} backdrop-blur-xl animate-in fade-in duration-500`}>
-        <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative border-2 ${theme === 'dark' ? 'border-amber-500/30' : 'border-amber-500/20'}`}>
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600"></div>
-          
-          <div className="p-10">
-            <div className="flex items-center gap-6 mb-12">
-              <div className="p-5 bg-amber-500 rounded-[2rem] shadow-2xl shadow-amber-500/20 rotate-3">
-                <Sparkles className="w-10 h-10 text-white" strokeWidth={2.5} />
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-700" />
+        
+        <div className={`relative w-full max-w-2xl card-unified ${theme === 'dark' ? 'card-unified-dark border-slate-800' : 'card-unified-light border-slate-200'} shadow-2xl animate-in zoom-in slide-in-from-bottom-10 duration-500`}>
+          <div className="p-8 md:p-12">
+            <div className="flex flex-col items-center text-center mb-12">
+              <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center border-2 border-amber-500/20 mb-6 animate-bounce-slow">
+                <Sparkles className="w-10 h-10 text-amber-500" />
               </div>
-              <div>
-                <h2 className={`text-4xl md:text-5xl font-black tracking-tight mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                  Welcome to Your Tracker
-                </h2>
-                <p className={`text-lg font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Let's set up your first few categories to get started.
-                </p>
-              </div>
+              <h1 className={`text-3xl md:text-4xl font-black tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                Let's personalize your tracker
+              </h1>
+              <p className={`text-lg ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-md`}>
+                Add the categories you spend on most to get started with your financial journey.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div className="space-y-6 mb-12">
               {initialCategories.map((cat, idx) => (
-                <div key={idx} className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${
-                  theme === 'dark' 
-                    ? 'bg-slate-800/40 border-slate-700/50 hover:border-amber-500/30' 
-                    : 'bg-slate-50 border-slate-200 hover:border-amber-500/20'
-                }`}>
-                  <div className="flex flex-col items-center gap-6">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest ${
-                      cat.type === 'expense' 
-                        ? 'bg-rose-500/10 text-rose-500' 
-                        : 'bg-emerald-500/10 text-emerald-500'
-                    }`}>
-                      {cat.type}
+                <div key={idx} className={`p-6 rounded-3xl border-2 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'} focus-within:border-amber-500/50 group`}>
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform group-hover:scale-110 duration-300 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}>
+                        {cat.icon}
+                      </div>
+                      <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-[10px] font-black text-white uppercase tracking-widest">
+                        {cat.type}
+                      </div>
                     </div>
-
-                    <div className={`w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-xl ${
-                      theme === 'dark' ? 'bg-slate-700/50' : 'bg-white'
-                    }`}>
-                      {cat.icon}
-                    </div>
-
-                    <div className="w-full space-y-4">
-                      <label className={`block text-[10px] font-black uppercase tracking-[0.2em] text-center ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Category Name
-                      </label>
+                    
+                    <div className="flex-1">
                       <input
                         type="text"
                         value={cat.name}
                         onChange={(e) => updateInitialCategory(idx, 'name', e.target.value)}
-                        placeholder={idx === 2 ? "e.g., Salary" : "e.g., Food"}
-                        className={`input-unified text-center text-sm font-bold ${theme === 'dark' ? 'input-unified-dark' : 'input-unified-light'}`}
+                        placeholder={idx === 0 ? "e.g., Grocery" : idx === 1 ? "e.g., Transport" : "e.g., Salary"}
+                        className={`w-full bg-transparent border-none outline-none text-xl font-bold p-0 ${theme === 'dark' ? 'text-white placeholder:text-slate-700' : 'text-slate-900 placeholder:text-slate-300'}`}
                       />
+                      <div className="h-0.5 w-full bg-slate-800/50 mt-2 rounded-full overflow-hidden">
+                        <div className={`h-full bg-amber-500 transition-all duration-500 ${cat.name ? 'w-full' : 'w-0'}`} />
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="flex flex-col items-center gap-8">
-              <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border ${theme === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                <Sparkles className="w-5 h-5" />
-                <span className="text-sm font-bold tracking-tight">AI will suggest emojis as you type!</span>
-              </div>
-
+            <div className="flex flex-col gap-4">
               <button
                 onClick={handleInitialSetupSubmit}
-                disabled={loading || initialCategories.some(c => !c.name.trim())}
-                className="btn-primary-unified w-full max-w-md py-6 text-lg uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed group"
+                disabled={loading || initialCategories.filter(c => c.name.trim()).length < 3}
+                className="w-full h-16 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-black text-lg rounded-2xl transition-all shadow-xl shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-3"
               >
-                {loading ? (
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto" />
-                ) : (
-                  <div className="flex items-center justify-center gap-4">
-                    <span>Start Tracking Now</span>
-                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-                  </div>
+                {loading ? <RefreshCw className="w-6 h-6 animate-spin" /> : (
+                  <>
+                    Continue to add transaction
+                    <ArrowRight className="w-6 h-6" />
+                  </>
                 )}
               </button>
+              <p className={`text-center text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                Add at least 3 categories to continue
+              </p>
             </div>
           </div>
         </div>
       </div>
     );
-  }
+  };
 
   if (loading) {
     return (
@@ -565,6 +545,7 @@ function Transactions() {
 
   return (
     <div className={`min-h-screen py-16 px-6 md:px-12 ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'} transition-colors duration-500`}>
+      {renderInitialSetupModal()}
       <div className="max-w-[1400px] mx-auto w-full">
       {/* Success Toast */}
       {showSuccessToast && (
@@ -577,6 +558,9 @@ function Transactions() {
           </div>
         </div>
       )}
+
+      {/* Initial Setup Modal */}
+      {renderInitialSetupModal()}
 
       {/* Header */}
       <div className="mb-12 animate-in fade-in slide-in-from-top-10 duration-700">
