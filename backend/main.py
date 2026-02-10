@@ -12,7 +12,7 @@ from fastapi import FastAPI, Depends, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, Index
 from pydantic import BaseModel, EmailStr, validator
 from passlib.context import CryptContext
@@ -486,20 +486,31 @@ def get_transactions(
     total = db.query(Transaction).filter(Transaction.user_id == user.id).count()
     
     # Get paginated transactions
-    transactions = db.query(Transaction).filter(
+    transactions = db.query(Transaction).options(joinedload(Transaction.category)).filter(
         Transaction.user_id == user.id
     ).order_by(Transaction.date.desc(), Transaction.id.desc()).offset(offset).limit(limit).all()
     
     # Format response
     result = []
     for t in transactions:
+        # Extra safety check for category
+        cat_name = "Uncategorized"
+        cat_icon = "📦"
+        
+        try:
+            if t.category is not None:
+                cat_name = getattr(t.category, 'name', "Uncategorized")
+                cat_icon = getattr(t.category, 'icon', "📦") or "📦"
+        except Exception as e:
+            print(f"DEBUG: Error accessing category for transaction {t.id}: {e}")
+            
         result.append({
             "id": t.id,
             "amount": t.amount,
             "description": t.description,
             "date": t.date.isoformat(),
-            "category_name": t.category.name if t.category else "Uncategorized",
-            "category_icon": t.category.icon if t.category else "📦"
+            "category_name": cat_name,
+            "category_icon": cat_icon
         })
     
     return {
@@ -583,7 +594,7 @@ def delete_transaction(
     user = get_current_user(request, authorization, token, db)
     
     # Find transaction
-    transaction = db.query(Transaction).filter(
+    transaction = db.query(Transaction).options(joinedload(Transaction.category)).filter(
         Transaction.id == transaction_id,
         Transaction.user_id == user.id
     ).first()
@@ -627,7 +638,7 @@ def update_transaction(
     user = get_current_user(request, authorization, token, db)
     
     # Find transaction
-    transaction = db.query(Transaction).filter(
+    transaction = db.query(Transaction).options(joinedload(Transaction.category)).filter(
         Transaction.id == transaction_id,
         Transaction.user_id == user.id
     ).first()
@@ -738,7 +749,8 @@ def get_categories(
             "name": c.name,
             "type": c.type,
             "icon": c.icon,
-            "is_custom": True
+            "user_id": c.user_id,
+            "is_custom": c.user_id is not None
         }
         for c in custom_categories
     ]
@@ -834,7 +846,7 @@ def delete_category(
 # ============================================
 
 def get_monthly_stats_logic(db: Session, user_id: int, year: int, month: int):
-    transactions = db.query(Transaction).filter(Transaction.user_id == user_id).all()
+    transactions = db.query(Transaction).options(joinedload(Transaction.category)).filter(Transaction.user_id == user_id).all()
     
     monthly_tx = [t for t in transactions if t.date.year == year and t.date.month == month]
     
@@ -862,15 +874,22 @@ def get_monthly_stats_logic(db: Session, user_id: int, year: int, month: int):
 
 # 2. Update the API Route to use that logic
 @app.get("/analytics/monthly")
-def get_monthly_analytics(year: int, month: int, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+def get_monthly_analytics(
+    year: int, 
+    month: int, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     return get_monthly_stats_logic(db, user.id, year, month)
 
 # 3. Update the Budget Comparison to use that logic (No more token error!)
 def get_budget_comparison(db: Session, user_id: int, year: int, month: int):
     actuals = get_monthly_stats_logic(db, user_id, year, month)
     
-    budgets = db.query(Budget).filter(
+    budgets = db.query(Budget).options(joinedload(Budget.category)).filter(
         Budget.user_id == user_id,
         Budget.year == year,
         Budget.month == month
@@ -894,7 +913,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     Build comprehensive financial context for AI analysis
     """
     # Get current month transactions
-    current_month_tx = db.query(Transaction).filter(
+    current_month_tx = db.query(Transaction).options(joinedload(Transaction.category)).filter(
         Transaction.user_id == user_id,
         func.extract('year', Transaction.date) == year,
         func.extract('month', Transaction.date) == month
@@ -904,7 +923,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     prev_month = month - 1 if month > 1 else 12
     prev_year = year if month > 1 else year - 1
     
-    prev_month_tx = db.query(Transaction).filter(
+    prev_month_tx = db.query(Transaction).options(joinedload(Transaction.category)).filter(
         Transaction.user_id == user_id,
         func.extract('year', Transaction.date) == prev_year,
         func.extract('month', Transaction.date) == prev_month
@@ -963,7 +982,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     category_changes.sort(key=lambda x: abs(x["change_percent"]), reverse=True)
     
     # Get budgets
-    budgets = db.query(Budget).filter(
+    budgets = db.query(Budget).options(joinedload(Budget.category)).filter(
         Budget.user_id == user_id,
         Budget.year == year,
         Budget.month == month
@@ -971,7 +990,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     
     budget_status = []
     for budget in budgets:
-        cat_name = budget.category.name
+        cat_name = budget.category.name if budget.category else "Uncategorized"
         spent = current_categories.get(cat_name, 0)
         percentage = (spent / budget.amount * 100) if budget.amount > 0 else 0
         status = "over" if spent > budget.amount else "on_track" if percentage > 80 else "good"
@@ -1219,16 +1238,19 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
     yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
 
 @app.get("/ai/progress")
-async def ai_progress_stream(year: int, month: int, token: str, db: Session = Depends(get_db)):
+async def ai_progress_stream(
+    year: int, 
+    month: int, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Server-Sent Events endpoint for real-time AI model progress"""
-    print(f"🎯 SSE REQUEST RECEIVED: year={year}, month={month}, token_length={len(token) if token else 0}")
-
-    if not token:
-        print("❌ SSE: No token provided")
-        return {"error": "No token provided"}
+    print(f"🎯 SSE REQUEST RECEIVED: year={year}, month={month}, token_provided={bool(token or (authorization and authorization.credentials))}")
 
     try:
-        user = get_current_user(token, db)
+        user = get_current_user(request, authorization, token, db)
         print(f"✅ SSE: Authenticated user {user.id}")
     except Exception as e:
         print(f"❌ SSE: Authentication failed: {e}")
@@ -1347,13 +1369,15 @@ Be professional, data-driven, and encouraging. Use 1-2 emojis."""
     yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
 
 @app.get("/ai/savings-progress")
-async def ai_savings_progress_stream(token: str, db: Session = Depends(get_db)):
+async def ai_savings_progress_stream(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Server-Sent Events endpoint for real-time Savings AI model progress"""
-    if not token:
-        return {"error": "No token provided"}
-
     try:
-        user = get_current_user(token, db)
+        user = get_current_user(request, authorization, token, db)
     except Exception:
         return {"error": "Authentication failed"}
 
@@ -1377,11 +1401,16 @@ async def ai_savings_progress_stream(token: str, db: Session = Depends(get_db)):
     )
 
 @app.post("/ai/savings-analysis")
-async def generate_savings_analysis(token: str, db: Session = Depends(get_db)):
+async def generate_savings_analysis(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """
     Generate specialized AI analysis for savings and investments
     """
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     context = build_savings_analysis_context(db, user.id)
     
     # Build a savings-focused prompt
@@ -1458,8 +1487,15 @@ Be professional, data-driven, and encouraging. Use 1-2 emojis."""
     raise HTTPException(status_code=503, detail="AI models busy")
 
 @app.post("/ai/summary")
-async def generate_ai_summary(year: int, month: int, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+async def generate_ai_summary(
+    year: int, 
+    month: int, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     
     # Get rich context
     context = build_rich_financial_context(db, user.id, year, month)
@@ -1590,8 +1626,8 @@ def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict
     ]
     cats = db.query(Category).filter((Category.user_id == None) | (Category.user_id == user_id)).all()
     cat_list = [{"name": c.name, "type": c.type} for c in cats]
-    budgets = db.query(Budget).filter(Budget.user_id == user_id, Budget.year == year, Budget.month == month).all()
-    bud_list = [{"category": b.category.name, "amount": b.amount} for b in budgets]
+    budgets = db.query(Budget).options(joinedload(Budget.category)).filter(Budget.user_id == user_id, Budget.year == year, Budget.month == month).all()
+    bud_list = [{"category": b.category.name if b.category else "Uncategorized", "amount": b.amount} for b in budgets]
     trend = _monthly_trend(db, user_id, 6)
     merchants: Dict[str, float] = {}
     for t in tx:
@@ -1663,9 +1699,17 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
 
 @app.get("/ai/chat_progress")
-async def ai_chat_progress_stream(year: int, month: int, question: str, token: str, db: Session = Depends(get_db)):
+async def ai_chat_progress_stream(
+    year: int, 
+    month: int, 
+    question: str, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     try:
-        user = get_current_user(token, db)
+        user = get_current_user(request, authorization, token, db)
     except Exception:
         return {"error": "Authentication failed"}
     async def safe_generator():
@@ -1690,8 +1734,16 @@ class ChatRequest(BaseModel):
     question: str
 
 @app.post("/ai/chat")
-async def ai_chat(year: int, month: int, token: str, data: ChatRequest, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+async def ai_chat(
+    year: int, 
+    month: int, 
+    data: ChatRequest, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     ctx = build_chat_context(db, user.id, year, month)
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     if not OPENROUTER_API_KEY:
@@ -1724,13 +1776,18 @@ async def ai_chat(year: int, month: int, token: str, data: ChatRequest, db: Sess
     raise HTTPException(status_code=503, detail="All AI models are currently busy. Please try again in a minute.")
 
 @app.post("/categories/init-savings")
-async def init_savings_category(token: str, db: Session = Depends(get_db)):
+async def init_savings_category(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """
     Initialize a 'Savings' category for the current user.
     This is called when the user clicks 'Open Savings Bank'.
     """
     try:
-        user = get_current_user(token, db)
+        user = get_current_user(request, authorization, token, db)
         
         # Check if a savings category already exists for this user (or globally)
         existing = db.query(Category).filter(
@@ -1975,8 +2032,13 @@ async def get_savings_rates(force: bool = False, db: Session = Depends(get_db)):
     return await fetch_real_time_rates(db, force_refresh=force)
 
 @app.get("/savings")
-async def get_savings(token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+async def get_savings(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     
     # 1. Get Real-time Rates
     rates = await fetch_real_time_rates(db)
@@ -2075,8 +2137,14 @@ async def get_savings(token: str, db: Session = Depends(get_db)):
     }
 
 @app.post("/investments")
-async def add_investment(data: InvestmentCreate, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+async def add_investment(
+    data: InvestmentCreate, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     
     # Fetch current rates to get the automatic buy price
     rates = await fetch_real_time_rates(db)
@@ -2127,8 +2195,14 @@ async def add_investment(data: InvestmentCreate, token: str, db: Session = Depen
     return investment
 
 @app.delete("/investments/{investment_id}")
-def delete_investment(investment_id: int, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+def delete_investment(
+    investment_id: int, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     investment = db.query(Investment).filter(
         Investment.id == investment_id,
         Investment.user_id == user.id
@@ -2142,15 +2216,27 @@ def delete_investment(investment_id: int, token: str, db: Session = Depends(get_
     return {"message": "Investment deleted"}
 
 @app.patch("/users/me/savings-goal")
-def update_savings_goal(data: SavingsGoalUpdate, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+def update_savings_goal(
+    data: SavingsGoalUpdate, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     user.monthly_savings_goal = data.monthly_goal
     db.commit()
     return {"message": "Savings goal updated", "monthly_goal": user.monthly_savings_goal}
 
 @app.post("/savings/long-term-goal")
-def set_long_term_goal(data: SavingsGoalLongTerm, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+def set_long_term_goal(
+    data: SavingsGoalLongTerm, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     
     try:
         target_date = datetime.strptime(data.target_date, "%Y-%m-%d")
@@ -2197,9 +2283,16 @@ class GoalUpdate(BaseModel):
     category_ids: Optional[List[int]] = None
 
 @app.get("/budgets")
-def get_budgets(token: str, year: int = None, month: int = None, db: Session = Depends(get_db)):
+def get_budgets(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    year: int = None, 
+    month: int = None, 
+    db: Session = Depends(get_db)
+):
     """Get budgets for current user, optionally filtered by month/year"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
 
     query = db.query(Budget).filter(Budget.user_id == user.id)
 
@@ -2213,10 +2306,10 @@ def get_budgets(token: str, year: int = None, month: int = None, db: Session = D
             "id": b.id,
             "category_id": b.category_id,
             "category": {
-                "id": b.category.id,
-                "name": b.category.name,
-                "icon": b.category.icon,
-                "type": b.category.type
+                "id": b.category.id if b.category else b.category_id,
+                "name": b.category.name if b.category else "Uncategorized",
+                "icon": b.category.icon if b.category else "📦",
+                "type": b.category.type if b.category else "expense"
             },
             "amount": b.amount,
             "month": b.month,
@@ -2228,11 +2321,13 @@ def get_budgets(token: str, year: int = None, month: int = None, db: Session = D
 @app.post("/budgets")
 def create_budget(
     data: BudgetCreate,
-    token: str,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Create or update a budget (upsert)"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
 
     # Always use upsert logic - check if budget already exists for this category/month/year
     existing = db.query(Budget).filter(
@@ -2265,11 +2360,13 @@ def create_budget(
 def update_budget(
     budget_id: int,
     data: BudgetCreate,
-    token: str,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Update a specific budget by ID"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
 
     budget = db.query(Budget).filter(
         Budget.id == budget_id,
@@ -2290,11 +2387,13 @@ def update_budget(
 @app.delete("/budgets/{budget_id}")
 def delete_budget(
     budget_id: int,
-    token: str,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Delete a budget"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     
     budget = db.query(Budget).filter(
         Budget.id == budget_id,
@@ -2313,11 +2412,13 @@ def delete_budget(
 def copy_last_month_budgets(
     year: int,
     month: int,
-    token: str,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Copy budgets from previous month to current month"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     
     # Calculate previous month
     prev_month = month - 1 if month > 1 else 12
@@ -2365,11 +2466,13 @@ def copy_last_month_budgets(
 def get_budget_comparison_endpoint(
     year: int,
     month: int,
-    token: str,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Get budget vs actual comparison"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     comparison = get_budget_comparison(db, user.id, year, month)
     return {"comparison": comparison}
 
@@ -2379,9 +2482,14 @@ def get_budget_comparison_endpoint(
 # ============================================
 
 @app.get("/goals")
-def get_goals_endpoint(token: str, db: Session = Depends(get_db)):
+def get_goals_endpoint(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Get all goals for current user"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     goals = db.query(Goal).filter(Goal.user_id == user.id).all()
     
     return [
@@ -2399,9 +2507,15 @@ def get_goals_endpoint(token: str, db: Session = Depends(get_db)):
     ]
 
 @app.post("/goals")
-def create_goal_endpoint(data: GoalCreate, token: str, db: Session = Depends(get_db)):
+def create_goal_endpoint(
+    data: GoalCreate, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Create a new savings goal"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     
     # Get categories by IDs
     categories = []
@@ -2422,9 +2536,16 @@ def create_goal_endpoint(data: GoalCreate, token: str, db: Session = Depends(get
     return goal
 
 @app.put("/goals/{goal_id}")
-def update_goal_endpoint(goal_id: int, data: GoalUpdate, token: str, db: Session = Depends(get_db)):
+def update_goal_endpoint(
+    goal_id: int, 
+    data: GoalUpdate, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Update a savings goal"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user.id).first()
     
     if not goal:
@@ -2449,9 +2570,15 @@ def update_goal_endpoint(goal_id: int, data: GoalUpdate, token: str, db: Session
     return goal
 
 @app.delete("/goals/{goal_id}")
-def delete_goal_endpoint(goal_id: int, token: str, db: Session = Depends(get_db)):
+def delete_goal_endpoint(
+    goal_id: int, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Delete a savings goal"""
-    user = get_current_user(token, db)
+    user = get_current_user(request, authorization, token, db)
     goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user.id).first()
     
     if not goal:
@@ -2468,10 +2595,12 @@ def delete_goal_endpoint(goal_id: int, token: str, db: Session = Depends(get_db)
 @app.patch("/profile")   # or @app.patch("/users/profile")
 def update_profile(
     data: ProfileUpdate,
-    token: str,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    current_user = get_current_user(token, db)
+    current_user = get_current_user(request, authorization, token, db)
     
     if data.username:
         # Check if username is taken
@@ -2731,8 +2860,13 @@ def root():
     return {
         "message": "Simple Finance Tracker API",
         "docs": "/docs",
-        "version": "1.0 (Beginner Friendly)"
+        "version": "1.0 (Beginner Friendly)",
+        "status": "online"
     }
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 def _parse_date(s: Optional[str]) -> Optional[date]:
     if not s:
@@ -2751,7 +2885,7 @@ def _default_period() -> tuple[date, date]:
     return start, end
 
 def _fetch_transactions(db: Session, user_id: int, start: date, end: date) -> List[Transaction]:
-    q = db.query(Transaction).filter(
+    q = db.query(Transaction).options(joinedload(Transaction.category)).filter(
         Transaction.user_id == user_id,
         func.date(Transaction.date) >= start,
         func.date(Transaction.date) <= end
@@ -3280,8 +3414,14 @@ def _build_csv(transactions: List[Transaction]) -> bytes:
     return buf.getvalue().encode("utf-8")
 
 @app.post("/reports/generate")
-def generate_report(data: ReportRequest, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token, db)
+def generate_report(
+    data: ReportRequest, 
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, authorization, token, db)
     start, end = _default_period()
     if data.start_date:
         start = _parse_date(data.start_date) or start

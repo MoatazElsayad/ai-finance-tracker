@@ -16,12 +16,8 @@ const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type");
   
   if (!response.ok) {
-    // If the server sent a JSON error (like FastAPI's {detail: "..."})
-    if (contentType && contentType.includes("application/json")) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || `Error: ${response.status}`);
-    }
-    // If the server sent HTML (404) or nothing
+    const errorBody = await response.text();
+    console.error(`API Error [${response.status} ${response.statusText}]:`, errorBody);
     throw new Error(`Server Error: ${response.status} ${response.statusText}`);
   }
 
