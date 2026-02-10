@@ -106,11 +106,13 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
   const [isExpense, setIsExpense] = useState(false);
   const [withdrawalReason, setWithdrawalReason] = useState('');
   const [showWithdrawalWarning, setShowWithdrawalWarning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const savingsCat = categories.find(c => c.name?.toLowerCase().includes("savings"));
     const isSavings = selectedCategoryId === String(savingsCat?.id);
-    const isWithdrawal = isSavings && !isExpense && parseFloat(amount) > 0;
+    const numAmount = parseFloat(amount);
+    const isWithdrawal = isSavings && !isExpense && numAmount > 0 && !isNaN(numAmount);
     setShowWithdrawalWarning(isWithdrawal);
     if (!isWithdrawal) setWithdrawalReason('');
   }, [selectedCategoryId, isExpense, amount, categories]);
@@ -151,6 +153,8 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     setError('');
     setSuccess(false);
     const numAmount = parseFloat(amount);
@@ -164,6 +168,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       return;
     }
 
+    setIsSubmitting(true);
     const type = activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
     try {
       if (activeTab === 'cash') {
@@ -177,6 +182,12 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         await onAddInvestment({ type, amount: numAmount, buy_date: buyDate });
       }
 
+      // Reset form fully on success
+      setAmount('');
+      setBuyDate(new Date().toISOString().split('T')[0]);
+      setWithdrawalReason('');
+      setIsExpense(false);
+
       setSuccess(true);
       confetti({
         particleCount: 150,
@@ -184,13 +195,12 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         origin: { y: 0.6 },
         colors: ['#3b82f6', '#10b981', '#fbbf24']
       });
-      setAmount('');
-      setBuyDate(new Date().toISOString().split('T')[0]);
-      setWithdrawalReason('');
-      if (activeTab === 'cash') setIsExpense(false);
+      
       setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
       setError(activeTab === 'cash' ? 'Failed to process transaction.' : 'Failed to add investment. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -340,22 +350,24 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
 
       {/* Right Content - Form and Chart */}
       <div className={`flex-1 flex flex-col ${isDark ? 'bg-slate-900/50' : 'bg-white'}`}>
-        <div className="p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
-              {activeTheme.icon}
+        {!success && (
+          <div className={`p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between`}>
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
+                {activeTheme.icon}
+              </div>
+              <div>
+                <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Add {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                </h2>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Market Performance</p>
+              </div>
             </div>
-            <div>
-              <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Add {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-              </h2>
-              <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Market Performance</p>
-            </div>
+            <button onClick={onClose} className={`p-3 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button onClick={onClose} className={`p-3 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+        )}
 
         {success ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
@@ -376,9 +388,9 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
           </div>
         ) : (
           <div className="flex-1 flex flex-col lg:flex-row">
-          {/* Chart Section */}
-          <div className={`lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'}`}>
-             <div className="flex items-center justify-between mb-4">
+            {/* Chart Section */}
+            <div className={`lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'} transition-opacity duration-500 ${showWithdrawalWarning ? 'opacity-40' : 'opacity-100'}`}>
+              <div className="flex items-center justify-between mb-4">
                 <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Performance</span>
                 <div className="flex gap-1.5">
                   {[
@@ -577,8 +589,16 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                     <span className="text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
                   </div>
                 </div>
-                <button type="submit" className={`w-full px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}>
-                  {showWithdrawalWarning ? 'Confirm Withdrawal' : activeTab === 'cash' ? 'Save to Savings' : 'Secure Investment'}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`w-full px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
+                >
+                  {isSubmitting ? 'Processing...' : (
+                    showWithdrawalWarning ? 'Confirm Withdrawal' : 
+                    activeTab === 'cash' ? (isExpense ? 'Deposit to Savings' : 'Withdraw from Savings') : 
+                    'Secure Investment'
+                  )}
                 </button>
               </div>
             </form>
