@@ -191,11 +191,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
 
       setSuccess(true);
       
-      // Dispatch event and trigger immediate refresh
-      window.dispatchEvent(new Event('transaction-added'));
+      // Trigger immediate refresh
       if (typeof loadAll === 'function') {
-        loadAll();
+        await loadAll();
       }
+      window.dispatchEvent(new CustomEvent('transaction-added'));
 
       confetti({
         particleCount: 150,
@@ -210,7 +210,12 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         const amountInput = document.querySelector('input[type="number"]');
         if (amountInput) amountInput.focus();
         // Scroll to top of the form area
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const formElement = document.getElementById('investment-form-top');
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }, 5000);
     } catch (err) {
       setError(activeTab === 'cash' ? 'Failed to process transaction.' : 'Failed to add investment. Please try again.');
@@ -282,7 +287,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
   const accentColor = activeTheme.accent;
 
   return (
-    <div className={`relative w-full overflow-hidden flex flex-col lg:flex-row rounded-[2.5rem] border ${isDark ? `bg-slate-900 border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${activeTheme.shadow}` : `bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${activeTheme.shadow}`} z-10 animate-in fade-in slide-in-from-top-8 duration-700 mb-8`}>
+    <div id="investment-form-top" className={`relative w-full overflow-hidden flex flex-col lg:flex-row rounded-[2.5rem] border ${isDark ? `bg-slate-900 border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${activeTheme.shadow}` : `bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${activeTheme.shadow}`} z-10 animate-in fade-in slide-in-from-top-8 duration-700 mb-8`}>
       
       {/* Decorative Background Gradients */}
       <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 transition-colors duration-700 ${
@@ -366,32 +371,32 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       {/* Right Content - Form and Chart */}
       <div className={`flex-1 flex flex-col ${isDark ? 'bg-slate-900/50' : 'bg-white'}`}>
         {!success && (
-          <div className={`p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between`}>
+          <div className={`p-5 md:p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between`}>
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
+              <div className={`p-2 rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
                 {activeTheme.icon}
               </div>
               <div>
-                <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Add {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                <h2 className={`text-lg md:text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
                 </h2>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Market Performance</p>
+                <p className={`text-[8px] md:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Market Performance</p>
               </div>
             </div>
-            <button onClick={onClose} className={`p-3 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
-              <X className="w-6 h-6" />
+            <button onClick={onClose} className={`p-2 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
         {success ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
-          <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-2xl shadow-emerald-500/20">
-            <Sparkles className="w-10 h-10" />
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-[2rem] md:rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-2xl shadow-emerald-500/20">
+            <Sparkles className="w-8 h-8 md:w-10 md:h-10" />
           </div>
-          <h3 className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Success!</h3>
-          <p className={`text-sm font-bold uppercase tracking-[0.2em] mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transaction processed successfully</p>
-          <div className="px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest mb-8 animate-pulse">
+          <h3 className={`text-xl md:text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Success!</h3>
+          <p className={`text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transaction processed successfully</p>
+          <div className="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-8 animate-pulse">
             Vault Updated Successfully
           </div>
           <button 
@@ -399,19 +404,19 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               setSuccess(false);
               onClose();
             }}
-            className="px-10 py-4 rounded-2xl bg-slate-800 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-slate-800 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
           >
             Back to Vault
           </button>
         </div>
       ) : (
-          <div className="flex-1 flex flex-col lg:flex-row">
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
             {/* Chart Section */}
             {activeTab !== 'cash' && (
-              <div className={`lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'} transition-opacity duration-500 ${showWithdrawalWarning ? 'opacity-40' : 'opacity-100'}`}>
+              <div className={`w-full lg:w-1/2 p-5 md:p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'} transition-opacity duration-500 ${showWithdrawalWarning ? 'opacity-40' : 'opacity-100'}`}>
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Performance</span>
-                  <div className="flex gap-1.5">
+                  <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Performance</span>
+                  <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
                     {[
                       { label: '1M', value: '1M' },
                       { label: '3M', value: '3M' },
@@ -422,7 +427,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                       <button
                         key={range.value}
                         onClick={() => setChartRange(range.value)}
-                        className={`text-[9px] font-black px-2.5 py-1 rounded-lg transition-all active:scale-95 ${
+                        className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded-lg transition-all active:scale-95 whitespace-nowrap ${
                           chartRange === range.value 
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
                             : isDark ? 'bg-slate-800 text-slate-500 hover:text-slate-300' : 'bg-white text-slate-400 hover:text-slate-600 shadow-sm'
@@ -433,27 +438,27 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                     ))}
                   </div>
                </div>
-               <div className="rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-6">
-                  <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={280} dateRange={chartRange} />
+               <div className="rounded-2xl md:rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-6">
+                  <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={220} dateRange={chartRange} />
                </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className={`p-5 rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <span className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Status</span>
-                    <div className={`flex items-center gap-2 ${activeTheme.statusColor} font-black`}>
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="text-sm">{activeTheme.status}</span>
+               <div className="grid grid-cols-2 gap-3 md:gap-4">
+                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Status</span>
+                    <div className={`flex items-center gap-1.5 md:gap-2 ${activeTheme.statusColor} font-black`}>
+                      <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <span className="text-xs md:text-sm">{activeTheme.status}</span>
                     </div>
                   </div>
-                  <div className={`p-5 rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <span className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Volume</span>
-                    <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeTheme.volume}</span>
+                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Volume</span>
+                    <span className={`text-xs md:text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeTheme.volume}</span>
                   </div>
                </div>
             </div>
             )}
 
             {/* Form Section */}
-            <div className={`${activeTab === 'cash' ? 'w-full' : 'lg:w-1/2'} p-8 lg:p-10`}>
+            <div className={`w-full ${activeTab === 'cash' ? '' : 'lg:w-1/2'} p-5 md:p-8 lg:p-10`}>
             {error && (
               <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in shake">
                 <AlertCircle className="w-5 h-5" /> {error}
@@ -464,21 +469,21 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               {activeTab === 'cash' && (
                 <div className="space-y-4">
                   <div>
-                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transaction Type</label>
-                    <div className="flex gap-2 p-1 rounded-2xl border border-slate-200/10 bg-slate-900/20">
+                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Type</label>
+                    <div className="flex flex-col sm:flex-row gap-2 p-1 rounded-2xl border border-slate-200/10 bg-slate-900/20">
                       <button
                         type="button"
                         onClick={() => setIsExpense(false)}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${!isExpense ? 'bg-rose-500 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+                        className={`flex-1 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${!isExpense ? 'bg-rose-500 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
                       >
-                        Withdraw from Savings
+                        Withdraw
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsExpense(true)}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isExpense ? 'bg-emerald-500 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+                        className={`flex-1 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${isExpense ? 'bg-emerald-500 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
                       >
-                        Deposit to Savings
+                        Deposit
                       </button>
                     </div>
                   </div>
@@ -487,8 +492,8 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
 
               {activeTab === 'currency' && (
                 <div>
-                  <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Select Currency</label>
-                  <div className="grid grid-cols-4 gap-2 p-2 rounded-2xl border border-slate-200/10 bg-slate-900/20 overflow-x-auto">
+                  <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Currency</label>
+                  <div className="flex gap-2 p-2 rounded-2xl border border-slate-200/10 bg-slate-900/20 overflow-x-auto pb-3">
                     {currencyOptions.map((curr) => (
                       <button
                         key={curr.id}
@@ -508,19 +513,10 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-2`}>
-                    Amount {['gold', 'silver'].includes(activeTab) ? '(Grams)' : activeTab === 'cash' ? '(EGP)' : (
-                      <div className="flex items-center gap-2">
-                        <span>({selectedCurrency})</span>
-                        <img 
-                          src={`https://flagcdn.com/w20/${currencyOptions.find(c => c.id === selectedCurrency)?.code}.png`} 
-                          alt=""
-                          className="w-4 h-3 rounded-sm"
-                        />
-                      </div>
-                    )}
+                    Amount {['gold', 'silver'].includes(activeTab) ? '(g)' : activeTab === 'cash' ? '(EGP)' : `(${selectedCurrency})`}
                   </label>
                   <div className="relative">
                     <input 
@@ -528,7 +524,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                       step="0.01" 
                       value={amount} 
                       onChange={(e) => setAmount(e.target.value)} 
-                      className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
+                      className={`w-full p-3.5 md:p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
                       placeholder="0.00" 
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-500">
@@ -542,21 +538,21 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                     type="date" 
                     value={buyDate} 
                     onChange={(e) => setBuyDate(e.target.value)} 
-                    className={`w-full p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
+                    className={`w-full p-3.5 md:p-4 rounded-2xl text-lg font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-blue-600'}`} 
                   />
                 </div>
               </div>
 
               {(showWithdrawalWarning || activeTab === 'cash') && (
-                <div className={`p-6 rounded-3xl border-2 animate-in fade-in slide-in-from-top-4 duration-500 ${showWithdrawalWarning ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
+                <div className={`p-5 md:p-6 rounded-3xl border-2 animate-in fade-in slide-in-from-top-4 duration-500 ${showWithdrawalWarning ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
                   {showWithdrawalWarning && (
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-rose-500 rounded-xl text-white">
-                        <AlertCircle className="w-5 h-5" />
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="p-2 bg-rose-500 rounded-xl text-white shrink-0">
+                        <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-rose-500 uppercase tracking-wider">This is a Withdrawal from Savings Vault</h4>
-                        <p className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Taking money out will reduce your vault balance.</p>
+                        <h4 className="text-xs md:text-sm font-black text-rose-500 uppercase tracking-wider">Withdrawal from Vault</h4>
+                        <p className={`text-[9px] md:text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>This will reduce your total balance.</p>
                       </div>
                     </div>
                   )}
@@ -564,48 +560,48 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                   <div className="space-y-4">
                     {showWithdrawalWarning && (
                       <div>
-                        <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Withdrawal Reason</label>
+                        <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Reason</label>
                         <select
                           value={withdrawalReason}
                           onChange={(e) => setWithdrawalReason(e.target.value)}
                           className={`w-full p-3 rounded-xl text-xs font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-rose-500' : 'bg-white border-slate-100 text-slate-900 focus:border-rose-500'}`}
                           required
                         >
-                          <option value="">Select a reason...</option>
-                          <option value="Emergency / unexpected need">Emergency / unexpected need</option>
-                          <option value="Planned large purchase">Planned large purchase</option>
-                          <option value="Temporary cash flow need">Temporary cash flow need</option>
-                          <option value="Other (please explain in notes)">Other (please explain in notes)</option>
+                          <option value="">Select...</option>
+                          <option value="Emergency">Emergency</option>
+                          <option value="Large purchase">Large purchase</option>
+                          <option value="Cash flow">Cash flow</option>
+                          <option value="Other">Other</option>
                         </select>
                       </div>
                     )}
 
                     <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-white/50'} border ${showWithdrawalWarning ? 'border-rose-500/10' : 'border-emerald-500/10'}`}>
-                      <span className={`text-[9px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Impact Preview</span>
+                      <span className={`text-[9px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Preview</span>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{isExpense ? 'Deposit Amount' : 'Withdrawal Amount'}</span>
-                          <span className={`text-xs font-black ${isExpense ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          <span className={`text-[9px] md:text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{isExpense ? 'Deposit' : 'Withdrawal'}</span>
+                          <span className={`text-[10px] md:text-xs font-black ${isExpense ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {isExpense ? '+' : '-'}{parseFloat(amount || 0).toLocaleString()} EGP
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>New Vault Balance</span>
-                          <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          <span className={`text-[9px] md:text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>New Balance</span>
+                          <span className={`text-[10px] md:text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             {(isExpense ? (cashBalance || 0) + parseFloat(amount || 0) : (cashBalance || 0) - parseFloat(amount || 0)).toLocaleString()} EGP
                           </span>
                         </div>
                         {!isExpense && monthlyGoal > 0 && (
                           <div className="pt-2 border-t border-rose-500/10">
-                            <p className="text-[9px] font-bold text-rose-500/80 italic">
-                              * This will reduce your goal progress by {Math.round((parseFloat(amount || 0) / monthlyGoal) * 100)}%
+                            <p className="text-[8px] md:text-[9px] font-bold text-rose-500/80 italic">
+                              * Goal impact: -{Math.round((parseFloat(amount || 0) / monthlyGoal) * 100)}%
                             </p>
                           </div>
                         )}
                         {isExpense && monthlyGoal > 0 && (
                           <div className="pt-2 border-t border-emerald-500/10">
-                            <p className="text-[9px] font-bold text-emerald-500/80 italic">
-                              * This will increase your goal progress by {Math.round((parseFloat(amount || 0) / monthlyGoal) * 100)}%
+                            <p className="text-[8px] md:text-[9px] font-bold text-emerald-500/80 italic">
+                              * Goal impact: +{Math.round((parseFloat(amount || 0) / monthlyGoal) * 100)}%
                             </p>
                           </div>
                         )}
@@ -615,22 +611,27 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                 </div>
               )}
 
-              <div className="pt-4">
-                <div className={`p-5 rounded-2xl border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'} mb-6`}>
+              <div className="pt-2 md:pt-4">
+                <div className={`p-4 md:p-5 rounded-2xl border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'} mb-6`}>
                   <div className="flex justify-between items-center">
                     <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Value</span>
-                    <span className="text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
+                    <span className="text-lg md:text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
                   </div>
                 </div>
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className={`w-full px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
+                  className={`w-full px-6 md:px-10 py-4 md:py-5 rounded-2xl text-[10px] md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white transition-all transform hover:scale-[1.01] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
                 >
-                  {isSubmitting ? 'Processing...' : (
-                    isExpense && activeTab === 'cash' ? 'Deposit to Savings' :
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Updating Vault...</span>
+                    </div>
+                  ) : (
+                    isExpense && activeTab === 'cash' ? 'Deposit' :
                     !isExpense && showWithdrawalWarning ? 'Confirm Withdrawal' :
-                    activeTab === 'cash' ? 'Withdraw from Savings' :
+                    activeTab === 'cash' ? 'Withdraw' :
                     'Secure Investment'
                   )}
                 </button>
@@ -868,9 +869,13 @@ export default function Savings() {
     try {
       let savingsCat = categories.find(c => c.name?.toLowerCase().includes("savings"));
       if (!savingsCat) savingsCat = await initSavingsCategory();
-      await createTransaction(savingsCat.id, -Math.abs(amount), "Quick savings allocation", new Date().toISOString().split("T")[0]);
+      
+      // Sending POSITIVE amount as requested for Quick Deposit
+      await createTransaction(savingsCat.id, Math.abs(amount), "Quick deposit to savings", new Date().toISOString().split("T")[0]);
+      
       setMonthlyInput("");
       await loadAll();
+      window.dispatchEvent(new CustomEvent('transaction-added'));
     } catch (e) {
       console.error(e);
     }
@@ -880,6 +885,7 @@ export default function Savings() {
     try {
       await createInvestment(investmentData);
       await loadAll();
+      window.dispatchEvent(new CustomEvent('transaction-added'));
     } catch (e) {
       console.error(e);
       alert("Failed to add investment.");
@@ -891,6 +897,7 @@ export default function Savings() {
     try {
       await deleteInvestment(id);
       await loadAll();
+      window.dispatchEvent(new CustomEvent('transaction-added'));
     } catch (e) {
       console.error(e);
       alert("Failed to remove investment.");

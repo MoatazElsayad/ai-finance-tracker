@@ -583,26 +583,23 @@ def create_transaction(
     user = get_current_user(request, authorization, token, db)
     
     # 1. Verify if this is a 'Savings' transaction and handle type mismatch
+    # In this system, Transaction.amount > 0 is INCOME (increases liquid cash), 
+    # and Transaction.amount < 0 is EXPENSE (decreases liquid cash).
+    # 
+    # Savings Logic:
+    # - Deposit to savings: User sends amount > 0. This is an 'expense' from liquid cash,
+    #   so we store it as -amount. The vault balance is calculated as -sum(transactions),
+    #   so -(-amount) = +amount (vault increases).
+    # - Withdrawal from savings: User sends amount < 0. This is 'income' to liquid cash,
+    #   so we store it as +abs(amount). The vault balance becomes -sum(..., +abs(amount)),
+    #   which decreases the vault balance.
     category = db.query(Category).filter(Category.id == data.category_id).first()
     if category and category.name.lower() == 'savings':
-        # The frontend now sends correct signs:
-        # Deposit -> isExpense=true -> Positive Amount
-        # Withdrawal -> isExpense=false -> Negative Amount
-        # We want to store Savings as an 'expense' category that is negative for deposits 
-        # (to reduce liquid cash) and positive for withdrawals (to increase liquid cash).
-        # Wait, the user said:
-        # Deposit to savings (positive amount, vault balance increases)
-        # Withdraw from savings (negative amount, vault balance decreases)
-        # In this system, Transaction.amount > 0 is INCOME, Transaction.amount < 0 is EXPENSE.
-        # So a "Deposit" should be a negative transaction (expense from wallet) 
-        # and a "Withdrawal" should be a positive transaction (income to wallet).
-        
-        # Let's align with the user's logic:
-        # User sends: Deposit -> amount > 0. We store as -amount (expense from liquid cash)
-        # User sends: Withdrawal -> amount < 0. We store as +abs(amount) (income to liquid cash)
         if data.amount > 0:
+            # Deposit: Increase vault, decrease liquid cash
             data.amount = -abs(data.amount)
         else:
+            # Withdrawal: Decrease vault, increase liquid cash
             data.amount = abs(data.amount)
 
     # Create transaction
@@ -2202,7 +2199,9 @@ async def get_savings(
         rates = await fetch_real_time_rates(db)
         
         # 2. Calculate Cash Balance from Transactions
-        # Find Savings Category
+        # The vault balance is the negative sum of all transactions in the 'Savings' category.
+        # Since deposits are stored as negative (expenses from wallet) and withdrawals 
+        # as positive (income to wallet), -sum(...) gives the correct current vault balance.
         savings_cat = db.query(Category).filter(
             Category.name.ilike("%savings%"),
             (Category.user_id == user.id) | (Category.user_id == None)
@@ -2220,6 +2219,9 @@ async def get_savings(
         investments = db.query(Investment).filter(Investment.user_id == user.id).all()
         
         # 4. Monthly Savings Allocation for current month
+        # We calculate the monthly saved amount as the negative sum of 'Savings' transactions 
+        # for the current month. Only deposits (stored as negative) contribute positively 
+        # to the monthly goal progress.
         now = datetime.utcnow()
         current_month_start = datetime(now.year, now.month, 1)
         
@@ -2230,6 +2232,7 @@ async def get_savings(
                 Transaction.category_id == savings_cat.id,
                 Transaction.date >= current_month_start
             ).scalar() or 0.0
+            # Only count net deposits towards the monthly goal
             monthly_saved = max(0.0, -monthly_net)
 
         # 5. Long-term Savings Goal
