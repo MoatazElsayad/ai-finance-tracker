@@ -315,26 +315,35 @@ function BudgetPlanning() {
               break;
             case 'success':
               clearTimeout(maxTimeout);
-              // Generate simple budget insights from the context
-              const context = data.context;
-              const budgetStatus = context.budget_status || [];
-
+              // Use the actual AI summary if available, otherwise generate simple insights
+              const aiSummary = data.summary;
               let insights = '';
-              if (budgetStatus.length > 0) {
-                const overBudget = budgetStatus.filter(b => b.status === 'over').length;
-                const onTrack = budgetStatus.filter(b => b.status === 'on_track').length;
-
-                if (overBudget > 0) {
-                  insights += `💰 <strong>Budget Alert:</strong> ${overBudget} categories are over budget. Time to adjust spending!\n\n`;
-                } else if (onTrack > 0) {
-                  insights += `✅ <strong>Great Job:</strong> ${onTrack} categories are on track. Keep it up!\n\n`;
-                }
+              
+              if (aiSummary) {
+                // Convert markdown-style bold to HTML strong tags
+                insights = aiSummary
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\n/g, '<br/>');
               } else {
-                insights += `💰 <strong>Budget Check:</strong> Start creating budgets to track your spending.\n\n`;
-              }
+                const context = data.context;
+                const budgetStatus = context.budget_status || [];
 
-              insights += `🎯 <strong>Savings Focus:</strong> Aim for 20% savings rate this month.\n\n`;
-              insights += `📊 <strong>Pro Tip:</strong> Review budgets weekly for better control.`;
+                if (budgetStatus.length > 0) {
+                  const overBudget = budgetStatus.filter(b => b.status === 'over').length;
+                  const onTrack = budgetStatus.filter(b => b.status === 'on_track').length;
+
+                  if (overBudget > 0) {
+                    insights += `💰 <strong>Budget Alert:</strong> ${overBudget} categories are over budget. Time to adjust spending!\n\n`;
+                  } else if (onTrack > 0) {
+                    insights += `✅ <strong>Great Job:</strong> ${onTrack} categories are on track. Keep it up!\n\n`;
+                  }
+                } else {
+                  insights += `💰 <strong>Budget Check:</strong> Start creating budgets to track your spending.\n\n`;
+                }
+
+                insights += `🎯 <strong>Savings Focus:</strong> Aim for 20% savings rate this month.\n\n`;
+                insights += `📊 <strong>Pro Tip:</strong> Review budgets weekly for better control.`;
+              }
 
               setAiBudgetInsights(insights);
               setBudgetModelUsed(data.model);
@@ -344,8 +353,13 @@ function BudgetPlanning() {
               // Cache the successful result and update last used cache key
               saveInsightsToCache(currentCacheKey, insights, data.model, selectedMonth);
               break;
+            case 'model_failed':
+              console.warn(`Model ${data.model} failed: ${data.reason}`);
+              setCurrentTryingBudgetModel(`Failed: ${data.model}. Trying next...`);
+              break;
             case 'error':
-              setAiBudgetInsights(`💰 <strong>Budget Check:</strong> Monitor your spending to stay within budget limits.\n\n🎯 <strong>Savings Goal:</strong> Focus on consistent saving habits.\n\n📊 <strong>Tip:</strong> Regular budget reviews help maintain financial health.`);
+              clearTimeout(maxTimeout);
+              setAiBudgetInsights(`💰 <strong>AI Busy:</strong> ${data.message || 'All AI models are currently busy.'}<br/><br/>🎯 <strong>Tip:</strong> Try again in a few moments or check your internet connection.`);
               setBudgetInsightsLoading(false);
               eventSource.close();
               break;

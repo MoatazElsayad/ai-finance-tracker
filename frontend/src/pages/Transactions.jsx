@@ -150,11 +150,20 @@ function Transactions() {
         throw new Error('No authentication token found. Please login again.');
       }
 
-      console.log(`[Transactions] Fetching transactions page ${page}...`);
+      console.log(`[Transactions] Fetching transactions page ${page} with filters...`);
       
+      // Get current filters
+      const range = getDateRange();
+      const filters = {
+        startDate: range.startDate,
+        endDate: range.endDate,
+        type: filterType,
+        categoryId: filterCategory
+      };
+
       // Ensure api.js functions are used properly
       const [txnsData, cats] = await Promise.all([
-        getTransactions(page, 50).catch(err => {
+        getTransactions(page, 50, filters).catch(err => {
           console.error("[Transactions] Error in getTransactions:", err);
           return { transactions: [], pagination: { page: 1, limit: 50, total: 0, pages: 1 } };
         }),
@@ -204,7 +213,7 @@ function Transactions() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [viewMode, selectedMonth, filterType, filterCategory]);
 
   useEffect(() => {
     let mounted = true;

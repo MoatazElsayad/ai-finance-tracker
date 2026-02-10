@@ -16,9 +16,21 @@ const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type");
   
   if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`API Error [${response.status} ${response.statusText}]:`, errorBody);
-    throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+    let errorDetail = response.statusText;
+    try {
+      const errorBody = await response.json();
+      errorDetail = errorBody.detail || errorBody.error?.message || response.statusText;
+    } catch (e) {
+      // If not JSON, try text
+      try {
+        errorDetail = await response.text() || response.statusText;
+      } catch (textErr) {
+        errorDetail = response.statusText;
+      }
+    }
+    
+    console.error(`API Error [${response.status}]:`, errorDetail);
+    throw new Error(errorDetail);
   }
 
   // If successful, check if there is actual content to parse
@@ -99,14 +111,26 @@ export const getCurrentUser = async () => {
 // TRANSACTIONS
 // ============================================
 
-export const getTransactions = async (page = 1, limit = 50) => {
-  const response = await authFetch(`/transactions?page=${page}&limit=${limit}`);
-  const data = await handleResponse(response);
-  // Handle both old format (array) and new format (object with pagination)
-  if (Array.isArray(data)) {
-    return { transactions: data, pagination: { page: 1, limit: data.length, total: data.length, pages: 1 } };
+export const getTransactions = async (page = 1, limit = 50, filters = {}) => {
+  try {
+    const { startDate, endDate, categoryId, type } = filters;
+    let url = `/transactions?page=${page}&limit=${limit}`;
+    if (startDate) url += `&start_date=${startDate}`;
+    if (endDate) url += `&end_date=${endDate}`;
+    if (categoryId && categoryId !== 'all') url += `&category_id=${categoryId}`;
+    if (type && type !== 'all') url += `&type=${type}`;
+
+    const response = await authFetch(url);
+    const data = await handleResponse(response);
+    // Handle both old format (array) and new format (object with pagination)
+    if (Array.isArray(data)) {
+      return { transactions: data, pagination: { page: 1, limit: data.length, total: data.length, pages: 1 } };
+    }
+    return data;
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    throw error;
   }
-  return data;
 };
 
 export const createTransaction = async (categoryId, amount, description, date) => {

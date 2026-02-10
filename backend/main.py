@@ -49,13 +49,30 @@ if os.getenv('OPENROUTER_API_KEY'):
     print(f"DEBUG: Key starts with: {os.getenv('OPENROUTER_API_KEY')[:10]}...")
 
 FREE_MODELS = [
-    "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "google/gemma-2-9b-it:free",
+    "stepfun/step-3.5-flash:free",
+    "arcee-ai/trinity-large-preview:free",
+    "upstage/solar-pro-3:free",
+    "liquid/lfm-2.5-1.2b-thinking:free",
+    "liquid/lfm-2.5-1.2b-instruct:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "arcee-ai/trinity-mini:free",
+    "tngtech/tng-r1t-chimera:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "openai/gpt-oss-120b:free",
+    "openai/gpt-oss-20b:free",
+    "z-ai/glm-4.5-air:free",
+    "qwen/qwen3-coder:free",
+    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+    "google/gemma-3n-e2b-it:free",
+    "tngtech/deepseek-r1t2-chimera:free",
+    "deepseek/deepseek-r1-0528:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "qwen/qwen-2.5-72b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "openai/gpt-3.5-turbo:free"
+    "google/gemma-3-4b-it:free",
+    "google/gemma-3-12b-it:free",
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free"
 ]
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -358,12 +375,13 @@ def get_current_user(
             
         return user
     except jwt.ExpiredSignatureError:
+        print(f"Auth Error: Token expired for request to {request.url if request else 'unknown'}")
         raise HTTPException(status_code=401, detail="Token has expired. Please login again.")
     except jwt.JWTError as e:
-        print(f"JWT Error: {e}")
+        print(f"Auth Error: JWT Error {e} for request to {request.url if request else 'unknown'}")
         raise HTTPException(status_code=401, detail="Invalid token format")
     except Exception as e:
-        print(f"Auth Error: {e}")
+        print(f"Auth Error: {e} for request to {request.url if request else 'unknown'}")
         raise HTTPException(status_code=401, detail="Authentication failed")
 
 
@@ -469,10 +487,14 @@ def get_transactions(
     token: Optional[str] = None,
     page: int = 1,
     limit: int = 50,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    category_id: Optional[int] = None,
+    type: Optional[str] = None, # 'income' or 'expense'
     db: Session = Depends(get_db)
 ):
     """
-    Get transactions for current user with pagination
+    Get transactions for current user with pagination and filters
     """
     check_rate_limit(request)
     user = get_current_user(request, authorization, token, db)
@@ -482,13 +504,34 @@ def get_transactions(
     limit = min(max(1, limit), 100)  # Max 100 per page
     offset = (page - 1) * limit
     
-    # Get total count
-    total = db.query(Transaction).filter(Transaction.user_id == user.id).count()
+    # Build query
+    query = db.query(Transaction).filter(Transaction.user_id == user.id)
+    
+    # Apply filters
+    if start_date:
+        try:
+            query = query.filter(Transaction.date >= datetime.fromisoformat(start_date))
+        except: pass
+    if end_date:
+        try:
+            # Add time to end_date to include the full day
+            end_dt = datetime.fromisoformat(end_date)
+            if end_dt.hour == 0 and end_dt.minute == 0:
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+            query = query.filter(Transaction.date <= end_dt)
+        except: pass
+    if category_id:
+        query = query.filter(Transaction.category_id == category_id)
+    if type:
+        query = query.join(Category).filter(Category.type == type)
+    
+    # Get total count before pagination
+    total = query.count()
     
     # Get paginated transactions
-    transactions = db.query(Transaction).options(joinedload(Transaction.category)).filter(
-        Transaction.user_id == user.id
-    ).order_by(Transaction.date.desc(), Transaction.id.desc()).offset(offset).limit(limit).all()
+    transactions = query.options(joinedload(Transaction.category)).order_by(
+        Transaction.date.desc(), Transaction.id.desc()
+    ).offset(offset).limit(limit).all()
     
     # Format response
     result = []
@@ -508,7 +551,8 @@ def get_transactions(
             "id": t.id,
             "amount": t.amount,
             "description": t.description,
-            "date": t.date.isoformat(),
+            "date": t.date.isoformat() if t.date else datetime.utcnow().isoformat(),
+            "category_id": t.category_id,
             "category_name": cat_name,
             "category_icon": cat_icon
         })
@@ -1201,36 +1245,51 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
                     "content": prompt_text
                 }
             ],
-            "max_tokens": 400,
+            "max_tokens": 500,
             "temperature": 0.7
         }
 
         async with httpx.AsyncClient(verify=False) as client:
             try:
-                # Shorter timeout per model attempt (15 seconds)
-                response = await client.post(url, headers=headers, json=payload, timeout=15.0)
+                # Increased timeout to 45 seconds for better reliability
+                response = await client.post(url, headers=headers, json=payload, timeout=45.0)
 
                 if response.status_code == 200:
                     result = response.json()
-                    summary = result['choices'][0]['message']['content']
-
-                    # Send success event
-                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
-                    return
-
-                elif response.status_code == 429:
-                    # Send failed event (rate limited)
-                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
-                    await asyncio.sleep(0.5)  # Brief pause before next model
+                    if 'choices' in result and len(result['choices']) > 0:
+                        summary = result['choices'][0]['message']['content']
+                        # Send success event
+                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                        return
+                    else:
+                        print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_response'})}\n\n"
+                        continue
+                else:
+                    error_detail = "Unknown error"
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get('error', {}).get('message', response.text)
+                    except:
+                        error_detail = response.text
+                    
+                    print(f"⚠️ Model {model_id} failed with status {response.status_code}: {error_detail}")
+                    if response.status_code == 429:
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                        await asyncio.sleep(0.5)
+                    else:
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': error_detail})}\n\n"
                     continue
 
             except httpx.TimeoutException:
                 # Send timeout event and continue to next model
+                print(f"❌ Model {model_id} timed out after 45s")
                 yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'timeout'})}\n\n"
                 continue
 
             except Exception as e:
                 # Send failed event (error)
+                print(f"❌ Model {model_id} error: {str(e)}")
                 yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
                 continue
 
@@ -1346,23 +1405,46 @@ Be professional, data-driven, and encouraging. Use 1-2 emojis."""
                     "content": prompt_text
                 }
             ],
-            "max_tokens": 400,
+            "max_tokens": 500,
             "temperature": 0.7
         }
 
         async with httpx.AsyncClient(verify=False) as client:
             try:
-                response = await client.post(url, headers=headers, json=payload, timeout=20.0)
+                # Increased timeout to 45 seconds for better reliability
+                response = await client.post(url, headers=headers, json=payload, timeout=45.0)
                 if response.status_code == 200:
                     result = response.json()
-                    summary = result['choices'][0]['message']['content']
-                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
-                    return
-                elif response.status_code == 429:
-                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
-                    await asyncio.sleep(0.5)
+                    if 'choices' in result and len(result['choices']) > 0:
+                        summary = result['choices'][0]['message']['content']
+                        # Send success event
+                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                        return
+                    else:
+                        print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_response'})}\n\n"
+                        continue
+                else:
+                    error_detail = "Unknown error"
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get('error', {}).get('message', response.text)
+                    except:
+                        error_detail = response.text
+                    
+                    print(f"⚠️ Model {model_id} failed with status {response.status_code}: {error_detail}")
+                    if response.status_code == 429:
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                        await asyncio.sleep(0.5)
+                    else:
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': error_detail})}\n\n"
                     continue
+            except httpx.TimeoutException:
+                print(f"❌ Savings Model {model_id} timed out after 45s")
+                yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'timeout'})}\n\n"
+                continue
             except Exception as e:
+                print(f"❌ Savings Model {model_id} error: {str(e)}")
                 yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
                 continue
 
@@ -1480,6 +1562,15 @@ Be professional, data-driven, and encouraging. Use 1-2 emojis."""
                         "context": context,
                         "model_used": model_id
                     }
+                else:
+                    error_detail = "Unknown error"
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get('error', {}).get('message', response.text)
+                    except:
+                        error_detail = response.text
+                    print(f"⚠️ Model {model_id} failed with status {response.status_code}: {error_detail}")
+                    continue
             except Exception as e:
                 print(f"Error with {model_id}: {e}")
                 continue
@@ -1554,7 +1645,6 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
 
     # AI Model Loop
     url = "https://openrouter.ai/api/v1/chat/completions"
-
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -1565,8 +1655,9 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
     MODELS = FREE_MODELS.copy()
     random.shuffle(MODELS)
 
+    errors = []
     for model_id in MODELS:
-        print(f"DEBUG: Randomly selected model: {model_id}")
+        print(f"DEBUG: Trying AI model: {model_id}")
         payload = {
             "model": model_id,
             "messages": [
@@ -1579,35 +1670,48 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
                     "content": prompt_text
                 }
             ],
-            "max_tokens": 400,  # Shorter response
+            "max_tokens": 500,
             "temperature": 0.7
         }
         
         async with httpx.AsyncClient(verify=False) as client:
             try:
-                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+                response = await client.post(url, headers=headers, json=payload, timeout=45.0)
                 
                 if response.status_code == 200:
                     result = response.json()
-                    summary = result['choices'][0]['message']['content']
-                    
-                    return {
-                        "summary": summary,
-                        "context": context,  # Return context for frontend to display charts
-                        "model_used": model_id
-                    }
+                    if 'choices' in result and len(result['choices']) > 0:
+                        summary = result['choices'][0]['message']['content']
+                        print(f"✅ AI Success with {model_id}")
+                        return {
+                            "summary": summary,
+                            "context": context,
+                            "model_used": model_id
+                        }
+                    else:
+                        print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
+                        errors.append(f"{model_id}: Empty response")
                 
-                elif response.status_code == 429:
-                    print(f"Model {model_id} busy, trying next...")
-                    continue
+                else:
+                    error_detail = "Unknown error"
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get('error', {}).get('message', response.text)
+                    except:
+                        error_detail = response.text
+                    
+                    print(f"⚠️ Model {model_id} failed ({response.status_code}): {error_detail}")
+                    errors.append(f"{model_id} ({response.status_code}): {error_detail}")
                     
             except Exception as e:
-                print(f"Error with {model_id}: {e}")
+                print(f"❌ Error with {model_id}: {str(e)}")
+                errors.append(f"{model_id}: {str(e)}")
                 continue
     
+    error_msg = " | ".join(errors[-3:]) if errors else "No models responded"
     raise HTTPException(
         status_code=503,
-        detail="All AI models are currently busy. Please try again in a minute."
+        detail=f"All AI models are busy. Last issues: {error_msg}"
     )
 
 def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict[str, Any]:
@@ -1671,29 +1775,67 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
         "role": "system",
         "content": "You are a financial assistant. Answer the user's question using provided data. Be specific, concise, and numeric where possible."
     }
+    # Build simplified context for chat
+    summary = ctx["summary"]["current_month"]
+    top_cats = "\n".join([f"- {c['name']}: ${c['amount']:,.2f}" for c in ctx["summary"]["category_breakdown"][:5]])
+    
+    prompt_content = f"""You are a helpful financial assistant. Answer the user's question about their finances.
+    
+📊 CURRENT MONTH DATA:
+- Income: ${summary['income']:,.2f}
+- Expenses: ${summary['expenses']:,.2f}
+- Savings: ${summary['savings']:,.2f}
+- Savings Rate: {summary['savings_rate']}%
+
+💰 TOP CATEGORIES:
+{top_cats}
+
+USER QUESTION: {question}
+
+Provide a clear, specific answer based on the data above. Be concise (under 150 words)."""
+
     user_msg = {
         "role": "user",
-        "content": json.dumps({"question": question, "data": ctx})
+        "content": prompt_content
     }
     for model_id in MODELS:
         yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
         payload = {"model": model_id, "messages": [prompt, user_msg], "max_tokens": 500, "temperature": 0.4}
         async with httpx.AsyncClient(verify=False) as client:
             try:
-                response = await client.post(url, headers=headers, json=payload, timeout=20.0)
+                # Increased timeout to 45 seconds for better reliability
+                response = await client.post(url, headers=headers, json=payload, timeout=45.0)
                 if response.status_code == 200:
                     result = response.json()
-                    answer = result["choices"][0]["message"]["content"]
-                    yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'answer': answer})}\n\n"
-                    return
-                elif response.status_code == 429:
-                    yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
-                    await asyncio.sleep(0.5)
+                    if 'choices' in result and len(result['choices']) > 0:
+                        answer = result["choices"][0]["message"]["content"]
+                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'answer': answer})}\n\n"
+                        return
+                    else:
+                        print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_response'})}\n\n"
+                        continue
+                else:
+                    error_detail = "Unknown error"
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get('error', {}).get('message', response.text)
+                    except:
+                        error_detail = response.text
+                    
+                    print(f"⚠️ Model {model_id} failed with status {response.status_code}: {error_detail}")
+                    if response.status_code == 429:
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'rate_limited'})}\n\n"
+                        await asyncio.sleep(0.5)
+                    else:
+                        yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': error_detail})}\n\n"
                     continue
             except httpx.TimeoutException:
+                print(f"❌ Chat Model {model_id} timed out after 45s")
                 yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'timeout'})}\n\n"
                 continue
             except Exception as e:
+                print(f"❌ Chat Model {model_id} error: {str(e)}")
                 yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'error', 'error': str(e)})}\n\n"
                 continue
     yield f"data: {json.dumps({'type': 'error', 'message': 'All AI models are currently busy. Please try again in a minute.'})}\n\n"
@@ -1857,7 +1999,7 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
     
     should_refresh = force_refresh
     
-    if not should_refresh and cached_record:
+    if not should_refresh and cached_record and cached_record.updated_at:
         cache_age_hours = (now_utc - cached_record.updated_at).total_seconds() / 3600
         
         # Check if cache is older than 8 hours
@@ -1894,7 +2036,7 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
             "cad": cached_record.cad_to_egp,
             "aud": cached_record.aud_to_egp,
             "egp": 1.0,
-            "last_updated": cached_record.updated_at.isoformat(),
+            "last_updated": cached_record.updated_at.isoformat() if cached_record.updated_at else now_utc.isoformat(),
             "is_cached": True
         }
 
@@ -2021,14 +2163,15 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
         # Return whatever we have (cache or defaults)
         return {
             **rates_data, 
-            "last_updated": cached_record.updated_at.isoformat() if cached_record else now_utc.isoformat(),
+            "last_updated": (cached_record.updated_at.isoformat() if cached_record.updated_at else now_utc.isoformat()) if cached_record else now_utc.isoformat(),
             "is_cached": True,
             "error": str(e)
         }
 
 @app.get("/savings/rates")
-async def get_savings_rates(force: bool = False, db: Session = Depends(get_db)):
+async def get_savings_rates(request: Request, force: bool = False, db: Session = Depends(get_db)):
     """Public endpoint for rates (DB cached)"""
+    check_rate_limit(request)
     return await fetch_real_time_rates(db, force_refresh=force)
 
 @app.get("/savings")
@@ -2038,103 +2181,100 @@ async def get_savings(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(request, authorization, token, db)
-    
-    # 1. Get Real-time Rates
-    rates = await fetch_real_time_rates(db)
-    
-    # 2. Calculate Cash Balance from Transactions
-    # IMPORTANT: We only want transactions that are NOT "Savings" allocations to get the "Available/Main" cash
-    # However, the user wants: total_wealth = cash_savings + live_investment_values
-    # "cash_savings" should be the sum of all transactions in the "Savings" category.
-    
-    # Find Savings Category
-    savings_cat = db.query(Category).filter(
-        Category.name.ilike("%savings%"),
-        (Category.user_id == user.id) | (Category.user_id == None)
-    ).first()
-    
-    cash_savings = 0.0
-    if savings_cat:
-        # Cash savings = absolute net balance of all transactions in "Savings" category
-        # Since money IN to savings is negative (expense from main wallet), 
-        # we sum all and take the negative of the sum to get the positive balance.
-        # Example: -1000 (in) + 200 (out) = -800. Net balance = -(-800) = 800.
-        net_savings = db.query(func.sum(Transaction.amount)).filter(
-            Transaction.user_id == user.id,
-            Transaction.category_id == savings_cat.id
-        ).scalar() or 0.0
-        cash_savings = abs(net_savings) if net_savings < 0 else 0.0 # If positive, it means more was taken out than put in? Should we allow this? 
-        # Actually, if net_savings is positive, it means we have a negative balance in savings (debt to main wallet).
-        # Let's just use the negative of the sum, and clamp to 0 if needed.
-        cash_savings = max(0.0, -net_savings)
+    try:
+        user = get_current_user(request, authorization, token, db)
+        print(f"DEBUG: get_savings for user {user.id}")
+        
+        # 1. Get Real-time Rates
+        rates = await fetch_real_time_rates(db)
+        
+        # 2. Calculate Cash Balance from Transactions
+        # Find Savings Category
+        savings_cat = db.query(Category).filter(
+            Category.name.ilike("%savings%"),
+            (Category.user_id == user.id) | (Category.user_id == None)
+        ).first()
+        
+        cash_savings = 0.0
+        if savings_cat:
+            net_savings = db.query(func.sum(Transaction.amount)).filter(
+                Transaction.user_id == user.id,
+                Transaction.category_id == savings_cat.id
+            ).scalar() or 0.0
+            cash_savings = max(0.0, -net_savings)
 
-    # 3. Get Investments
-    investments = db.query(Investment).filter(Investment.user_id == user.id).all()
-    
-    # 4. Monthly Savings Allocation for current month (for goal tracking)
-    now = datetime.utcnow()
-    current_month_start = datetime(now.year, now.month, 1)
-    
-    monthly_saved = 0.0
-    if savings_cat:
-        # Net balance for the current month in Savings category
-        monthly_net = db.query(func.sum(Transaction.amount)).filter(
-            Transaction.user_id == user.id,
-            Transaction.category_id == savings_cat.id,
-            Transaction.date >= current_month_start
-        ).scalar() or 0.0
-        monthly_saved = max(0.0, -monthly_net)
+        # 3. Get Investments
+        investments = db.query(Investment).filter(Investment.user_id == user.id).all()
+        
+        # 4. Monthly Savings Allocation for current month
+        now = datetime.utcnow()
+        current_month_start = datetime(now.year, now.month, 1)
+        
+        monthly_saved = 0.0
+        if savings_cat:
+            monthly_net = db.query(func.sum(Transaction.amount)).filter(
+                Transaction.user_id == user.id,
+                Transaction.category_id == savings_cat.id,
+                Transaction.date >= current_month_start
+            ).scalar() or 0.0
+            monthly_saved = max(0.0, -monthly_net)
 
-    # 5. Long-term Savings Goal
-    long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
-    goal_data = None
-    if long_term_goal:
-        goal_data = {
-            "target_amount": long_term_goal.target_amount,
-            "target_date": long_term_goal.target_date.isoformat(),
-            "created_at": long_term_goal.created_at.isoformat()
+        # 5. Long-term Savings Goal
+        long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
+        goal_data = None
+        if long_term_goal:
+            goal_data = {
+                "target_amount": long_term_goal.target_amount,
+                "target_date": long_term_goal.target_date.isoformat() if long_term_goal.target_date else None,
+                "created_at": long_term_goal.created_at.isoformat() if long_term_goal.created_at else None
+            }
+
+        # 6. Rate History (last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        history_records = db.query(MarketRatesCache).filter(
+            MarketRatesCache.updated_at >= seven_days_ago
+        ).order_by(MarketRatesCache.updated_at.asc()).all()
+        
+        daily_history = {}
+        for rec in history_records:
+            if not rec.updated_at:
+                continue
+            date_str = rec.updated_at.date().isoformat()
+            daily_history[date_str] = {
+                "gold": rec.gold_egp_per_gram,
+                "silver": rec.silver_egp_per_gram,
+                "usd": rec.usd_to_egp,
+                "gbp": rec.gbp_to_egp,
+                "eur": rec.eur_to_egp,
+                "date": date_str
+            }
+
+        return {
+            "cash_balance": cash_savings,
+            "investments": [
+                {
+                    "id": i.id,
+                    "type": i.type,
+                    "amount": i.amount,
+                    "buy_price": i.buy_price,
+                    "buy_date": i.buy_date.isoformat() if i.buy_date else None,
+                    "current_rate": rates.get(i.type.lower(), 0),
+                    "current_value": i.amount * rates.get(i.type.lower(), 0)
+                } for i in investments
+            ],
+            "monthly_goal": getattr(user, "monthly_savings_goal", 0.0),
+            "monthly_saved": monthly_saved,
+            "rates": rates,
+            "long_term_goal": goal_data,
+            "rate_history": list(daily_history.values())
         }
-
-    # 6. Rate History (last 7 days)
-    # Get one record per day for the last 7 days
-    seven_days_ago = now - timedelta(days=7)
-    history_records = db.query(MarketRatesCache).filter(
-        MarketRatesCache.updated_at >= seven_days_ago
-    ).order_by(MarketRatesCache.updated_at.asc()).all()
-    
-    # Simple grouping by date to get daily close (last record of each day)
-    daily_history = {}
-    for rec in history_records:
-        date_str = rec.updated_at.date().isoformat()
-        daily_history[date_str] = {
-            "gold": rec.gold_egp_per_gram,
-            "silver": rec.silver_egp_per_gram,
-            "usd": rec.usd_to_egp,
-            "gbp": rec.gbp_to_egp,
-            "eur": rec.eur_to_egp,
-            "date": date_str
-        }
-
-    return {
-        "cash_balance": cash_savings,
-        "investments": [
-            {
-                "id": i.id,
-                "type": i.type,
-                "amount": i.amount,
-                "buy_price": i.buy_price,
-                "buy_date": i.buy_date.isoformat(),
-                "current_rate": rates.get(i.type.lower(), 0),
-                "current_value": i.amount * rates.get(i.type.lower(), 0)
-            } for i in investments
-        ],
-        "monthly_goal": getattr(user, "monthly_savings_goal", 0.0),
-        "monthly_saved": monthly_saved,
-        "rates": rates,
-        "long_term_goal": goal_data,
-        "rate_history": list(daily_history.values())
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_savings: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/investments")
 async def add_investment(
@@ -2144,55 +2284,63 @@ async def add_investment(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(request, authorization, token, db)
-    
-    # Fetch current rates to get the automatic buy price
-    rates = await fetch_real_time_rates(db)
-    
-    # Use provided buy_price or fetch from live rates
-    buy_price = data.buy_price
-    if buy_price is None or buy_price <= 0:
-        # Check if the type matches one of our currencies or metals
-        inv_type = data.type.lower()
-        buy_price = rates.get(inv_type, 0.0)
-        
-        # If still not found, try uppercase (some might be stored that way)
-        if buy_price <= 0:
-            buy_price = rates.get(data.type.upper(), 0.0)
-            
-        # Last resort fallback if both fail
-        if buy_price <= 0:
-            # Look for common mappings
-            mapping = {
-                "gold": "gold",
-                "silver": "silver",
-                "usd": "usd",
-                "eur": "eur",
-                "gbp": "gbp",
-                "sar": "sar",
-                "aed": "aed",
-                "kwd": "kwd"
-            }
-            mapped_key = mapping.get(inv_type)
-            if mapped_key:
-                buy_price = rates.get(mapped_key, 0.0)
-    
     try:
-        buy_date = datetime.strptime(data.buy_date, "%Y-%m-%d") if data.buy_date else datetime.utcnow()
-    except:
-        buy_date = datetime.utcnow()
+        user = get_current_user(request, authorization, token, db)
         
-    investment = Investment(
-        user_id=user.id,
-        type=data.type,
-        amount=data.amount,
-        buy_price=buy_price,
-        buy_date=buy_date
-    )
-    db.add(investment)
-    db.commit()
-    db.refresh(investment)
-    return investment
+        # Fetch current rates to get the automatic buy price
+        rates = await fetch_real_time_rates(db)
+        
+        # Use provided buy_price or fetch from live rates
+        buy_price = data.buy_price
+        if buy_price is None or buy_price <= 0:
+            # Check if the type matches one of our currencies or metals
+            inv_type = data.type.lower()
+            buy_price = rates.get(inv_type, 0.0)
+            
+            # If still not found, try uppercase (some might be stored that way)
+            if buy_price <= 0:
+                buy_price = rates.get(data.type.upper(), 0.0)
+                
+            # Last resort fallback if both fail
+            if buy_price <= 0:
+                # Look for common mappings
+                mapping = {
+                    "gold": "gold",
+                    "silver": "silver",
+                    "usd": "usd",
+                    "eur": "eur",
+                    "gbp": "gbp",
+                    "sar": "sar",
+                    "aed": "aed",
+                    "kwd": "kwd"
+                }
+                mapped_key = mapping.get(inv_type)
+                if mapped_key:
+                    buy_price = rates.get(mapped_key, 0.0)
+        
+        try:
+            buy_date = datetime.strptime(data.buy_date, "%Y-%m-%d") if data.buy_date else datetime.utcnow()
+        except:
+            buy_date = datetime.utcnow()
+            
+        investment = Investment(
+            user_id=user.id,
+            type=data.type,
+            amount=data.amount,
+            buy_price=buy_price,
+            buy_date=buy_date
+        )
+        db.add(investment)
+        db.commit()
+        db.refresh(investment)
+        return investment
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in add_investment: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/investments/{investment_id}")
 def delete_investment(
@@ -2202,18 +2350,24 @@ def delete_investment(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(request, authorization, token, db)
-    investment = db.query(Investment).filter(
-        Investment.id == investment_id,
-        Investment.user_id == user.id
-    ).first()
-    
-    if not investment:
-        raise HTTPException(status_code=404, detail="Investment not found")
+    try:
+        user = get_current_user(request, authorization, token, db)
+        investment = db.query(Investment).filter(
+            Investment.id == investment_id,
+            Investment.user_id == user.id
+        ).first()
         
-    db.delete(investment)
-    db.commit()
-    return {"message": "Investment deleted"}
+        if not investment:
+            raise HTTPException(status_code=404, detail="Investment not found")
+            
+        db.delete(investment)
+        db.commit()
+        return {"message": "Investment deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in delete_investment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.patch("/users/me/savings-goal")
 def update_savings_goal(
@@ -2223,10 +2377,16 @@ def update_savings_goal(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(request, authorization, token, db)
-    user.monthly_savings_goal = data.monthly_goal
-    db.commit()
-    return {"message": "Savings goal updated", "monthly_goal": user.monthly_savings_goal}
+    try:
+        user = get_current_user(request, authorization, token, db)
+        user.monthly_savings_goal = data.monthly_goal
+        db.commit()
+        return {"message": "Savings goal updated", "monthly_goal": user.monthly_savings_goal}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_savings_goal: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/savings/long-term-goal")
 def set_long_term_goal(
@@ -2236,27 +2396,41 @@ def set_long_term_goal(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(request, authorization, token, db)
-    
     try:
-        target_date = datetime.strptime(data.target_date, "%Y-%m-%d")
-    except:
-        raise HTTPException(400, "Invalid date format. Use YYYY-MM-DD")
-
-    goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
-    if goal:
-        goal.target_amount = data.target_amount
-        goal.target_date = target_date
-    else:
-        goal = SavingsGoal(
-            user_id=user.id,
-            target_amount=data.target_amount,
-            target_date=target_date
-        )
-        db.add(goal)
-    
-    db.commit()
-    return {"message": "Long-term goal secured"}
+        user = get_current_user(request, authorization, token, db)
+        
+        # Check if already exists
+        existing = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
+        
+        target_date = None
+        if data.target_date:
+            try:
+                target_date = datetime.strptime(data.target_date, "%Y-%m-%d")
+            except:
+                pass
+                
+        if existing:
+            existing.target_amount = data.target_amount
+            existing.target_date = target_date
+            db.commit()
+            db.refresh(existing)
+            return existing
+        else:
+            new_goal = SavingsGoal(
+                user_id=user.id,
+                target_amount=data.target_amount,
+                target_date=target_date,
+                created_at=datetime.utcnow()
+            )
+            db.add(new_goal)
+            db.commit()
+            db.refresh(new_goal)
+            return new_goal
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in set_long_term_goal: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================
 # BUDGET ROUTES (Add these to main.py)

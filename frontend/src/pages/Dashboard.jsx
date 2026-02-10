@@ -439,8 +439,12 @@ function Dashboard() {
               setAiLoading(false);
               eventSource.close();
               break;
+            case 'model_failed':
+              console.warn(`Model ${data.model} failed: ${data.reason}`);
+              setCurrentTryingModel(`Failed: ${data.model}. Trying next...`);
+              break;
             case 'error':
-              setAiSummary(`**All Models Busy**\n\n${data.message}\n\nPlease try again in a few minutes.`);
+              setAiSummary(`**All Models Busy**\n\n${data.message || 'The AI service is currently experiencing high traffic.'}\n\nPlease try again in a few minutes.`);
               setAiLoading(false);
               eventSource.close();
               break;
@@ -527,8 +531,12 @@ function Dashboard() {
               setChatLoading(false);
               eventSource.close();
               break;
+            case 'model_failed':
+              console.warn(`Chat model ${data.model} failed: ${data.reason}`);
+              setChatTryingModel(`Failed: ${data.model}. Trying next...`);
+              break;
             case 'error':
-              setChatMessages(prev => [...prev, { role: 'assistant', text: `All Models Busy\n\n${data.message}\n\nPlease try again in a few minutes.` }]);
+              setChatMessages(prev => [...prev, { role: 'assistant', text: `**All AI Models Busy**\n\n${data.message || 'I am currently unable to process your request.'}\n\nPlease try again in a minute.` }]);
               setChatLoading(false);
               eventSource.close();
               break;

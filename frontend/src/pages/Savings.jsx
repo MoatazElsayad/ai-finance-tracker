@@ -498,21 +498,30 @@ export default function Savings() {
     setLoading(true);
     setError(null);
     try {
-      const [cats, sData, txns, r] = await Promise.all([
+      // Load essential data first
+      const [cats, sData, txns] = await Promise.all([
         getCategories(),
         getSavingsData(),
         getTransactions(),
-        getSavingsRates(false),
       ]);
+      
       setCategories(cats || []);
       setSavings(sData || {});
       setTransactions(txns?.transactions || []);
-      setRates(r || {});
       if (sData?.monthly_goal) setMonthlyGoalInput(String(sData.monthly_goal));
+
+      // Load rates separately so they don't block the whole page if they fail (e.g. rate limited)
+      try {
+        const r = await getSavingsRates(false);
+        setRates(r || {});
+      } catch (rateErr) {
+        console.warn("Could not load market rates:", rateErr);
+        // We don't set the main error state here so the vault still opens
+      }
     } catch (e) {
-      console.error("Load savings error", e);
-      setError("Unable to load savings data.");
-    } finally {
+        console.error("Load savings error", e);
+        setError(e.message || "Unable to load savings data.");
+      } finally {
       setLoading(false);
     }
   }, []);

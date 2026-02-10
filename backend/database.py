@@ -54,6 +54,10 @@ def init_database():
                 if curr_col not in rates_col_names:
                     print(f"Adding '{curr_col}' column to market_rates_cache table...")
                     conn.exec_driver_sql(f"ALTER TABLE market_rates_cache ADD COLUMN {curr_col} FLOAT")
+            
+            if "updated_at" not in rates_col_names:
+                print("Adding 'updated_at' column to market_rates_cache table...")
+                conn.exec_driver_sql("ALTER TABLE market_rates_cache ADD COLUMN updated_at DATETIME")
                     
         except Exception as e:
             print(f"Migration error: {e}")
