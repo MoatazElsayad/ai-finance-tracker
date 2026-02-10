@@ -83,7 +83,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
     suggestTimer.current = setTimeout(async () => {
       setSuggesting(true);
       try {
-        const { suggestions: suggested } = await suggestEmoji(text);
+        const { suggestions: suggested } = await suggestEmoji(text, type);
         
         if (suggested && suggested.length > 0) {
           setSuggestions(suggested);
@@ -103,7 +103,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       } finally {
         setSuggesting(false);
       }
-    }, 400); // Faster response for better UX
+    }, 300); // Faster response for better UX
     return () => {
       if (suggestTimer.current) clearTimeout(suggestTimer.current);
     };

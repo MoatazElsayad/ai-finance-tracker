@@ -68,14 +68,14 @@ function Transactions() {
 
       return setTimeout(async () => {
         try {
-          const { suggestions } = await suggestEmoji(cat.name.trim());
+          const { suggestions } = await suggestEmoji(cat.name.trim(), cat.type || 'expense');
           if (suggestions && suggestions.length > 0) {
             updateInitialCategory(idx, 'icon', suggestions[0]);
           }
         } catch (err) {
           console.error('Emoji Suggestion failed for initial setup:', err);
         }
-      }, 400);
+      }, 300);
     });
 
     return () => timers.forEach(t => t && clearTimeout(t));

@@ -745,95 +745,93 @@ def get_categories(
 
 
 @app.get("/categories/suggest-emoji")
-def suggest_emoji(name: str):
+def suggest_emoji(name: str, context: str = "general"):
     """
-    Suggest emojis based on category name using simple keyword mapping
+    Suggest emojis based on category name and context (income/expense/general).
+    Uses keyword mapping with context-aware prioritization.
     """
     name_lower = name.lower().strip()
     
-    # Keyword mapping for common categories
+    # Context-aware defaults (Exactly 3 emojis)
+    context_defaults = {
+        "income": ["💰", "💸", "📈"],
+        "expense": ["🛒", "🍽️", "🚗"],
+        "general": ["💰", "📊", "🛍️"]
+    }
+    
+    # Unified mapping with potential context variations
+    # Key: keyword, Value: list of emojis or dict mapping context to emojis
     mapping = {
-        "food": ["🍔", "🍕", "🥗"],
+        # University/Education
+        "university": {
+            "income": ["🎓", "📚", "🏫"], # Scholarship/Stipend
+            "expense": ["📚", "💸", "🏫"] # Tuition/Fees
+        },
+        "college": {
+            "income": ["🎓", "📚", "🏫"],
+            "expense": ["📚", "💸", "🏫"]
+        },
+        "tuition": ["📚", "💸", "🏫"],
+        "stipend": ["💰", "🎓", "🏫"],
+        "scholarship": ["🎓", "💰", "🏫"],
+        
+        # Income specific
+        "salary": ["💼", "💰", "💳"],
+        "wage": ["💵", "💰", "🏦"],
+        "bonus": ["🎁", "🎊", "💰"],
+        "freelance": ["💻", "👨‍💻", "🚀"],
+        "income": ["📈", "💰", "💸"],
+        "pay": ["💸", "💳", "🏦"],
+        
+        # Food & Dining
+        "food": ["🍔", "🍕", "🛒"],
         "eat": ["🍽️", "🍜", "🍕"],
-        "drink": ["☕", "🥤", "🍺"],
-        "coffee": ["☕", "🥐", "🧁"],
         "restaurant": ["🍴", "🍷", "🍝"],
         "grocer": ["🛒", "🍎", "🥦"],
-        "market": ["🏪", "🛍️", "🍎"],
-        "transport": ["🚗", "🚌", "🚇"],
-        "travel": ["✈️", "🧳", "🌍"],
-        "car": ["🚗", "⛽", "🔧"],
+        "coffee": ["☕", "🥐", "🧁"],
+        
+        # Transport
+        "transport": ["🚗", "🚌", "⛽"],
+        "uber": ["🚗", "🚕", "📱"],
         "fuel": ["⛽", "⚡", "🚗"],
         "gas": ["⛽", "🔥", "🚗"],
         "taxi": ["🚕", "🚕", "🚗"],
-        "bus": ["🚌", "🚍", "🚏"],
-        "train": ["🚆", "🚇", "🚄"],
+        
+        # Home & Living
         "rent": ["🏠", "🔑", "🏘️"],
-        "home": ["🏠", "🛋️", "🪴"],
         "house": ["🏡", "🏘️", "🏗️"],
-        "bill": ["🧾", "📑", "💸"],
+        "home": ["🏠", "🛋️", "🪴"],
+        "bill": ["🏠", "💡", "📞"],
         "utilit": ["💡", "🚰", "🔌"],
-        "electric": ["⚡", "💡", "🔌"],
-        "water": ["🚰", "💧", "🚿"],
         "internet": ["🌐", "💻", "📡"],
-        "phone": ["📱", "📞", "📶"],
-        "mobile": ["📱", "📲", "📡"],
-        "salary": ["💰", "💵", "🏦"],
-        "income": ["📈", "💰", "💸"],
-        "pay": ["💸", "💳", "🏦"],
-        "wage": ["💵", "💰", "🏦"],
-        "work": ["💼", "💻", "🏢"],
-        "freelance": ["💻", "👨‍💻", "🚀"],
-        "bonus": ["🎁", "🎊", "💰"],
-        "gift": ["🎁", "💝", "🎈"],
-        "shop": ["🛍️", "👗", "👟"],
-        "clothes": ["👕", "👗", "👟"],
-        "shoe": ["👟", "👞", "👠"],
-        "health": ["🏥", "💊", "🍎"],
-        "medical": ["💊", "🩺", "🚑"],
-        "doctor": ["👨‍⚕️", "👩‍⚕️", "🏥"],
-        "pharmacy": ["💊", "🧪", "🩹"],
-        "gym": ["💪", "🏋️‍♂️", "👟"],
-        "sport": ["⚽", "🏀", "🎾"],
-        "fitness": ["🏃‍♂️", "🧘‍♀️", "💪"],
-        "education": ["📚", "🎓", "✏️"],
-        "school": ["🏫", "🎒", "📚"],
-        "learn": ["🧠", "💡", "📖"],
-        "book": ["📖", "📚", "🔖"],
-        "enterta": ["🍿", "🎮", "🎭"],
+        
+        # Entertainment
+        "enterta": ["🎬", "🎮", "🎧"],
+        "cinema": ["🎬", "🍿", "🎟️"],
         "movie": ["🎬", "🍿", "🎟️"],
         "game": ["🎮", "🕹️", "👾"],
         "music": ["🎵", "🎧", "🎸"],
-        "hobby": ["🎨", "📸", "🧶"],
-        "pet": ["🐾", "🐕", "🐈"],
-        "dog": ["🐕", "🐩", "🦴"],
-        "cat": ["🐈", "🐾", "🧶"],
-        "subscr": ["📅", "💳", "📺"],
-        "netflix": ["📺", "🎬", "🍿"],
-        "spotify": ["🎵", "🎧", "🟢"],
-        "insurance": ["🛡️", "📜", "🏥"],
-        "tax": ["📝", "🏛️", "💸"],
-        "invest": ["📈", "📊", "🚀"],
-        "stock": ["📉", "💹", "🏢"],
-        "crypto": ["₿", "🚀", "⛓️"],
-        "saving": ["🏦", "🐷", "💰"],
-        "emergency": ["🚨", "🆘", "🩹"],
-        "family": ["👨‍👩‍👧‍👦", "🏠", "❤️"],
-        "kid": ["👶", "🧸", "🎈"],
-        "baby": ["👶", "🍼", "🧸"],
-        "charity": ["🤝", "❤️", "🕊️"],
-        "donat": ["🤲", "💝", "✨"],
-        "other": ["📦", "🏷️", "📝"],
-        "misc": ["🖇️", "📦", "🧩"],
+        
+        # Health
+        "health": ["🏥", "💊", "🍎"],
+        "medical": ["💊", "🩺", "🚑"],
+        "medicine": ["💊", "🏥", "🩹"],
+        
+        # Travel
+        "travel": ["✈️", "🏖️", "🌍"],
+        "vacation": ["🏖️", "✈️", "🍹"],
     }
     
     # Check for keyword matches
-    for keyword, emojis in mapping.items():
+    for keyword, value in mapping.items():
         if keyword in name_lower:
-            return {"suggestions": emojis}
+            if isinstance(value, dict):
+                # Return context-specific emojis or fall back to 'expense' or first available
+                return {"suggestions": value.get(context, value.get("expense", list(value.values())[0]))[:3]}
+            return {"suggestions": value[:3]}
             
-    # Default fallback
-    return {"suggestions": ["💰", "📊", "🛍️"]}
+    # Default fallback based on context
+    return {"suggestions": context_defaults.get(context, context_defaults["general"])}
 
 
 @app.post("/categories")
