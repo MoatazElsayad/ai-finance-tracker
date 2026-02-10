@@ -2,7 +2,7 @@
 Database Models - All in ONE file for simplicity
 This defines what data we store in the database
 """
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, Index, Numeric
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -35,7 +35,7 @@ class User(Base):
     avatar_seed = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    monthly_savings_goal = Column(Numeric(12, 2), default=0.0)
+    monthly_savings_goal = Column(Float, default=0.0)
     
     # Relationship: one user has many transactions
     transactions = relationship("Transaction", back_populates="user")
@@ -70,8 +70,8 @@ class Investment(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     type = Column(String, nullable=False)  # "gold", "silver", "USD", "GBP", "EUR"
-    amount = Column(Numeric(12, 2), nullable=False)  # grams or currency amount
-    buy_price = Column(Numeric(12, 2), nullable=False)  # in EGP at time of purchase
+    amount = Column(Float, nullable=False)  # grams or currency amount
+    buy_price = Column(Float, nullable=False)  # in EGP at time of purchase
     buy_date = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -115,7 +115,7 @@ class Transaction(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)
     
     # Money details
-    amount = Column(Numeric(12, 2), nullable=False)  # Positive = income, Negative = expense
+    amount = Column(Float, nullable=False)  # Positive = income, Negative = expense
     description = Column(String)
     date = Column(DateTime, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -137,7 +137,7 @@ class Budget(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
-    amount = Column(Numeric(12, 2), nullable=False) # e.g., 400.0
+    amount = Column(Float, nullable=False) # e.g., 400.0
     month = Column(Integer, nullable=False) # 1-12
     year = Column(Integer, nullable=False)
 
@@ -160,7 +160,7 @@ class Goal(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
-    target_amount = Column(Numeric(12, 2), nullable=False)
+    target_amount = Column(Float, nullable=False)
     target_date = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
