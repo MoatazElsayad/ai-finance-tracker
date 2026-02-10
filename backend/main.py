@@ -498,8 +498,8 @@ def get_transactions(
             "amount": t.amount,
             "description": t.description,
             "date": t.date.isoformat(),
-            "category_name": t.category.name,
-            "category_icon": t.category.icon
+            "category_name": t.category.name if t.category else "Uncategorized",
+            "category_icon": t.category.icon if t.category else "📦"
         })
     
     return {
@@ -966,7 +966,7 @@ def get_budget_comparison(db: Session, user_id: int, year: int, month: int):
         Budget.month == month
     ).all()
     
-    budget_map = {b.category.name: b.amount for b in budgets}
+    budget_map = {b.category.name if b.category else "Uncategorized": b.amount for b in budgets}
     
     comparison = []
     for cat_data in actuals["category_breakdown"]:
