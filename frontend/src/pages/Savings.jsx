@@ -94,7 +94,7 @@ const TradingViewChart = ({ symbol, isDark, height = 300, dateRange = "12M" }) =
 /* --------------------------------------------------------------- *
  *  INVESTMENT FORM (INLINE)
  * --------------------------------------------------------------- */
-const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, cashBalance, monthlyGoal, monthlySaved }) => {
+const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, cashBalance, monthlyGoal, monthlySaved, loadAll }) => {
   const [activeTab, setActiveTab] = useState('gold'); // 'gold', 'silver', 'currency', 'cash'
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [amount, setAmount] = useState('');
@@ -190,6 +190,13 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       setIsExpense(false);
 
       setSuccess(true);
+      
+      // Dispatch event and trigger immediate refresh
+      window.dispatchEvent(new Event('transaction-added'));
+      if (typeof loadAll === 'function') {
+        loadAll();
+      }
+
       confetti({
         particleCount: 150,
         spread: 70,
@@ -197,7 +204,14 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         colors: ['#3b82f6', '#10b981', '#fbbf24']
       });
       
-      setTimeout(() => setSuccess(false), 5000);
+      setTimeout(() => {
+        setSuccess(false);
+        // Focus the amount input after success message disappears
+        const amountInput = document.querySelector('input[type="number"]');
+        if (amountInput) amountInput.focus();
+        // Scroll to top of the form area
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 5000);
     } catch (err) {
       setError(activeTab === 'cash' ? 'Failed to process transaction.' : 'Failed to add investment. Please try again.');
     } finally {
@@ -371,23 +385,26 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         )}
 
         {success ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
-            <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-2xl shadow-emerald-500/20">
-              <Sparkles className="w-10 h-10" />
-            </div>
-            <h3 className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Success!</h3>
-            <p className={`text-sm font-bold uppercase tracking-[0.2em] mb-8 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transaction processed successfully</p>
-            <button 
-              onClick={() => {
-                setSuccess(false);
-                onClose();
-              }}
-              className="px-10 py-4 rounded-2xl bg-slate-800 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
-            >
-              Back to Vault
-            </button>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
+          <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-2xl shadow-emerald-500/20">
+            <Sparkles className="w-10 h-10" />
           </div>
-        ) : (
+          <h3 className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Success!</h3>
+          <p className={`text-sm font-bold uppercase tracking-[0.2em] mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transaction processed successfully</p>
+          <div className="px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest mb-8 animate-pulse">
+            Vault Updated Successfully
+          </div>
+          <button 
+            onClick={() => {
+              setSuccess(false);
+              onClose();
+            }}
+            className="px-10 py-4 rounded-2xl bg-slate-800 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+          >
+            Back to Vault
+          </button>
+        </div>
+      ) : (
           <div className="flex-1 flex flex-col lg:flex-row">
             {/* Chart Section */}
             {activeTab !== 'cash' && (
@@ -1203,6 +1220,7 @@ export default function Savings() {
               cashBalance={savings?.cash_balance || 0}
               monthlyGoal={monthlyGoal}
               monthlySaved={monthlySaved}
+              loadAll={loadAll}
             />
           </div>
         )}

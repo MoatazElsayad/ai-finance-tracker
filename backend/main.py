@@ -585,11 +585,24 @@ def create_transaction(
     # 1. Verify if this is a 'Savings' transaction and handle type mismatch
     category = db.query(Category).filter(Category.id == data.category_id).first()
     if category and category.name.lower() == 'savings':
-        # Ensure the amount is treated as an expense (negative) if it's the Savings category
-        # even if the frontend sends a positive number (common for 'deposit' UI)
-        if category.type == 'expense' and data.amount > 0:
-            data.amount = -data.amount
-        elif category.type == 'income' and data.amount < 0:
+        # The frontend now sends correct signs:
+        # Deposit -> isExpense=true -> Positive Amount
+        # Withdrawal -> isExpense=false -> Negative Amount
+        # We want to store Savings as an 'expense' category that is negative for deposits 
+        # (to reduce liquid cash) and positive for withdrawals (to increase liquid cash).
+        # Wait, the user said:
+        # Deposit to savings (positive amount, vault balance increases)
+        # Withdraw from savings (negative amount, vault balance decreases)
+        # In this system, Transaction.amount > 0 is INCOME, Transaction.amount < 0 is EXPENSE.
+        # So a "Deposit" should be a negative transaction (expense from wallet) 
+        # and a "Withdrawal" should be a positive transaction (income to wallet).
+        
+        # Let's align with the user's logic:
+        # User sends: Deposit -> amount > 0. We store as -amount (expense from liquid cash)
+        # User sends: Withdrawal -> amount < 0. We store as +abs(amount) (income to liquid cash)
+        if data.amount > 0:
+            data.amount = -abs(data.amount)
+        else:
             data.amount = abs(data.amount)
 
     # Create transaction
