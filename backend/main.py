@@ -17,7 +17,7 @@ from sqlalchemy import func, Index
 from pydantic import BaseModel, EmailStr, validator
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, timezone
 import httpx
 import random
 import json
@@ -287,7 +287,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_token(user_id: int) -> str:
     """Create JWT token for authentication"""
-    expire = datetime.utcnow() + timedelta(days=7)
+    expire = datetime.now(timezone.utc) + timedelta(days=7)
     data = {"sub": str(user_id), "exp": expire}
     return jwt.encode(data, SECRET_KEY, algorithm="HS256")
 

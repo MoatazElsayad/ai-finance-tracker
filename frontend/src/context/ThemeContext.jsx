@@ -15,7 +15,7 @@ export function ThemeProvider({ children }) {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
-    return 'dark'; // Default to dark
+    return 'light'; // Default to light mode, respecting system preference
   });
 
   // Save theme to localStorage

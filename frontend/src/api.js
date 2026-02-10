@@ -36,21 +36,13 @@ const handleResponse = async (response) => {
 const authFetch = async (url, options = {}) => {
   const token = getToken();
   
-  // Use Authorization header (preferred) and fallback to query param for backward compatibility
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
     ...options.headers,
   };
   
-  // For backward compatibility, also add token to query if not already present
-  let finalUrl = url;
-  if (token && !url.includes('token=')) {
-    const separator = url.includes('?') ? '&' : '?';
-    finalUrl = `${url}${separator}token=${encodeURIComponent(token)}`;
-  }
-  
-  const response = await fetch(`${API_URL}${finalUrl}`, {
+  const response = await fetch(`${API_URL}${url}`, {
     ...options,
     headers,
   });
@@ -319,7 +311,7 @@ export const uploadReceipt = async (file) => {
   formData.append('file', file);
 
   const token = getToken();
-  const response = await fetch(`${API_URL}/ocr/upload-receipt?token=${encodeURIComponent(token)}`, {
+  const response = await fetch(`${API_URL}/ocr/upload-receipt`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
