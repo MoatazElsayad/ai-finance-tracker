@@ -121,6 +121,8 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       if (savingsCat) setSelectedCategoryId(String(savingsCat.id));
     } else {
       setSelectedCategoryId('');
+      setIsExpense(false);
+      setWithdrawalReason('');
     }
   }, [activeTab, categories]);
 
@@ -185,6 +187,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       setAmount('');
       setBuyDate(new Date().toISOString().split('T')[0]);
       setWithdrawalReason('');
+      if (activeTab === 'cash') setIsExpense(false);
       setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
       setError(activeTab === 'cash' ? 'Failed to process transaction.' : 'Failed to add investment. Please try again.');
@@ -354,6 +357,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
           </button>
         </div>
 
+        {success ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
             <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white mb-6 shadow-2xl shadow-emerald-500/20">
               <Sparkles className="w-10 h-10" />
@@ -424,23 +428,6 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               </div>
             )}
 
-            {success && (
-              <div className="mb-6 p-6 bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-500 rounded-3xl text-sm font-black flex items-center justify-between animate-in zoom-in slide-in-from-top-4 duration-500 shadow-lg shadow-emerald-500/10">
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-emerald-500 rounded-xl text-white">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg">Success!</p>
-                    <p className="text-xs opacity-70 font-bold uppercase tracking-widest">Investment secured in vault</p>
-                  </div>
-                </div>
-                <button onClick={() => setSuccess(false)} className="p-2 hover:bg-emerald-500/20 rounded-xl transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-6">
               {activeTab === 'cash' && (
                 <div className="space-y-4">
@@ -462,20 +449,6 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                         Expense / Deposit
                       </button>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Category</label>
-                    <select
-                      value={selectedCategoryId}
-                      onChange={(e) => setSelectedCategoryId(e.target.value)}
-                      className={`w-full p-4 rounded-2xl text-sm font-black outline-none border-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-emerald-600'}`}
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
                   </div>
                 </div>
               )}
@@ -605,15 +578,16 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                   </div>
                 </div>
                 <button type="submit" className={`w-full px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-[0.3em] text-white transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}>
-                  {showWithdrawalWarning ? 'Confirm Withdrawal' : activeTab === 'cash' ? 'Process Transaction' : 'Secure Investment'}
+                  {showWithdrawalWarning ? 'Confirm Withdrawal' : activeTab === 'cash' ? 'Save to Savings' : 'Secure Investment'}
                 </button>
               </div>
             </form>
           </div>
         </div>
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 /* --------------------------------------------------------------- *
