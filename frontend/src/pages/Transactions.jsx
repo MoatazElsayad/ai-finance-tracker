@@ -3,12 +3,13 @@
  * Professional transaction management with advanced filtering and insights
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { getTransactions, createTransaction, deleteTransaction, getCategories, createCategory, suggestEmoji } from '../api';
+import { getTransactions, createTransaction, deleteTransaction, getCategories, createCategory } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { clearInsightsCache } from '../utils/cache';
 import { useDebounce } from '../utils/debounce';
 import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft, Filter, ArrowDownAZ, SortDesc, Type, Sparkles } from 'lucide-react';
 import CustomCategoryCreator from '../components/CustomCategoryCreator';
+import EmojiPicker from '../components/EmojiPicker';
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -26,6 +27,7 @@ function Transactions() {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(new Set());
   const [showInitialSetup, setShowInitialSetup] = useState(false);
+  const [activePickerIdx, setActivePickerIdx] = useState(null);
   const [initialCategories, setInitialCategories] = useState([
     { name: '', type: 'expense', icon: '🛍️' },
     { name: '', type: 'expense', icon: '🍔' },
@@ -38,16 +40,23 @@ function Transactions() {
       // Filter out empty names and create categories
       const categoriesToCreate = initialCategories.filter(cat => cat.name.trim() !== '');
       
+      console.log('Creating initial categories:', categoriesToCreate);
+      
       for (const cat of categoriesToCreate) {
         await createCategory(cat.name.trim(), cat.type, cat.icon);
       }
       
       localStorage.setItem('initial_setup_completed', 'true');
       setShowInitialSetup(false);
+      
+      // Force reload data to reflect new categories
       await loadData(1, false);
+      
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (error) {
-      console.error(error);
-      alert('Failed to save categories. Please try again.');
+      console.error('Initial setup error:', error);
+      alert('Failed to save categories: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -58,28 +67,6 @@ function Transactions() {
     newCats[index][field] = value;
     setInitialCategories(newCats);
   };
-
-  // AI Emoji suggestions for initial setup
-  useEffect(() => {
-    if (!showInitialSetup) return;
-
-    const timers = initialCategories.map((cat, idx) => {
-      if (!cat.name.trim() || cat.name.length < 2) return null;
-
-      return setTimeout(async () => {
-        try {
-          const { suggestions } = await suggestEmoji(cat.name.trim(), cat.type || 'expense');
-          if (suggestions && suggestions.length > 0) {
-            updateInitialCategory(idx, 'icon', suggestions[0]);
-          }
-        } catch (err) {
-          console.error('Emoji Suggestion failed for initial setup:', err);
-        }
-      }, 300);
-    });
-
-    return () => timers.forEach(t => t && clearTimeout(t));
-  }, [showInitialSetup, initialCategories[0].name, initialCategories[1].name, initialCategories[2].name]);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -475,15 +462,35 @@ function Transactions() {
 
             <div className="space-y-6 mb-12">
               {initialCategories.map((cat, idx) => (
-                <div key={idx} className={`p-6 rounded-3xl border-2 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'} focus-within:border-amber-500/50 group`}>
+                <div key={idx} className={`p-6 rounded-3xl border-2 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'} focus-within:border-amber-500/50 group relative`}>
                   <div className="flex items-center gap-6">
                     <div className="relative">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform group-hover:scale-110 duration-300 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}>
+                      <button
+                        onClick={() => setActivePickerIdx(activePickerIdx === idx ? null : idx)}
+                        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-110 duration-300 relative group/icon ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
+                      >
                         {cat.icon}
-                      </div>
+                        <div className="absolute inset-0 bg-amber-500/0 group-hover/icon:bg-amber-500/10 transition-all flex items-center justify-center rounded-2xl">
+                          <Search className="w-4 h-4 text-amber-500 opacity-0 group-hover/icon:opacity-100 transition-all scale-50 group-hover/icon:scale-100" />
+                        </div>
+                      </button>
                       <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-[10px] font-black text-white uppercase tracking-widest">
                         {cat.type}
                       </div>
+
+                      {/* Emoji Picker Popover */}
+                      {activePickerIdx === idx && (
+                        <div className="absolute bottom-full left-0 mb-4 z-[110]">
+                          <EmojiPicker 
+                            onSelect={(emoji) => {
+                              updateInitialCategory(idx, 'icon', emoji);
+                              setActivePickerIdx(null);
+                            }}
+                            onClose={() => setActivePickerIdx(null)}
+                            categoryName={cat.name}
+                          />
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex-1">
@@ -502,6 +509,7 @@ function Transactions() {
                 </div>
               ))}
             </div>
+
 
             <div className="flex flex-col gap-4">
               <button
@@ -549,18 +557,15 @@ function Transactions() {
       <div className="max-w-[1400px] mx-auto w-full">
       {/* Success Toast */}
       {showSuccessToast && (
-        <div className="fixed top-20 right-4 z-50 animate-in fade-in slide-in-from-right-10 duration-500">
+        <div className="fixed top-20 right-4 z-[200] animate-in fade-in slide-in-from-right-10 duration-500">
           <div className={`${theme === 'dark' ? 'bg-emerald-500/90' : 'bg-emerald-100'} backdrop-blur-sm ${theme === 'dark' ? 'text-white' : 'text-emerald-900'} px-8 py-4 rounded-[1.5rem] shadow-2xl flex items-center gap-4 border-2 ${theme === 'dark' ? 'border-emerald-400/30' : 'border-emerald-300'}`}>
             <div className="p-2 bg-white/20 rounded-lg">
               <Check className="w-6 h-6" strokeWidth={3} />
             </div>
-            <span className="font-black uppercase tracking-[0.1em]">Transaction saved!</span>
+            <span className="font-black uppercase tracking-[0.1em]">Saved successfully!</span>
           </div>
         </div>
       )}
-
-      {/* Initial Setup Modal */}
-      {renderInitialSetupModal()}
 
       {/* Header */}
       <div className="mb-12 animate-in fade-in slide-in-from-top-10 duration-700">

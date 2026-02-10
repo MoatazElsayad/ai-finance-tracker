@@ -1,47 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, RefreshCw } from 'lucide-react';
+import { X, Sparkles, RefreshCw, Search } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { createCategory, suggestEmoji } from '../api';
+import { createCategory } from '../api';
+import EmojiPicker from './EmojiPicker';
+import { getSmartSuggestions } from '../utils/emojiData';
 
 function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
+  const [icon, setIcon] = useState('💰');
+  const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [suggesting, setSuggesting] = useState(false);
-  const suggestTimer = useRef(null);
-  const lastNameRef = useRef('');
-  const lastSuggestionsRef = useRef([]);
-
-  const localSuggestEmoji = (text) => {
-    const t = (text || '').toLowerCase();
-    const map = [
-      [/food|restaurant|coffee|cafe|meal|grocery|pizza|burger/, ['🍔', '🍕', '🥗']],
-      [/transport|car|uber|taxi|bus|train|fuel|gas|parking/, ['🚗', '🚌', '⛽']],
-      [/shop|shopping|mall|clothes|fashion|store|retail/, ['🛍️', '👕', '👠']],
-      [/bill|utility|electric|water|internet|phone|wifi/, ['💡', '🚰', '📱']],
-      [/health|doctor|hospital|medicine|pharmacy|fitness|gym/, ['🏥', '💊', '💪']],
-      [/entertain|movie|cinema|netflix|game|games|fun/, ['🎮', '🎬', '🍿']],
-      [/travel|flight|hotel|trip|vacation|holiday/, ['✈️', '🏨', '🏝️']],
-      [/education|school|course|book|books|study|tuition/, ['🎓', '📚', '📝']],
-      [/rent|house|home|mortgage|apartment/, ['🏠', '🔑', '🏢']],
-      [/salary|pay|income|bonus|freelance|cash/, ['💰', '💵', '💸']],
-      [/gift|present/, ['🎁', '🎈', '🎉']],
-      [/interest|investment|stock|crypto|bitcoin/, ['📈', '📊', '🪙']],
-      [/refund|return/, ['🏷️', '🔄', '🔙']],
-      [/pet|dog|cat/, ['🐶', '🐱', '🐾']],
-      [/kids|baby|child|children/, ['🍼', '🧸', '👶']],
-      [/beauty|salon|makeup|hair|spa/, ['💄', '💅', '💆']],
-      [/clean|laundry|wash|soap/, ['🧽', '🧼', '🧺']],
-    ];
-    for (const [regex, emojis] of map) {
-      if (regex.test(t)) return emojis;
-    }
-    return ['📦', '🏷️', '📝'];
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,13 +26,11 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
     setLoading(true);
 
     try {
-      const chosenIcon = icon || (suggestions.length > 0 ? suggestions[0] : localSuggestEmoji(name)[0]);
-      await createCategory(name.trim(), type, chosenIcon);
+      await createCategory(name.trim(), type, icon);
       
       // Reset form
       setName('');
-      setIcon('');
-      setSuggestions([]);
+      setIcon('💰');
       onSuccess();
       onClose();
     } catch (err) {
@@ -70,44 +39,6 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (suggestTimer.current) {
-      clearTimeout(suggestTimer.current);
-    }
-    const text = name.trim();
-    if (!text || text.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    suggestTimer.current = setTimeout(async () => {
-      setSuggesting(true);
-      try {
-        const { suggestions: suggested } = await suggestEmoji(text, type);
-        
-        if (suggested && suggested.length > 0) {
-          setSuggestions(suggested);
-          if (!icon || !suggested.includes(icon)) {
-            setIcon(suggested[0]);
-          }
-        } else {
-          const fallbacks = localSuggestEmoji(text);
-          setSuggestions(fallbacks);
-          if (!icon) setIcon(fallbacks[0]);
-        }
-      } catch (err) {
-        console.error('Emoji suggestion error:', err);
-        const fallbacks = localSuggestEmoji(text);
-        setSuggestions(fallbacks);
-        if (!icon) setIcon(fallbacks[0]);
-      } finally {
-        setSuggesting(false);
-      }
-    }, 300); // Faster response for better UX
-    return () => {
-      if (suggestTimer.current) clearTimeout(suggestTimer.current);
-    };
-  }, [name]);
 
   if (!isOpen) return null;
 
@@ -121,7 +52,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
       
       {/* Modal */}
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in zoom-in duration-300">
-        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-md shadow-2xl`}>
+        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} w-full max-w-md shadow-2xl relative`}>
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
@@ -133,7 +64,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
                   New {type === 'expense' ? 'Expense' : 'Income'} Category
                 </h2>
                 <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  AI-Powered Suggestions
+                  Personalize Your Tracker
                 </p>
               </div>
             </div>
@@ -173,54 +104,53 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
 
             <div className="space-y-6">
               <label className={`block text-[10px] font-black uppercase tracking-[0.2em] ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Choose an Icon
+                Category Icon
               </label>
               
               <div className="flex flex-col items-center gap-6">
-                {/* Selected Icon Display */}
-                <div
-                  className={`w-28 h-28 rounded-[2rem] border-4 flex items-center justify-center text-5xl shadow-2xl transition-all duration-500 ${
-                    icon
-                      ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/10'
-                      : isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  {suggesting ? (
-                    <RefreshCw className="w-10 h-10 text-amber-500 animate-spin" />
-                  ) : (
-                    <span className="animate-in zoom-in duration-300">{icon || '🔖'}</span>
+                {/* Selected Icon Display & Picker Trigger */}
+                <div className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => setShowPicker(!showPicker)}
+                    className={`w-28 h-28 rounded-[2rem] border-4 flex items-center justify-center text-5xl shadow-2xl transition-all duration-500 relative overflow-hidden ${
+                      icon
+                        ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/10'
+                        : isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <span className="animate-in zoom-in duration-300 z-10">{icon || '💰'}</span>
+                    <div className="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/5 transition-all flex items-center justify-center">
+                      <Search className="w-8 h-8 text-amber-500 opacity-0 group-hover:opacity-100 transition-all transform scale-50 group-hover:scale-100" />
+                    </div>
+                  </button>
+
+                  {/* Picker Popover */}
+                  {showPicker && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 z-[70]">
+                      <EmojiPicker 
+                        onSelect={(emoji) => {
+                          setIcon(emoji);
+                          setShowPicker(false);
+                        }}
+                        onClose={() => setShowPicker(false)}
+                        categoryName={name}
+                      />
+                    </div>
                   )}
                 </div>
 
-                {/* AI Suggestions Row */}
-                <div className="w-full">
-                  <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-center mb-4 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-                    {suggesting ? 'Finding perfect emojis...' : 'AI Recommended Emojis'}
-                  </p>
-                  <div className="flex justify-center gap-4">
-                    {suggestions.map((s, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setIcon(s)}
-                        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl transition-all duration-300 ${
-                          icon === s
-                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110'
-                            : isDark 
-                              ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white' 
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                    {!suggesting && suggestions.length === 0 && (
-                      <div className={`w-full py-4 text-center text-[10px] font-bold italic ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-                        Start typing to see suggestions...
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPicker(!showPicker)}
+                  className={`text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl border-2 transition-all ${
+                    isDark 
+                      ? 'border-slate-800 text-slate-400 hover:border-amber-500/30 hover:text-amber-500 hover:bg-amber-500/5' 
+                      : 'border-slate-100 text-slate-500 hover:border-amber-500/30 hover:text-amber-500 hover:bg-amber-500/5'
+                  }`}
+                >
+                  {showPicker ? 'Close Picker' : 'Choose Icon'}
+                </button>
               </div>
             </div>
 
@@ -238,7 +168,7 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
               </button>
               <button
                 type="submit"
-                disabled={loading || !name.trim() || !icon}
+                disabled={loading || !name.trim()}
                 className="btn-primary-unified flex-1 text-xs uppercase tracking-[0.2em] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -251,7 +181,6 @@ function CustomCategoryCreator({ isOpen, onClose, onSuccess, type = 'expense' })
           </form>
         </div>
       </div>
-
     </>
   );
 }

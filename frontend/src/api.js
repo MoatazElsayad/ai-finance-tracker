@@ -200,16 +200,6 @@ export const getCategories = async () => {
   }
 };
 
-export const suggestEmoji = async (name, context = "general") => {
-  try {
-    const response = await authFetch(`/categories/suggest-emoji?name=${encodeURIComponent(name)}&context=${context}`);
-    return handleResponse(response);
-  } catch (error) {
-    console.error('Error suggesting emoji:', error);
-    return { suggestions: ["💰", "📊", "🛍️"] }; // Fallback
-  }
-};
-
 export const createCategory = async (name, type, icon) => {
   try {
     const response = await authFetch(`/categories`, {
