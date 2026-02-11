@@ -364,6 +364,21 @@ function Dashboard() {
           window.dispatchEvent(new CustomEvent('user-updated', { detail: updatedUser }));
         }
       }
+
+      // Sync with system-wide state
+      if (window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('analytics-updated', { detail: {
+          total_income: displayIncome,
+          total_expenses: displayExpenses,
+          total_savings: totalSavingsOverall,
+          net_savings: lifetimeAvailableBalance,
+          total_net_worth: totalNetWorth,
+          period_net_savings: periodNetSavings,
+          savings_rate: savingsRateValue,
+          category_breakdown: categoryBreakdownArray,
+          recent_savings: recentSavings
+        }}));
+      }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {

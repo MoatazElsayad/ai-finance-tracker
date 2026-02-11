@@ -207,8 +207,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       setTimeout(() => {
         setSuccess(false);
         // Focus the amount input after success message disappears
-        const amountInput = document.querySelector('input[type="number"]');
-        if (amountInput) amountInput.focus();
+        setTimeout(() => {
+          const amountInput = document.getElementById('investment-amount-input');
+          if (amountInput) amountInput.focus();
+        }, 100);
+        
         // Scroll to top of the form area
         const formElement = document.getElementById('investment-form-top');
         if (formElement) {
@@ -287,10 +290,10 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
   const accentColor = activeTheme.accent;
 
   return (
-    <div id="investment-form-top" className={`relative w-full overflow-hidden flex flex-col lg:flex-row rounded-[2.5rem] border ${isDark ? `bg-slate-900 border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${activeTheme.shadow}` : `bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${activeTheme.shadow}`} z-10 animate-in fade-in slide-in-from-top-8 duration-700 mb-8`}>
+    <div id="investment-form-top" className={`relative w-full overflow-hidden flex flex-col lg:flex-row rounded-[1.5rem] md:rounded-[2.5rem] border ${isDark ? `bg-slate-900 border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${activeTheme.shadow}` : `bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${activeTheme.shadow}`} z-10 animate-in fade-in slide-in-from-top-8 duration-700 mb-8`}>
       
       {/* Decorative Background Gradients */}
-      <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-20 -z-10 transition-colors duration-700 ${
+      <div className={`absolute top-0 right-0 w-64 h-64 md:w-96 md:h-96 blur-[120px] opacity-20 -z-10 transition-colors duration-700 ${
         accentColor === 'amber' ? 'bg-amber-500' : 
         accentColor === 'slate' ? 'bg-slate-400' : 
         accentColor === 'emerald' ? 'bg-emerald-500' :
@@ -298,64 +301,56 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       }`} />
 
       {/* Left Sidebar - Navigation */}
-      <div className={`w-full lg:w-72 p-8 flex flex-col border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-100 bg-slate-50/50'}`}>
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-            <ArrowUpRight className="w-5 h-5 text-white" />
+      <div className={`w-full lg:w-72 p-6 md:p-8 flex flex-col border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-100 bg-slate-50/50'}`}>
+        <div className="flex items-center gap-3 mb-6 md:mb-10">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
+            <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 text-white" />
           </div>
           <div>
-            <h3 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>New Asset</h3>
-            <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Investment Portal</p>
+            <h3 className={`text-base md:text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>New Asset</h3>
+            <p className={`text-[8px] md:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Investment Portal</p>
           </div>
         </div>
 
-        <div className="space-y-3 flex-1">
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 md:gap-3 flex-1">
           <button 
             onClick={() => setActiveTab('gold')}
-            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'gold' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'gold' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'gold' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
-              <Sparkles className="w-5 h-5" />
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'gold' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-black uppercase tracking-wider">Gold</span>
-            </div>
+            <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Gold</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('silver')}
-            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'silver' ? 'bg-slate-400 text-white shadow-lg shadow-slate-400/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'silver' ? 'bg-slate-400 text-white shadow-lg shadow-slate-400/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'silver' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
-              <Gem className="w-5 h-5" />
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'silver' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <Gem className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-black uppercase tracking-wider">Silver</span>
-            </div>
+            <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Silver</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('currency')}
-            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'currency' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'currency' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'currency' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
-              <Banknote className="w-5 h-5" />
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'currency' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <Banknote className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-black uppercase tracking-wider">Currency</span>
-            </div>
+            <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Currency</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('cash')}
-            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${activeTab === 'cash' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'cash' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'cash' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
-              <Wallet className="w-5 h-5" />
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'cash' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <Wallet className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-black uppercase tracking-wider">Cash</span>
-            </div>
+            <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Cash</span>
           </button>
         </div>
 
@@ -410,12 +405,12 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
           </button>
         </div>
       ) : (
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
             {/* Chart Section */}
             {activeTab !== 'cash' && (
-              <div className={`w-full lg:w-1/2 p-5 md:p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'} transition-opacity duration-500 ${showWithdrawalWarning ? 'opacity-40' : 'opacity-100'}`}>
+              <div className={`w-full lg:w-1/2 p-4 md:p-8 border-b lg:border-b-0 lg:border-r ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'} transition-opacity duration-500 ${showWithdrawalWarning ? 'opacity-40' : 'opacity-100'}`}>
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Performance</span>
+                  <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Performance</span>
                   <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
                     {[
                       { label: '1M', value: '1M' },
@@ -426,6 +421,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                     ].map((range) => (
                       <button
                         key={range.value}
+                        type="button"
                         onClick={() => setChartRange(range.value)}
                         className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded-lg transition-all active:scale-95 whitespace-nowrap ${
                           chartRange === range.value 
@@ -438,27 +434,27 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                     ))}
                   </div>
                </div>
-               <div className="rounded-2xl md:rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-6">
-                  <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={220} dateRange={chartRange} />
+               <div className="rounded-2xl md:rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-4 md:mb-6">
+                  <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={180} dateRange={chartRange} />
                </div>
-               <div className="grid grid-cols-2 gap-3 md:gap-4">
-                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+               <div className="grid grid-cols-2 gap-2 md:gap-4">
+                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                     <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Status</span>
                     <div className={`flex items-center gap-1.5 md:gap-2 ${activeTheme.statusColor} font-black`}>
-                      <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="text-xs md:text-sm">{activeTheme.status}</span>
+                      <TrendingUp className="w-3 md:w-4 h-3 md:h-4" />
+                      <span className="text-[10px] md:text-sm">{activeTheme.status}</span>
                     </div>
                   </div>
-                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                     <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Volume</span>
-                    <span className={`text-xs md:text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeTheme.volume}</span>
+                    <span className={`text-[10px] md:text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeTheme.volume}</span>
                   </div>
                </div>
             </div>
             )}
 
             {/* Form Section */}
-            <div className={`w-full ${activeTab === 'cash' ? '' : 'lg:w-1/2'} p-5 md:p-8 lg:p-10`}>
+            <div className={`w-full ${activeTab === 'cash' ? '' : 'lg:w-1/2'} p-4 md:p-8 lg:p-10`}>
             {error && (
               <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in shake">
                 <AlertCircle className="w-5 h-5" /> {error}
@@ -520,6 +516,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                   </label>
                   <div className="relative">
                     <input 
+                      id="investment-amount-input"
                       type="number" 
                       step="0.01" 
                       value={amount} 
@@ -621,7 +618,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className={`w-full px-6 md:px-10 py-4 md:py-5 rounded-2xl text-[10px] md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white transition-all transform hover:scale-[1.01] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
+                  className={`w-full py-4 rounded-2xl text-[10px] md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white transition-all transform hover:scale-[1.01] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center justify-center gap-2">
@@ -629,10 +626,15 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                       <span>Updating Vault...</span>
                     </div>
                   ) : (
-                    isExpense && activeTab === 'cash' ? 'Deposit' :
-                    !isExpense && showWithdrawalWarning ? 'Confirm Withdrawal' :
-                    activeTab === 'cash' ? 'Withdraw' :
-                    'Secure Investment'
+                    <div className="flex items-center justify-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      <span>
+                        {isExpense && activeTab === 'cash' ? 'Deposit' :
+                         !isExpense && showWithdrawalWarning ? 'Confirm Withdrawal' :
+                         activeTab === 'cash' ? 'Withdraw' :
+                         'Secure Investment'}
+                      </span>
+                    </div>
                   )}
                 </button>
               </div>
