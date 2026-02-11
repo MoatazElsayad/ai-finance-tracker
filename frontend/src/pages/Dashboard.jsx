@@ -301,10 +301,11 @@ function Dashboard() {
       const periodNetSavingsTx = periodDeposits - periodWithdrawals;
 
       // User's Mental Model Logic:
-      // Income card should show net cash flow into checking (Regular Income - Deposits + Withdrawals)
-      // Expense card should show net cash flow out of checking (Regular Expenses + Deposits - Withdrawals)
-      const displayIncome = periodRegularIncome - periodNetSavingsTx;
-      const displayExpenses = periodRegularSpending + periodNetSavingsTx;
+      // Income card should show ALL positive cash flow (Regular Income + Savings Deposits)
+      // Expense card should show ALL negative cash flow (Regular Expenses + Savings Withdrawals)
+      // This way, a "Quick Deposit" adds to the Income total, and a "Withdrawal" adds to the Expense total.
+      const displayIncome = periodRegularIncome + periodDeposits;
+      const displayExpenses = periodRegularSpending + periodWithdrawals;
 
       // Use backend-provided lifetime balances for accuracy
       const totalVaultCash = savingsData?.cash_balance || 0;
@@ -314,6 +315,7 @@ function Dashboard() {
       const liquidCash = userData?.available_balance || 0;
       
       // Total Net Worth = Liquid Cash + Savings Vault (Cash + Investments)
+      // Since Liquid Cash excludes savings, adding them together gives the true total.
       const totalNetWorth = liquidCash + totalSavingsOverall;
 
       // Net Savings Rate calculation (based on regular income/spending)
