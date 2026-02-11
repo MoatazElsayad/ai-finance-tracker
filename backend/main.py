@@ -49,31 +49,30 @@ if os.getenv('OPENROUTER_API_KEY'):
     print(f"DEBUG: Key starts with: {os.getenv('OPENROUTER_API_KEY')[:10]}...")
 
 FREE_MODELS = [
+    # "openai/gpt-4o-mini",                      # OpenAI    - ChatGPT (Paid)
+    # "openai/chatgpt-4o-latest",                # OpenAI    - ChatGPT (paid)
+    "openai/gpt-oss-120b:free",
+    "google/gemini-2.0-flash-exp:free",          # Google    - Gemini
+    "google/gemma-3-27b-it:free",
     "stepfun/step-3.5-flash:free",
     "arcee-ai/trinity-large-preview:free",
     "upstage/solar-pro-3:free",
     "liquid/lfm-2.5-1.2b-thinking:free",
     "liquid/lfm-2.5-1.2b-instruct:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",       # Nvidia    - Nemotron
     "arcee-ai/trinity-mini:free",
     "tngtech/tng-r1t-chimera:free",
     "qwen/qwen3-next-80b-a3b-instruct:free",
     "nvidia/nemotron-nano-9b-v2:free",
-    "openai/gpt-oss-120b:free",
-    "openai/gpt-oss-20b:free",
     "z-ai/glm-4.5-air:free",
     "qwen/qwen3-coder:free",
     "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
     "google/gemma-3n-e2b-it:free",
+    "deepseek/deepseek-r1-0528:free",            # DeepSeek  - DeepSeek
     "tngtech/deepseek-r1t2-chimera:free",
-    "deepseek/deepseek-r1-0528:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "google/gemma-3-4b-it:free",
-    "google/gemma-3-12b-it:free",
-    "google/gemma-3-27b-it:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "meta-llama/llama-3.2-3b-instruct:free",
-    "google/gemini-2.0-flash-exp:free",
     "mistralai/mistral-7b-instruct:free",
     "mistralai/devstral-2512:free",
     "qwen/qwen-2.5-vl-7b-instruct:free",

@@ -238,7 +238,7 @@ export function getModelInfo(modelId) {
   } else if (modelLower.includes('liquid')) {
     return {
       name: 'Liquid LFM',
-      logo: `${lobeBase}/liquid-color.png`,
+      logo: 'https://playground.liquid.ai/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo-dark.0d6b4311.png&w=96&q=75&dpl=dpl_xz1jqhCLvj2A8wwSwGozs96g5fEz',
       color: 'blue-500',
     };
   } else if (modelLower.includes('stepfun')) {
