@@ -235,6 +235,36 @@ export function getModelInfo(modelId) {
       logo: `${lobeBase}/zhipu-color.png`,
       color: 'blue-600',
     };
+  } else if (modelLower.includes('liquid')) {
+    return {
+      name: 'Liquid LFM',
+      logo: `${lobeBase}/liquid-color.png`,
+      color: 'blue-500',
+    };
+  } else if (modelLower.includes('stepfun')) {
+    return {
+      name: 'StepFun',
+      logo: `${lobeBase}/stepfun-color.png`,
+      color: 'blue-400',
+    };
+  } else if (modelLower.includes('upstage')) {
+    return {
+      name: 'Solar Pro',
+      logo: `${lobeBase}/upstage-color.png`,
+      color: 'blue-300',
+    };
+  } else if (modelLower.includes('arcee')) {
+    return {
+      name: 'Arcee Trinity',
+      logo: `${lobeBase}/arcee-color.png`,
+      color: 'blue-200',
+    };
+  } else if (modelLower.includes('cognitivecomputations') || modelLower.includes('dolphin')) {
+    return {
+      name: 'Dolphin Mistral',
+      logo: `${lobeBase}/mistral-color.png`,
+      color: 'purple-500',
+    };
   }
 
   const modelName = modelId.split('/').pop().split(':')[0].replace(/-/g, ' ');
