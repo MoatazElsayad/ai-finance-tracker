@@ -160,7 +160,7 @@ export const SectionHeaderAndSummary = memo(({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <StatCard
             label="Total Income"
             value={analytics?.total_income ?? '—'}
@@ -182,11 +182,22 @@ export const SectionHeaderAndSummary = memo(({
           />
 
           <StatCard
-            label="Available Balance"
+            label="Liquid Cash"
             value={analytics?.net_savings ?? '—'}
             icon={<Wallet className="w-6 h-6" />}
             className="text-amber-500"
             color="amber"
+            isDark={isDark}
+            isCurrency={true}
+            analytics={analytics}
+          />
+
+          <StatCard
+            label="Net Worth"
+            value={analytics?.total_net_worth ?? '—'}
+            icon={<Scale className="w-6 h-6" />}
+            className="text-purple-600 dark:text-purple-400"
+            color="indigo"
             isDark={isDark}
             isCurrency={true}
             analytics={analytics}

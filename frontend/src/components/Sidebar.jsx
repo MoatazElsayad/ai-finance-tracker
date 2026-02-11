@@ -149,7 +149,7 @@ function Sidebar({ user: initialUser }) {
                 isDark ? 'bg-amber-500/5 border border-amber-500/10' : 'bg-amber-50/50 border border-amber-100'
               }`}>
                 <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 ${isDark ? 'text-amber-500/50' : 'text-amber-600/50'}`}>
-                  Available Balance
+                  Liquid Cash
                 </p>
                 <p className={`text-base font-black tracking-tight ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                   {formatCurrency(user?.available_balance)}

@@ -8,6 +8,7 @@ import {
   getMonthlyAnalytics, 
   generateAISummary, 
   getCurrentUser, 
+  getSavingsData,
   askAIQuestion, 
   generateReport,
   getCategories,
@@ -72,18 +73,6 @@ function Dashboard() {
       window.removeEventListener('transaction-added', handleTransactionAdded);
     };
   }, [selectedMonth, viewMode]);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await getCurrentUser();
-        setUser(userData);
-      } catch (error) {
-        console.error('Failed to load user:', error);
-      }
-    };
-    loadUser();
-  }, []);
 
   useEffect(() => {
     if (aiMode === 'chat' && chatMessages.length === 0) {
@@ -267,24 +256,19 @@ function Dashboard() {
   const loadDashboard = async () => {
     setLoading(true);
     try {
-      const [txnsData, categories, userData] = await Promise.all([
+      const [txnsData, categories, userData, savingsData] = await Promise.all([
         getTransactions(1, 1000), // Get more transactions for dashboard
         getCategories(),
-        getCurrentUser()
+        getCurrentUser(),
+        getSavingsData()
       ]);
 
       // Handle both old format (array) and new format (object with pagination)
       const txns = txnsData?.transactions || (Array.isArray(txnsData) ? txnsData : []);
 
       setUser(userData);
-      console.log('🔄 Dashboard categories updated, checking for savings category...');
-      console.log('📁 Categories list:', categories.map(c => c.name));
       const savingsCat = categories.find(c => c.name && c.name.toLowerCase().includes('savings'));
-      console.log('🔍 Savings category found in Dashboard:', savingsCat ? `${savingsCat.name} (ID: ${savingsCat.id})` : 'NO');
       setHasSavingsAccount(!!savingsCat);
-
-      // Log state changes for debugging
-      console.log('💎 Dashboard hasSavingsAccount state set to:', !!savingsCat);
 
       const { startDateStr, endDateStr } = getDateRange();
 
@@ -294,47 +278,47 @@ function Dashboard() {
         return txnDateStr >= startDateStr && txnDateStr <= endDateStr;
       });
 
-      // separation of regular expenses and special savings
-      const totalIncome = periodTransactions
+      // Total regular income (non-savings)
+      const periodRegularIncome = periodTransactions
         .filter(t => t.amount > 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
         .reduce((sum, t) => sum + t.amount, 0);
 
-      // Total of all negative amounts (Expenses + Savings)
-      const totalOutflow = Math.abs(
-        periodTransactions
-          .filter(t => t.amount < 0)
-          .reduce((sum, t) => sum + t.amount, 0)
-      );
-
-      // Total dedicated savings (deposits minus withdrawals) - PERIOD
-      const totalSavingsTx = periodTransactions
-          .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
-          .reduce((sum, t) => sum + (-t.amount), 0);
-
-      // Total dedicated savings (deposits minus withdrawals) - OVERALL (Lifetime)
-      const totalSavingsOverall = txns
-          .filter(t => t.category_name && t.category_name.toLowerCase().includes('savings'))
-          .reduce((sum, t) => sum + (-t.amount), 0);
-
-      // Actual spending (regular expenses only, excluding ALL savings-related transactions)
-      const actualSpending = periodTransactions
+      // Total regular expenses (non-savings)
+      const periodRegularSpending = periodTransactions
         .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-      // Total lifetime balance calculation
-      const lifetimeIncome = txns
-        .filter(t => t.amount > 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
-        .reduce((sum, t) => sum + t.amount, 0);
-      const lifetimeSpending = txns
-        .filter(t => t.amount < 0 && !(t.category_name && t.category_name.toLowerCase().includes('savings')))
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-      
-      const lifetimeAvailableBalance = lifetimeIncome - lifetimeSpending - totalSavingsOverall;
+      // Period net savings (Deposits - Withdrawals)
+      // Deposits are stored as negative, Withdrawals as positive
+      const periodDeposits = periodTransactions
+          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+          
+      const periodWithdrawals = periodTransactions
+          .filter(t => t.amount > 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
+          .reduce((sum, t) => sum + t.amount, 0);
 
-      // Net Savings = Income - Actual Spending (this is what's left over for potential savings in THIS period)
-      const periodNetSavings = totalIncome - actualSpending;
+      const periodNetSavingsTx = periodDeposits - periodWithdrawals;
+
+      // User's Mental Model Logic:
+      // Income card should show net cash flow into checking (Regular Income - Deposits + Withdrawals)
+      // Expense card should show net cash flow out of checking (Regular Expenses + Deposits - Withdrawals)
+      const displayIncome = periodRegularIncome - periodNetSavingsTx;
+      const displayExpenses = periodRegularSpending + periodNetSavingsTx;
+
+      // Use backend-provided lifetime balances for accuracy
+      const totalVaultCash = savingsData?.cash_balance || 0;
+      const totalInvestmentsValue = (savingsData?.investments || []).reduce((sum, inv) => sum + (inv.current_value || 0), 0);
+      const totalSavingsOverall = totalVaultCash + totalInvestmentsValue;
       
-      const savingsRateValue = totalIncome > 0 ? ((periodNetSavings / totalIncome) * 100) : 0;
+      const lifetimeAvailableBalance = userData?.available_balance || 0;
+      
+      // Total Net Worth = Liquid Cash + Savings Vault (Cash + Investments)
+      const totalNetWorth = lifetimeAvailableBalance + totalSavingsOverall;
+
+      // Net Savings Rate calculation (based on regular income/spending)
+      const periodNetSavings = periodRegularIncome - periodRegularSpending;
+      const savingsRateValue = periodRegularIncome > 0 ? ((periodNetSavings / periodRegularIncome) * 100) : 0;
 
       const categoryBreakdown = {};
       periodTransactions
@@ -356,11 +340,12 @@ function Dashboard() {
 
       setTransactions(txns);
       setAnalytics({
-        total_income: totalIncome,
-        total_expenses: actualSpending, // Show only regular expenses
-        total_savings: totalSavingsOverall, // Show lifetime total savings in the card
-        net_savings: lifetimeAvailableBalance, // This is the "Available Balance" card
-        period_net_savings: periodNetSavings, // Use this for internal logic if needed
+        total_income: displayIncome,
+        total_expenses: displayExpenses,
+        total_savings: totalSavingsOverall,
+        net_savings: lifetimeAvailableBalance,
+        total_net_worth: totalNetWorth, // New metric
+        period_net_savings: periodNetSavings,
         savings_rate: savingsRateValue,
         category_breakdown: categoryBreakdownArray,
         recent_savings: recentSavings

@@ -1101,7 +1101,7 @@ export default function Savings() {
             <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} relative overflow-hidden group border-2 ${isDark ? 'hover:border-blue-500/30 shadow-blue-900/20' : 'hover:border-blue-200 shadow-blue-600/10'} transition-all duration-500 shadow-xl`}>
               <div className="flex items-center justify-between mb-6">
                 <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Liquid Cash
+                  Vault Balance
                 </span>
                 <div className="p-3 bg-blue-600/10 rounded-2xl border border-blue-600/20 text-blue-600 shadow-sm group-hover:scale-110 transition-transform duration-500">
                   <Wallet className="w-6 h-6" />
