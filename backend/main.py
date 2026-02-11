@@ -462,23 +462,12 @@ def get_me(
     """
     # Note: Skipping rate limit for auth endpoint to avoid issues
     user = get_current_user(request, authorization, token, db)
-    # Calculate Liquid Balance (Total - Savings)
+    # Calculate Total Balance (Sum of all transactions)
+    # This represents the Total Net Worth (Liquid + Savings Cash)
     from sqlalchemy import func
-    savings_cat = db.query(Category).filter(
-        Category.name.ilike("%savings%"),
-        (Category.user_id == user.id) | (Category.user_id == None)
-    ).first()
-    
-    # Base balance: Sum of all non-savings transactions
-    if savings_cat:
-        balance = db.query(func.sum(Transaction.amount)).filter(
-            Transaction.user_id == user.id,
-            Transaction.category_id != savings_cat.id
-        ).scalar() or 0.0
-    else:
-        balance = db.query(func.sum(Transaction.amount)).filter(
-            Transaction.user_id == user.id
-        ).scalar() or 0.0
+    balance = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == user.id
+    ).scalar() or 0.0
     
     return {
         "id": user.id,

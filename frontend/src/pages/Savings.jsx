@@ -101,6 +101,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
   const [buyDate, setBuyDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [chartRange, setChartRange] = useState('12M');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [isExpense, setIsExpense] = useState(false);
@@ -190,6 +191,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       setIsExpense(false);
 
       setSuccess(true);
+      setShowToast(true);
       
       // Trigger immediate refresh
       if (typeof loadAll === 'function') {
@@ -204,6 +206,8 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         colors: ['#3b82f6', '#10b981', '#fbbf24']
       });
       
+      // Hide success screen after 5 seconds, but toast stays for 3s if needed
+      // Actually the user wants "3 seconds after success"
       setTimeout(() => {
         setSuccess(false);
         // Focus the amount input after success message disappears
@@ -220,6 +224,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }, 5000);
+
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
     } catch (err) {
       setError(activeTab === 'cash' ? 'Failed to process transaction.' : 'Failed to add investment. Please try again.');
     } finally {
@@ -366,20 +375,23 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       {/* Right Content - Form and Chart */}
       <div className={`flex-1 flex flex-col ${isDark ? 'bg-slate-900/50' : 'bg-white'}`}>
         {!success && (
-          <div className={`p-5 md:p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between`}>
-            <div className="flex items-center gap-4">
-              <div className={`p-2 rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
-                {activeTheme.icon}
+          <div className={`p-4 md:p-8 lg:p-10 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between`}>
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className={`p-1.5 md:p-2 rounded-xl md:rounded-2xl ${activeTheme.bg} ${activeTheme.text}`}>
+                {React.cloneElement(activeTheme.icon, { className: "w-4 h-4 md:w-5 md:h-5" })}
               </div>
               <div>
-                <h2 className={`text-lg md:text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <h2 className={`text-base md:text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {activeTab === 'currency' ? selectedCurrency : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
                 </h2>
-                <p className={`text-[8px] md:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Market Performance</p>
+                <p className={`text-[7px] md:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className="md:inline hidden">Market Performance</span>
+                  <span className="md:hidden">Performance</span>
+                </p>
               </div>
             </div>
-            <button onClick={onClose} className={`p-2 rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
-              <X className="w-5 h-5" />
+            <button onClick={onClose} className={`p-1.5 md:p-2 rounded-xl md:rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
+              <X className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
         )}
@@ -511,8 +523,10 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-2`}>
-                    Amount {['gold', 'silver'].includes(activeTab) ? '(g)' : activeTab === 'cash' ? '(EGP)' : `(${selectedCurrency})`}
+                  <label className={`block text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} flex items-center gap-2`}>
+                    <span className="md:inline hidden">Amount</span>
+                    <span className="md:hidden">Value</span>
+                    {['gold', 'silver'].includes(activeTab) ? '(g)' : activeTab === 'cash' ? '(EGP)' : `(${selectedCurrency})`}
                   </label>
                   <div className="relative">
                     <input 
@@ -548,8 +562,14 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                         <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
                       <div>
-                        <h4 className="text-xs md:text-sm font-black text-rose-500 uppercase tracking-wider">Withdrawal from Vault</h4>
-                        <p className={`text-[9px] md:text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>This will reduce your total balance.</p>
+                        <h4 className="text-[10px] md:text-sm font-black text-rose-500 uppercase tracking-wider">
+                          <span className="md:inline hidden">Withdrawal from Vault</span>
+                          <span className="md:hidden">Vault Withdrawal</span>
+                        </h4>
+                        <p className={`text-[8px] md:text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <span className="md:inline hidden">This will reduce your total balance.</span>
+                          <span className="md:hidden">Reduces total balance.</span>
+                        </p>
                       </div>
                     </div>
                   )}
@@ -611,8 +631,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               <div className="pt-2 md:pt-4">
                 <div className={`p-4 md:p-5 rounded-2xl border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'} mb-6`}>
                   <div className="flex justify-between items-center">
-                    <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Value</span>
-                    <span className="text-lg md:text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
+                    <span className={`text-[10px] md:text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <span className="md:inline hidden">Total Value</span>
+                      <span className="md:hidden">Total</span>
+                    </span>
+                    <span className="text-base md:text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
                   </div>
                 </div>
                 <button 
@@ -628,17 +651,42 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                   ) : (
                     <div className="flex items-center justify-center gap-2">
                       <Plus className="w-4 h-4" />
-                      <span>
-                        {isExpense && activeTab === 'cash' ? 'Deposit' :
-                         !isExpense && showWithdrawalWarning ? 'Confirm Withdrawal' :
-                         activeTab === 'cash' ? 'Withdraw' :
-                         'Secure Investment'}
-                      </span>
+                         <span>
+                           {isExpense && activeTab === 'cash' ? 'Deposit' :
+                            !isExpense && showWithdrawalWarning ? (
+                              <>
+                                <span className="md:inline hidden">Confirm Withdrawal</span>
+                                <span className="md:hidden">Confirm</span>
+                              </>
+                            ) :
+                            activeTab === 'cash' ? 'Withdraw' :
+                            (
+                              <>
+                                <span className="md:inline hidden">Secure Investment</span>
+                                <span className="md:hidden">Secure</span>
+                              </>
+                            )}
+                         </span>
                     </div>
                   )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Vault Updated Toast */}
+      {showToast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-500">
+          <div className={`px-6 py-3 rounded-2xl ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border shadow-2xl flex items-center gap-3`}>
+            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+              <RefreshCw className="w-4 h-4" />
+            </div>
+            <div>
+              <p className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>Vault Updated</p>
+              <p className={`text-[8px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Balances synchronized successfully</p>
+            </div>
           </div>
         </div>
       )}
