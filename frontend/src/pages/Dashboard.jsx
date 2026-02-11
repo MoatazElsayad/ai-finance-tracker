@@ -289,14 +289,14 @@ function Dashboard() {
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
       // Period net savings (Deposits - Withdrawals)
-      // Deposits are stored as negative, Withdrawals as positive
+      // NEW LOGIC: Deposits are positive, Withdrawals are negative
       const periodDeposits = periodTransactions
-          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
-          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-          
-      const periodWithdrawals = periodTransactions
           .filter(t => t.amount > 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
           .reduce((sum, t) => sum + t.amount, 0);
+          
+      const periodWithdrawals = periodTransactions
+          .filter(t => t.amount < 0 && t.category_name && t.category_name.toLowerCase().includes('savings'))
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
       const periodNetSavingsTx = periodDeposits - periodWithdrawals;
 
@@ -311,10 +311,10 @@ function Dashboard() {
       const totalInvestmentsValue = (savingsData?.investments || []).reduce((sum, inv) => sum + (inv.current_value || 0), 0);
       const totalSavingsOverall = totalVaultCash + totalInvestmentsValue;
       
-      const lifetimeAvailableBalance = userData?.available_balance || 0;
+      const liquidCash = userData?.available_balance || 0;
       
       // Total Net Worth = Liquid Cash + Savings Vault (Cash + Investments)
-      const totalNetWorth = lifetimeAvailableBalance + totalSavingsOverall;
+      const totalNetWorth = liquidCash + totalSavingsOverall;
 
       // Net Savings Rate calculation (based on regular income/spending)
       const periodNetSavings = periodRegularIncome - periodRegularSpending;
@@ -343,19 +343,19 @@ function Dashboard() {
         total_income: displayIncome,
         total_expenses: displayExpenses,
         total_savings: totalSavingsOverall,
-        net_savings: lifetimeAvailableBalance,
-        total_net_worth: totalNetWorth, // New metric
+        net_savings: liquidCash,
+        total_net_worth: totalNetWorth, 
         period_net_savings: periodNetSavings,
         savings_rate: savingsRateValue,
         category_breakdown: categoryBreakdownArray,
         recent_savings: recentSavings
       });
 
-      // Update global user state with lifetime available balance
+      // Update global user state with liquid balance
       if (userData) {
         const updatedUser = {
           ...userData,
-          available_balance: lifetimeAvailableBalance
+          available_balance: liquidCash
         };
         setUser(updatedUser);
         

@@ -458,9 +458,23 @@ def get_me(
     """
     # Note: Skipping rate limit for auth endpoint to avoid issues
     user = get_current_user(request, authorization, token, db)
-    # Calculate balance
+    # Calculate Liquid Balance (Total - Savings)
     from sqlalchemy import func
-    balance = db.query(func.sum(Transaction.amount)).filter(Transaction.user_id == user.id).scalar() or 0.0
+    savings_cat = db.query(Category).filter(
+        Category.name.ilike("%savings%"),
+        (Category.user_id == user.id) | (Category.user_id == None)
+    ).first()
+    
+    # Base balance: Sum of all non-savings transactions
+    if savings_cat:
+        balance = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == user.id,
+            Transaction.category_id != savings_cat.id
+        ).scalar() or 0.0
+    else:
+        balance = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == user.id
+        ).scalar() or 0.0
     
     return {
         "id": user.id,
@@ -2199,9 +2213,8 @@ async def get_savings(
         rates = await fetch_real_time_rates(db)
         
         # 2. Calculate Cash Balance from Transactions
-        # The vault balance is the negative sum of all transactions in the 'Savings' category.
-        # Since deposits are stored as negative (expenses from wallet) and withdrawals 
-        # as positive (income to wallet), -sum(...) gives the correct current vault balance.
+        # NEW LOGIC: Deposits are positive, Withdrawals are negative.
+        # This aligns with the "Total Net Worth = sum(all transactions)" model.
         savings_cat = db.query(Category).filter(
             Category.name.ilike("%savings%"),
             (Category.user_id == user.id) | (Category.user_id == None)
@@ -2213,15 +2226,13 @@ async def get_savings(
                 Transaction.user_id == user.id,
                 Transaction.category_id == savings_cat.id
             ).scalar() or 0.0
-            cash_savings = max(0.0, -net_savings)
+            cash_savings = max(0.0, net_savings)
 
         # 3. Get Investments
         investments = db.query(Investment).filter(Investment.user_id == user.id).all()
         
         # 4. Monthly Savings Allocation for current month
-        # We calculate the monthly saved amount as the negative sum of 'Savings' transactions 
-        # for the current month. Only deposits (stored as negative) contribute positively 
-        # to the monthly goal progress.
+        # NEW LOGIC: Positive transactions to savings category are deposits.
         now = datetime.utcnow()
         current_month_start = datetime(now.year, now.month, 1)
         
@@ -2230,10 +2241,10 @@ async def get_savings(
             monthly_net = db.query(func.sum(Transaction.amount)).filter(
                 Transaction.user_id == user.id,
                 Transaction.category_id == savings_cat.id,
-                Transaction.date >= current_month_start
+                Transaction.date >= current_month_start,
+                Transaction.amount > 0
             ).scalar() or 0.0
-            # Only count net deposits towards the monthly goal
-            monthly_saved = max(0.0, -monthly_net)
+            monthly_saved = float(monthly_net)
 
         # 5. Long-term Savings Goal
         long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
