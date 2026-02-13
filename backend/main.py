@@ -2348,6 +2348,27 @@ async def add_investment(
             buy_date=buy_date
         )
         db.add(investment)
+        
+        # DEDUCT FROM CASH SAVINGS:
+        # Create a transaction in the "Savings" category to reflect the purchase cost.
+        # This decreases the cash_balance while the investment record increases the portfolio value.
+        savings_category = db.query(Category).filter(
+            Category.name.ilike("%savings%"),
+            (Category.user_id == user.id) | (Category.user_id == None)
+        ).first()
+        
+        if savings_category:
+            cost = float(data.amount * buy_price)
+            # Negative amount indicates money leaving cash savings to buy an asset
+            purchase_transaction = Transaction(
+                user_id=user.id,
+                category_id=savings_category.id,
+                amount=-cost,
+                description=f"Investment Purchase: {data.amount} {data.type} @ {buy_price}",
+                date=buy_date
+            )
+            db.add(purchase_transaction)
+        
         db.commit()
         db.refresh(investment)
         return investment

@@ -27,6 +27,7 @@ import {
   AlertCircle, 
   Sparkles, 
   TrendingUp, 
+  TrendingDown,
   Landmark, 
   ArrowRight,
   PieChart as PieChartIcon,
@@ -864,6 +865,20 @@ export default function Savings() {
   }, [loadAll]);
 
   const investments = useMemo(() => savings?.investments || [], [savings]);
+  const portfolioProfit = useMemo(() => {
+    return investments.reduce((sum, i) => {
+      const buyValue = (i.amount || 0) * (i.buy_price || 0);
+      const currentValue = i.current_value || 0;
+      return sum + (currentValue - buyValue);
+    }, 0);
+  }, [investments]);
+
+  const portfolioProfitPercent = useMemo(() => {
+    const totalBuyValue = investments.reduce((sum, i) => sum + (i.amount || 0) * (i.buy_price || 0), 0);
+    if (totalBuyValue === 0) return 0;
+    return (portfolioProfit / totalBuyValue) * 100;
+  }, [investments, portfolioProfit]);
+
   const savingsTransactions = useMemo(
     () => transactions.filter(t => t.category_name?.toLowerCase()?.includes('savings')),
     [transactions]
@@ -1287,12 +1302,28 @@ export default function Savings() {
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/90 mb-2">
                   Total Net Worth
                 </p>
-                <h2 className="text-[3rem] md:text-[5rem] leading-none font-black tracking-tight text-white tabular-nums drop-shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+                <h2 className={`text-[3rem] md:text-[5rem] leading-none font-black tracking-tight tabular-nums drop-shadow-[0_8px_30px_rgba(0,0,0,0.25)] ${
+                  portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-white'
+                }`}>
                   {fmt(animatedNetWorth)}
                 </h2>
-                <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-100/80">
-                  Live Vault + Portfolio Value
-                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100/80">
+                    Live Vault + Portfolio Value
+                  </p>
+                  {investments.length > 0 && (
+                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border backdrop-blur-md ${
+                      portfolioProfit >= 0 
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                        : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                    }`}>
+                      {portfolioProfit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      <span className="text-[10px] font-black tabular-nums">
+                        {portfolioProfit >= 0 ? '+' : ''}{fmt(portfolioProfit)} ({portfolioProfitPercent.toFixed(2)}%)
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <span className="mt-4 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-blue-50 backdrop-blur-sm">
                   Live count on page load
                 </span>
@@ -1723,6 +1754,11 @@ export default function Savings() {
                         if (!inv) return null;
                         const type = (inv.type || "Investment").toLowerCase();
                         const isMetal = ["gold", "silver"].includes(type);
+                        const buyValue = (inv.amount || 0) * (inv.buy_price || 0);
+                        const invProfit = (inv.current_value || 0) - buyValue;
+                        const invProfitPercent = buyValue > 0 ? (invProfit / buyValue) * 100 : 0;
+                        const isPositive = invProfit >= 0;
+
                         return (
                           <div key={inv.id} className={`group p-6 rounded-[2rem] border-2 transition-all duration-300 ${
                             isDark 
@@ -1764,9 +1800,9 @@ export default function Savings() {
                                 </div>
                               </div>
                               <div className="flex flex-col items-end">
-                                <div className="flex items-center gap-1">
-                                  <TrendingUp className="w-3 h-3 text-emerald-500" />
-                                  <span className="text-[10px] font-black text-emerald-500">+{(Math.random() * 5 + 1).toFixed(1)}%</span>
+                                <div className={`flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                  <span className="text-[10px] font-black">{isPositive ? '+' : ''}{invProfitPercent.toFixed(1)}%</span>
                                 </div>
                                 <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Total Return</span>
                               </div>
@@ -1774,24 +1810,28 @@ export default function Savings() {
 
                             <div className="grid grid-cols-2 gap-3 mb-6">
                               <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Value</p>
+                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Current Value</p>
                                 <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(inv.current_value)}</p>
                               </div>
                               <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Avg Price</p>
+                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Buy Price</p>
                                 <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                  EGP {((inv.current_value || 0) / (inv.amount || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  EGP {(inv.buy_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </p>
                               </div>
                             </div>
 
                             <div className="flex items-center justify-between pt-4 border-t border-slate-700/20">
                               <div className="flex gap-2">
-                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                                  Active
-                                </span>
+                                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
+                                  isPositive 
+                                    ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
+                                    : (isDark ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600')
+                                }`}>
+                                  {isPositive ? '+' : ''}{fmt(invProfit)}
+                                </div>
                                 <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-                                  {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                  {inv.buy_date ? new Date(inv.buy_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                                 </span>
                               </div>
                               <button 
