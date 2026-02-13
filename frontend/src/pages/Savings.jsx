@@ -1302,9 +1302,18 @@ export default function Savings() {
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/90 mb-2">
                   Total Net Worth
                 </p>
-                <h2 className={`text-[3rem] md:text-[5rem] leading-none font-black tracking-tight tabular-nums drop-shadow-[0_8px_30px_rgba(0,0,0,0.25)] ${
-                  portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-white'
-                }`}>
+                <h2 
+                  className={`text-[3rem] md:text-[5rem] leading-none font-black tracking-tight tabular-nums drop-shadow-[0_8px_30px_rgba(0,0,0,0.25)] cursor-help transition-all duration-300 ${
+                    portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-white'
+                  }`}
+                  title={
+                    portfolioProfit > 0 
+                      ? "Your total wealth is up because market rates exceed your buy prices." 
+                      : portfolioProfit < 0 
+                      ? "Your total wealth is down because market rates are currently lower than what you paid." 
+                      : "Your portfolio value matches your initial investment cost."
+                  }
+                >
                   {fmt(animatedNetWorth)}
                 </h2>
                 <div className="flex items-center gap-3 mt-2">
@@ -1327,6 +1336,21 @@ export default function Savings() {
                 <span className="mt-4 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-blue-50 backdrop-blur-sm">
                   Live count on page load
                 </span>
+                
+                {investments.length > 0 && (
+                  <div className="mt-3 animate-in fade-in slide-in-from-left-4 duration-700">
+                    <p className={`text-[9px] font-black uppercase tracking-[0.15em] flex items-center gap-2 ${
+                      portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-blue-100/60'
+                    }`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                      {portfolioProfit > 0 
+                        ? "Market Gain: Your assets have appreciated since purchase." 
+                        : portfolioProfit < 0 
+                        ? "Market Dip: Current rates are below your average buy price." 
+                        : "Neutral: Asset values are stable relative to purchase cost."}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
