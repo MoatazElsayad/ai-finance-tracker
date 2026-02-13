@@ -522,9 +522,9 @@ export const askAIQuestion = async (year, month, question) => {
 // SAVINGS & INVESTMENTS
 // ============================================
 
-export const getSavingsData = async () => {
+export const getSavingsData = async (force = false) => {
   try {
-    const response = await authFetch(`/savings`);
+    const response = await authFetch(`/savings${force ? '?force=true' : ''}`);
     return handleResponse(response);
   } catch (error) {
     console.error('Error fetching savings data:', error);

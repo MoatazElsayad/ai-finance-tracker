@@ -2185,6 +2185,7 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
 async def get_savings_rates(request: Request, force: bool = False, db: Session = Depends(get_db)):
     """Public endpoint for rates (DB cached)"""
     check_rate_limit(request)
+    print(f"DEBUG: Manual refresh requested: {force}")
     return await fetch_real_time_rates(db, force_refresh=force)
 
 @app.get("/savings")
@@ -2192,14 +2193,15 @@ async def get_savings(
     request: Request,
     authorization: HTTPAuthorizationCredentials = Depends(security),
     token: Optional[str] = None,
+    force: bool = False,
     db: Session = Depends(get_db)
 ):
     try:
         user = get_current_user(request, authorization, token, db)
-        print(f"DEBUG: get_savings for user {user.id}")
+        print(f"DEBUG: get_savings for user {user.id}, force={force}")
         
         # 1. Get Real-time Rates
-        rates = await fetch_real_time_rates(db)
+        rates = await fetch_real_time_rates(db, force_refresh=force)
         
         # 2. Calculate Cash Balance from Transactions
         # NEW LOGIC: Deposits are positive, Withdrawals are negative.

@@ -1162,9 +1162,16 @@ export default function Savings() {
   const refreshMarketRates = async () => {
     setIsRatesRefreshing(true);
     try {
-      const updatedRates = await getSavingsRates(false);
+      // 1. Force refresh the rates cache and get updated rates
+      const updatedRates = await getSavingsRates(true);
       setRates(updatedRates || {});
       setRatesUpdatedAt(new Date());
+
+      // 2. Refresh the entire savings data (cash balance, investments, etc.)
+      const sData = await getSavingsData(true);
+      setSavings(sData || {});
+      if (sData?.monthly_goal) setMonthlyGoalInput(String(sData.monthly_goal));
+      
     } catch (err) {
       console.warn("Could not refresh rates:", err);
     } finally {
