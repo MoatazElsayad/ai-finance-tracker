@@ -2014,23 +2014,22 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
     should_refresh = force_refresh
     
     if not should_refresh and cached_record and cached_record.updated_at:
-        cache_age_hours = (now_utc - cached_record.updated_at).total_seconds() / 3600
+        # Check if we passed a scheduled update time since last update
+        # Schedules: 8:00, 14:00, 20:00 EET (UTC+2)
+        # This strictly limits external API calls to 3 times per day.
+        last_update_eet = cached_record.updated_at + timedelta(hours=2)
+        schedules = [time(8, 0), time(14, 0), time(20, 0)]
         
-        # Check if cache is older than 8 hours
-        if cache_age_hours >= 8:
+        for sched_time in schedules:
+            sched_dt = datetime.combine(now_eet.date(), sched_time)
+            # If a schedule happened between last update and now, we refresh
+            if last_update_eet < sched_dt <= now_eet:
+                should_refresh = True
+                break
+        
+        # Also refresh if the cache is extremely old (e.g., > 24 hours) as a safety measure
+        if not should_refresh and (now_utc - cached_record.updated_at).total_seconds() > 86400:
             should_refresh = True
-        else:
-            # Check if we passed a scheduled update time since last update
-            # Schedules: 8:00, 14:00, 20:00 EET
-            last_update_eet = cached_record.updated_at + timedelta(hours=2)
-            schedules = [time(8, 0), time(14, 0), time(20, 0)]
-            
-            for sched_time in schedules:
-                sched_dt = datetime.combine(now_eet.date(), sched_time)
-                # If a schedule happened between last update and now
-                if last_update_eet < sched_dt <= now_eet:
-                    should_refresh = True
-                    break
 
     if not should_refresh and cached_record:
         return {
