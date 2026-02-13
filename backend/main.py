@@ -2118,22 +2118,29 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
                     print(f"Currency API failed: {ce}")
 
             # 3. Metals-API Fallback (Only if GoldPrice failed and we have a key)
-            # We check if gold is still at fallback/cache level or if we want a second opinion
-            if METALS_API_KEY and (rates_data["gold"] == 7150.0 or (cached_record and rates_data["gold"] == cached_record.gold_egp_per_gram)):
+            # We request EGP directly to avoid manual conversion errors.
+            if METALS_API_KEY and (rates_data["gold"] == 7151.64 or (cached_record and rates_data["gold"] == cached_record.gold_egp_per_gram)):
                 try:
-                    metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=USD&symbols=XAU,XAG"
+                    # Requesting with base=EGP to get rates directly in Egyptian Pounds
+                    metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=EGP&symbols=XAU,XAG"
                     metals_resp = await client.get(metals_url, timeout=10.0)
                     if metals_resp.status_code == 200:
                         metals_json = metals_resp.json()
                         if metals_json.get("success") and "rates" in metals_json:
+                            # Rates are in 1 unit of metal per X units of EGP (since base is EGP)
+                            # Actually, Metals-API usually returns 1 base = X symbols.
+                            # So 1 EGP = X XAU. We want 1 XAU in EGP, which is 1/X.
                             ounce_to_gram = 31.1035
-                            gold_usd = metals_json["rates"].get("XAU")
-                            silver_usd = metals_json["rates"].get("XAG")
-                            usd_to_egp = rates_data["usd"]
-                            if gold_usd: 
-                                rates_data["gold"] = round((gold_usd * usd_to_egp) / ounce_to_gram, 2)
-                            if silver_usd: 
-                                rates_data["silver"] = round((silver_usd * usd_to_egp) / ounce_to_gram, 2)
+                            rate_xau = metals_json["rates"].get("XAU") # 1 EGP = ? XAU
+                            rate_xag = metals_json["rates"].get("XAG") # 1 EGP = ? XAG
+                            
+                            if rate_xau and rate_xau > 0:
+                                gold_egp_ounce = 1 / rate_xau
+                                rates_data["gold"] = round(gold_egp_ounce / ounce_to_gram, 2)
+                            if rate_xag and rate_xag > 0:
+                                silver_egp_ounce = 1 / rate_xag
+                                rates_data["silver"] = round(silver_egp_ounce / ounce_to_gram, 2)
+                            print(f"Successfully fetched direct EGP rates from Metals-API: Gold={rates_data['gold']}")
                 except Exception as me:
                     print(f"Metals-API fallback failed: {me}")
             
