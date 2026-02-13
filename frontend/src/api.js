@@ -2,8 +2,8 @@
  * API Client - Fixed & Robust Version
  */
 
-// Change this line in your api.js
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8001' : '/api');
+// Local dev backend runs on 8000 (docker-compose and common FastAPI default here).
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
 
 // Helper function to get auth token from localStorage
 const getToken = () => localStorage.getItem('token');
@@ -593,6 +593,32 @@ export const setLongTermSavingsGoal = async (targetAmount, targetDate) => {
   } catch (error) {
     console.error('Error setting long-term savings goal:', error);
     throw new Error(error.message || 'Failed to set long-term savings goal. Please try again.');
+  }
+};
+
+export const getShoppingState = async () => {
+  try {
+    const response = await authFetch(`/shopping/state`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error fetching shopping state:', error);
+    throw new Error(error.message || 'Failed to load shopping data. Please try again.');
+  }
+};
+
+export const saveShoppingState = async (inventoryItems, shoppingItems) => {
+  try {
+    const response = await authFetch(`/shopping/state`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        inventory_items: inventoryItems || [],
+        shopping_items: shoppingItems || [],
+      }),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error saving shopping state:', error);
+    throw new Error(error.message || 'Failed to save shopping data. Please try again.');
   }
 };
 

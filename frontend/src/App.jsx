@@ -19,6 +19,7 @@ import Landing from "./pages/Landing";
 import Profile from './pages/Profile';
 import ReceiptUpload from './pages/ReceiptUpload';
 import Savings from './pages/Savings';
+import Shopping from './pages/Shopping';
 import About from './pages/About';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
@@ -59,6 +60,7 @@ function AppContent() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/budget" element={<Budget />} />
           <Route path="/savings" element={<Savings />} />
+          <Route path="/shopping" element={<Shopping />} />
           <Route path="/goals" element={<Goals />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/receipt-upload" element={<ReceiptUpload />} />
@@ -151,6 +153,7 @@ function Layout() {
                     { path: '/transactions', label: 'Transactions' },
                     { path: '/budget', label: 'Budget' },
                     { path: '/savings', label: 'Savings' },
+                    { path: '/shopping', label: 'Shopping & Inventory' },
                     { path: '/goals', label: 'Savings Goals' },
                     { path: '/receipt-upload', label: 'Receipt Upload' },
                     { path: '/profile', label: 'Profile' },

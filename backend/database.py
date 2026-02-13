@@ -39,6 +39,13 @@ def init_database():
             if "monthly_savings_goal" not in col_names:
                 print("Adding 'monthly_savings_goal' column to users table...")
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN monthly_savings_goal FLOAT DEFAULT 0.0")
+
+            # Ensure goals table has current_amount for progress tracking
+            goals_cols = conn.exec_driver_sql("PRAGMA table_info(goals)").fetchall()
+            goals_col_names = [c[1] for c in goals_cols]
+            if "current_amount" not in goals_col_names:
+                print("Adding 'current_amount' column to goals table...")
+                conn.exec_driver_sql("ALTER TABLE goals ADD COLUMN current_amount FLOAT DEFAULT 0.0")
                 
             # Check market_rates_cache columns for expanded currency support
             rates_cols = conn.exec_driver_sql("PRAGMA table_info(market_rates_cache)").fetchall()

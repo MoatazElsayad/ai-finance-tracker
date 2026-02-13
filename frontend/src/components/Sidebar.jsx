@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info, Target, Landmark } from 'lucide-react';
+import { Menu, X, Moon, Sun, LogOut, BarChart3, CreditCard, Wallet, User, ChevronLeft, ChevronRight, ImagePlus, Info, Target, Landmark, ShoppingCart } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useSidebarCollapsed } from '../context/SidebarContext';
 import { logout } from '../api';
@@ -37,6 +37,7 @@ function Sidebar({ user: initialUser }) {
     { path: '/transactions', label: 'Transactions', icon: CreditCard },
     { path: '/budget', label: 'Budget', icon: Wallet },
     { path: '/savings', label: 'Savings', icon: Landmark },
+    { path: '/shopping', label: 'Shopping', icon: ShoppingCart },
     { path: '/goals', label: 'Savings Goals', icon: Target },
     { path: '/receipt-upload', label: 'Receipt Upload', icon: ImagePlus },
     { path: '/profile', label: 'Profile', icon: User },

@@ -255,7 +255,7 @@ function BudgetPlanning() {
 
     try {
       // Use Server-Sent Events for real-time progress (similar to main AI)
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('token');
 
       if (!token) {
@@ -264,7 +264,7 @@ function BudgetPlanning() {
         return;
       }
 
-      const eventSourceUrl = `${apiUrl}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
+      const eventSourceUrl = `${API_URL}/ai/progress?year=${selectedMonth.year}&month=${selectedMonth.month}&token=${token}`;
 
       const eventSource = new EventSource(eventSourceUrl);
       let hasReceivedMessage = false;

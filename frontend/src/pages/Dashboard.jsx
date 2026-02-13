@@ -176,7 +176,7 @@ function Dashboard() {
     setChatWidgetTryingModel(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('token');
       if (!token) {
         setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: 'Please log in again to use AI chat.' }]);
@@ -373,7 +373,7 @@ function Dashboard() {
           total_income: displayIncome,
           total_expenses: displayExpenses,
           total_savings: totalSavingsOverall,
-          net_savings: lifetimeAvailableBalance,
+          net_savings: liquidCash,
           total_net_worth: totalNetWorth,
           period_net_savings: periodNetSavings,
           savings_rate: savingsRateValue,
@@ -395,7 +395,7 @@ function Dashboard() {
     setCurrentTryingModel(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('token');
       if (!token) {
         alert('Please log in again');
@@ -487,7 +487,7 @@ function Dashboard() {
     setChatTryingModel(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('token');
       if (!token) {
         alert('Please log in again');

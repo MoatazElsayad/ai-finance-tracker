@@ -29,7 +29,7 @@ from time import time as current_time
 
 # Import local modules
 from database import get_db, init_database
-from models import User, Transaction, Category, Budget, Goal, Investment, MarketRatesCache, SavingsGoal
+from models import User, Transaction, Category, Budget, Goal, Investment, MarketRatesCache, SavingsGoal, ShoppingState
 from dotenv import load_dotenv
 from ocr_utils import parse_receipt
 from fastapi import File, UploadFile
@@ -271,6 +271,10 @@ class SavingsGoalUpdate(BaseModel):
 class SavingsGoalLongTerm(BaseModel):
     target_amount: float
     target_date: str
+
+class ShoppingStatePayload(BaseModel):
+    inventory_items: List[Dict[str, Any]] = []
+    shopping_items: List[Dict[str, Any]] = []
 
 class ReportRequest(BaseModel):
     start_date: Optional[str] = None
@@ -626,14 +630,9 @@ def create_transaction(
     ).all()
     
     for goal in linked_goals:
-        # If it's a Savings category, we treat the absolute value as progress 
-        # (since savings is an expense but increases the goal balance)
-        if category and category.name.lower() == 'savings':
-            goal.current_amount += abs(transaction.amount)
-        else:
-            # amount is positive for income, negative for expense
-            # so adding it correctly handles both (adds income, subtracts expense)
-            goal.current_amount += transaction.amount
+        # Keep one consistent rule for goal progress:
+        # positive transaction adds progress, negative subtracts progress.
+        goal.current_amount += transaction.amount
             
     db.commit()
     
@@ -670,12 +669,8 @@ def delete_transaction(
     ).all()
     
     for goal in linked_goals:
-        # Reverse the effect based on category type
-        if transaction.category and transaction.category.name.lower() == 'savings':
-            goal.current_amount -= abs(transaction.amount)
-        else:
-            # Subtract the amount we previously added (this correctly handles both income and expense)
-            goal.current_amount -= transaction.amount
+        # Reverse the exact delta previously applied.
+        goal.current_amount -= transaction.amount
 
     db.delete(transaction)
     db.commit()
@@ -716,10 +711,7 @@ def update_transaction(
     ).all()
     
     for goal in old_linked_goals:
-        if old_category and old_category.name.lower() == 'savings':
-            goal.current_amount -= abs(transaction.amount)
-        else:
-            goal.current_amount -= transaction.amount
+        goal.current_amount -= transaction.amount
 
     # Update fields
     transaction.category_id = data.category_id
@@ -735,10 +727,7 @@ def update_transaction(
     ).all()
     
     for goal in new_linked_goals:
-        if new_category and new_category.name.lower() == 'savings':
-            goal.current_amount += abs(transaction.amount)
-        else:
-            goal.current_amount += transaction.amount
+        goal.current_amount += transaction.amount
             
     db.commit()
     db.refresh(transaction)
@@ -774,10 +763,7 @@ def bulk_delete_transactions(
         ).all()
         
         for goal in linked_goals:
-            if transaction.category and transaction.category.name.lower() == 'savings':
-                goal.current_amount -= abs(transaction.amount)
-            else:
-                goal.current_amount -= transaction.amount
+            goal.current_amount -= transaction.amount
         
         db.delete(transaction)
         deleted_count += 1
@@ -910,26 +896,29 @@ def get_monthly_stats_logic(db: Session, user_id: int, year: int, month: int):
     transactions = db.query(Transaction).options(joinedload(Transaction.category)).filter(Transaction.user_id == user_id).all()
     
     monthly_tx = [t for t in transactions if t.date.year == year and t.date.month == month]
-    
-    total_income = sum(t.amount for t in monthly_tx if t.amount > 0)
-    
-    # Calculate regular expenses vs savings
-    total_expenses_all = abs(sum(t.amount for t in monthly_tx if t.amount < 0))
-    total_savings = abs(sum(t.amount for t in monthly_tx if t.amount < 0 and t.category and t.category.name == 'Savings'))
-    actual_spending = total_expenses_all - total_savings
-    
+    is_savings = lambda t: (t.category and t.category.name and 'savings' in t.category.name.lower())
+
+    # Regular cashflow (exclude internal vault transfers)
+    total_income = sum(t.amount for t in monthly_tx if t.amount > 0 and not is_savings(t))
+    actual_spending = abs(sum(t.amount for t in monthly_tx if t.amount < 0 and not is_savings(t)))
+
+    # Savings transfers
+    savings_deposits = sum(t.amount for t in monthly_tx if is_savings(t) and t.amount > 0)
+    savings_withdrawals = abs(sum(t.amount for t in monthly_tx if is_savings(t) and t.amount < 0))
+    net_savings_transfers = savings_deposits - savings_withdrawals
+
     categories = {}
     for t in monthly_tx:
-        if t.amount < 0:
+        if t.amount < 0 and not is_savings(t):
             name = t.category.name if t.category else "Uncategorized"
             categories[name] = categories.get(name, 0) + abs(t.amount)
             
     return {
         "total_income": round(total_income, 2),
-        "total_expenses": round(total_expenses_all, 2),
-        "total_savings": round(total_savings, 2),
+        "total_expenses": round(actual_spending, 2),
+        "total_savings": round(net_savings_transfers, 2),
         "actual_spending": round(actual_spending, 2),
-        "net_savings": round(total_income - actual_spending, 2), # Income - Actual Expenses
+        "net_savings": round(total_income - actual_spending + net_savings_transfers, 2),
         "category_breakdown": [{"name": k, "amount": round(v, 2)} for k, v in categories.items()]
     }
 
@@ -990,20 +979,29 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
         func.extract('month', Transaction.date) == prev_month
     ).all()
     
-    # Calculate current month stats
-    current_income = sum(t.amount for t in current_month_tx if t.amount > 0)
-    current_expenses_all = abs(sum(t.amount for t in current_month_tx if t.amount < 0))
-    current_savings_from_tx = sum(-t.amount for t in current_month_tx if t.category and 'savings' in t.category.name.lower())
-    current_spending = current_expenses_all - max(0, current_savings_from_tx) # Only subtract positive savings (deposits)
-    current_net_savings = current_income - current_spending
+    is_savings = lambda t: (t.category and t.category.name and 'savings' in t.category.name.lower())
+
+    # Calculate current month stats (regular cashflow + explicit vault transfers)
+    current_income = sum(t.amount for t in current_month_tx if t.amount > 0 and not is_savings(t))
+    current_expenses_all = abs(sum(t.amount for t in current_month_tx if t.amount < 0 and not is_savings(t)))
+    # Savings category delta in this period (positive=net deposit, negative=net withdrawal)
+    current_savings_from_tx = sum(
+        t.amount for t in current_month_tx
+        if is_savings(t)
+    )
+    current_spending = current_expenses_all
+    current_net_savings = current_income - current_spending + current_savings_from_tx
     current_savings_rate = (current_net_savings / current_income * 100) if current_income > 0 else 0
     
     # Calculate previous month stats
-    prev_income = sum(t.amount for t in prev_month_tx if t.amount > 0)
-    prev_expenses_all = abs(sum(t.amount for t in prev_month_tx if t.amount < 0))
-    prev_savings_from_tx = sum(-t.amount for t in prev_month_tx if t.category and 'savings' in t.category.name.lower())
-    prev_spending = prev_expenses_all - max(0, prev_savings_from_tx)
-    prev_net_savings = prev_income - prev_spending
+    prev_income = sum(t.amount for t in prev_month_tx if t.amount > 0 and not is_savings(t))
+    prev_expenses_all = abs(sum(t.amount for t in prev_month_tx if t.amount < 0 and not is_savings(t)))
+    prev_savings_from_tx = sum(
+        t.amount for t in prev_month_tx
+        if is_savings(t)
+    )
+    prev_spending = prev_expenses_all
+    prev_net_savings = prev_income - prev_spending + prev_savings_from_tx
     
     # Calculate trends
     income_change = ((current_income - prev_income) / prev_income * 100) if prev_income > 0 else 0
@@ -1015,15 +1013,13 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     prev_categories = {}
     
     for t in current_month_tx:
-        if t.amount < 0:
-            is_savings = t.category and 'savings' in t.category.name.lower()
-            cat_name = "Savings" if is_savings else (t.category.name if t.category else "Uncategorized")
+        if t.amount < 0 and not is_savings(t):
+            cat_name = t.category.name if t.category else "Uncategorized"
             current_categories[cat_name] = current_categories.get(cat_name, 0) + abs(t.amount)
     
     for t in prev_month_tx:
-        if t.amount < 0:
-            is_savings = t.category and 'savings' in t.category.name.lower()
-            cat_name = "Savings" if is_savings else (t.category.name if t.category else "Uncategorized")
+        if t.amount < 0 and not is_savings(t):
+            cat_name = t.category.name if t.category else "Uncategorized"
             prev_categories[cat_name] = prev_categories.get(cat_name, 0) + abs(t.amount)
     
     # Find biggest changes
@@ -1066,7 +1062,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     
     # Find unusual transactions (highest expenses)
     unusual_expenses = sorted(
-        [t for t in current_month_tx if t.amount < 0],
+        [t for t in current_month_tx if t.amount < 0 and not is_savings(t)],
         key=lambda x: abs(x.amount),
         reverse=True
     )[:3]
@@ -1074,7 +1070,7 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
     # Count transactions per category
     transaction_frequency = {}
     for t in current_month_tx:
-        if t.amount < 0:
+        if t.amount < 0 and not is_savings(t):
             cat_name = t.category.name if t.category else "Uncategorized"
             transaction_frequency[cat_name] = transaction_frequency.get(cat_name, 0) + 1
     
@@ -1127,18 +1123,19 @@ def build_savings_analysis_context(db: Session, user_id: int):
     long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).first()
     
     # 2. Get Savings Category and Cash Balance
-    savings_cat = db.query(Category).filter(
+    savings_categories = db.query(Category).filter(
         Category.name.ilike("%savings%"),
         (Category.user_id == user_id) | (Category.user_id == None)
-    ).first()
+    ).all()
+    savings_category_ids = [c.id for c in savings_categories]
     
     cash_savings = 0.0
-    if savings_cat:
+    if savings_category_ids:
         net_savings = db.query(func.sum(Transaction.amount)).filter(
             Transaction.user_id == user_id,
-            Transaction.category_id == savings_cat.id
+            Transaction.category_id.in_(savings_category_ids)
         ).scalar() or 0.0
-        cash_savings = max(0.0, -net_savings)
+        cash_savings = max(0.0, net_savings)
 
     # 3. Get Current Month Stats
     now = datetime.utcnow()
@@ -1948,9 +1945,9 @@ async def init_savings_category(
     try:
         user = get_current_user(request, authorization, token, db)
         
-        # Check if a savings category already exists for this user (or globally)
+        # Prefer user-specific savings category.
         existing = db.query(Category).filter(
-            (Category.user_id == user.id) | (Category.user_id == None),
+            Category.user_id == user.id,
             Category.name.ilike("savings")
         ).first()
         
@@ -1964,7 +1961,7 @@ async def init_savings_category(
                 "message": "Savings category already exists"
             }
         
-        # Create new Savings category specifically for this user
+        # Create a user-specific Savings category so frontend category list always includes it.
         category = Category(
             user_id=user.id,
             name="Savings",
@@ -2208,16 +2205,17 @@ async def get_savings(
         # 2. Calculate Cash Balance from Transactions
         # NEW LOGIC: Deposits are positive, Withdrawals are negative.
         # This aligns with the "Total Net Worth = sum(all transactions)" model.
-        savings_cat = db.query(Category).filter(
+        savings_categories = db.query(Category).filter(
             Category.name.ilike("%savings%"),
             (Category.user_id == user.id) | (Category.user_id == None)
-        ).first()
+        ).all()
+        savings_category_ids = [c.id for c in savings_categories]
         
         cash_savings = 0.0
-        if savings_cat:
+        if savings_category_ids:
             net_savings = db.query(func.sum(Transaction.amount)).filter(
                 Transaction.user_id == user.id,
-                Transaction.category_id == savings_cat.id
+                Transaction.category_id.in_(savings_category_ids)
             ).scalar() or 0.0
             cash_savings = max(0.0, net_savings)
 
@@ -2230,14 +2228,13 @@ async def get_savings(
         current_month_start = datetime(now.year, now.month, 1)
         
         monthly_saved = 0.0
-        if savings_cat:
+        if savings_category_ids:
             monthly_net = db.query(func.sum(Transaction.amount)).filter(
                 Transaction.user_id == user.id,
-                Transaction.category_id == savings_cat.id,
+                Transaction.category_id.in_(savings_category_ids),
                 Transaction.date >= current_month_start,
-                Transaction.amount > 0
             ).scalar() or 0.0
-            monthly_saved = float(monthly_net)
+            monthly_saved = float(max(0.0, monthly_net))
 
         # 5. Long-term Savings Goal
         long_term_goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user.id).first()
@@ -2450,6 +2447,82 @@ def set_long_term_goal(
         raise
     except Exception as e:
         print(f"ERROR in set_long_term_goal: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/shopping/state")
+def get_shopping_state(
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = get_current_user(request, authorization, token, db)
+        state = db.query(ShoppingState).filter(ShoppingState.user_id == user.id).first()
+        if not state:
+            return {"inventory_items": [], "shopping_items": [], "updated_at": None}
+
+        try:
+            inventory_items = json.loads(state.inventory_json or "[]")
+        except Exception:
+            inventory_items = []
+
+        try:
+            shopping_items = json.loads(state.shopping_json or "[]")
+        except Exception:
+            shopping_items = []
+
+        return {
+            "inventory_items": inventory_items,
+            "shopping_items": shopping_items,
+            "updated_at": state.updated_at.isoformat() if state.updated_at else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_shopping_state: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/shopping/state")
+def save_shopping_state(
+    data: ShoppingStatePayload,
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(security),
+    token: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = get_current_user(request, authorization, token, db)
+        state = db.query(ShoppingState).filter(ShoppingState.user_id == user.id).first()
+
+        inventory_json = json.dumps(data.inventory_items or [])
+        shopping_json = json.dumps(data.shopping_items or [])
+
+        if state:
+            state.inventory_json = inventory_json
+            state.shopping_json = shopping_json
+            state.updated_at = datetime.utcnow()
+        else:
+            state = ShoppingState(
+                user_id=user.id,
+                inventory_json=inventory_json,
+                shopping_json=shopping_json,
+                updated_at=datetime.utcnow()
+            )
+            db.add(state)
+
+        db.commit()
+        db.refresh(state)
+        return {
+            "message": "Shopping state saved",
+            "updated_at": state.updated_at.isoformat() if state.updated_at else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in save_shopping_state: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================
@@ -2997,14 +3070,7 @@ def confirm_receipt(
         ).all()
         
         for goal in linked_goals:
-            # If it's a Savings category, we treat the absolute value as progress 
-            # (since savings is an expense but increases the goal balance)
-            if category and category.name.lower() == 'savings':
-                goal.current_amount += abs(transaction.amount)
-            else:
-                # amount is positive for income, negative for expense
-                # so adding it correctly handles both (adds income, subtracts expense)
-                goal.current_amount += transaction.amount
+            goal.current_amount += transaction.amount
                 
         db.commit()
         db.refresh(transaction)

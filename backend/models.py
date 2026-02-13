@@ -2,7 +2,7 @@
 Database Models - All in ONE file for simplicity
 This defines what data we store in the database
 """
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table, Index, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -43,6 +43,7 @@ class User(Base):
     goals = relationship("Goal", back_populates="user")
     investments = relationship("Investment", back_populates="user")
     savings_goal = relationship("SavingsGoal", back_populates="user", uselist=False)
+    shopping_state = relationship("ShoppingState", back_populates="user", uselist=False)
 
 
 class SavingsGoal(Base):
@@ -161,6 +162,7 @@ class Goal(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     target_amount = Column(Float, nullable=False)
+    current_amount = Column(Float, nullable=False, default=0.0)
     target_date = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -192,6 +194,21 @@ class MarketRatesCache(Base):
     cad_to_egp = Column(Float, nullable=True)
     aud_to_egp = Column(Float, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ShoppingState(Base):
+    """
+    Persisted Shopping & Inventory page state (per user)
+    """
+    __tablename__ = "shopping_states"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    inventory_json = Column(Text, nullable=False, default="[]")
+    shopping_json = Column(Text, nullable=False, default="[]")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="shopping_state")
 
 
 # Pre-defined categories to insert when app starts

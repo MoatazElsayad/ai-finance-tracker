@@ -1,0 +1,258 @@
+/* node_modules/react-circular-progressbar/dist/styles.css */
+.CircularProgressbar {
+  width: 100%;
+  vertical-align: middle;
+}
+.CircularProgressbar .CircularProgressbar-path {
+  stroke: #3e98c7;
+  stroke-linecap: round;
+  -webkit-transition: stroke-dashoffset 0.5s ease 0s;
+  transition: stroke-dashoffset 0.5s ease 0s;
+}
+.CircularProgressbar .CircularProgressbar-trail {
+  stroke: #d6d6d6;
+  stroke-linecap: round;
+}
+.CircularProgressbar .CircularProgressbar-text {
+  fill: #3e98c7;
+  font-size: 20px;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+.CircularProgressbar .CircularProgressbar-background {
+  fill: #d6d6d6;
+}
+.CircularProgressbar.CircularProgressbar-inverted .CircularProgressbar-background {
+  fill: #3e98c7;
+}
+.CircularProgressbar.CircularProgressbar-inverted .CircularProgressbar-text {
+  fill: #fff;
+}
+.CircularProgressbar.CircularProgressbar-inverted .CircularProgressbar-path {
+  stroke: #fff;
+}
+.CircularProgressbar.CircularProgressbar-inverted .CircularProgressbar-trail {
+  stroke: transparent;
+}
+
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    "Oxygen",
+    "Ubuntu",
+    "Cantarell",
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0a0e27;
+  color: #e2e8f0;
+}
+:root {
+  --bg-primary: #0a0e27;
+  --bg-secondary: #1a1f3a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #1f2937;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent-gold: #fbbf24;
+  --accent-blue: #3b82f6;
+  --income-green: #10b981;
+  --expense-red: #ef4444;
+  --border-color: #334155;
+  --brand-amber: #f59e0b;
+  --brand-amber-hover: #d97706;
+  --brand-amber-glow: rgba(245, 158, 11, 0.2);
+  --radius-card: 2.5rem;
+  --radius-button: 1.5rem;
+  --radius-input: 1.25rem;
+}
+:root.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-gold: #d97706;
+  --accent-blue: #0ea5e9;
+  --income-green: #059669;
+  --expense-red: #dc2626;
+  --border-color: #cbd5e1;
+  --brand-amber: #f59e0b;
+  --brand-amber-hover: #d97706;
+  --brand-amber-glow: rgba(245, 158, 11, 0.15);
+}
+@layer utilities {
+  .card-unified {
+    @apply p-8 rounded-[2.5rem] transition-all border-2 duration-500 overflow-hidden relative;
+  }
+  .card-unified-dark {
+    @apply bg-slate-800/40 border-slate-700 hover:border-amber-500/50 hover:bg-slate-800/60;
+  }
+  .card-unified-light {
+    @apply bg-white border-slate-100 shadow-xl hover:shadow-2xl hover:border-amber-500/30;
+  }
+  .btn-primary-unified {
+    @apply flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-amber-500/20 transition-all duration-300 active:scale-95;
+  }
+  .input-unified {
+    @apply w-full p-6 rounded-[1.5rem] border-2 transition-all outline-none font-bold text-lg focus:ring-8 focus:ring-amber-500/10;
+  }
+  .input-unified-dark {
+    @apply bg-slate-800 border-slate-700 focus:border-amber-500 text-white placeholder:text-slate-600;
+  }
+  .input-unified-light {
+    @apply bg-slate-50 border-slate-200 focus:border-amber-500 text-slate-900 placeholder:text-slate-400;
+  }
+  .text-header-unified {
+    @apply text-4xl md:text-5xl font-black tracking-tight;
+  }
+  .input-unified-small {
+    @apply w-full px-4 py-2.5 rounded-xl border-2 transition-all outline-none font-bold text-sm focus:ring-4 focus:ring-amber-500/10;
+  }
+  .input-unified-small.dark {
+    @apply bg-slate-800 border-slate-700 focus:border-amber-500 text-white placeholder:text-slate-600;
+  }
+  .input-unified-small.light {
+    @apply bg-slate-50 border-slate-200 focus:border-amber-500 text-slate-900 placeholder:text-slate-400;
+  }
+  .btn-primary-unified-small {
+    @apply flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-amber-500/10 transition-all duration-300 active:scale-95;
+  }
+  .btn-secondary-unified-small {
+    @apply flex items-center justify-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 px-4 py-2 rounded-xl font-bold border border-slate-700/50 shadow-sm transition-all duration-300 active:scale-95;
+  }
+  .shadow-inner-dark {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  }
+}
+html {
+  scroll-behavior: smooth;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+html {
+  color-scheme: light dark;
+}
+html.dark {
+  color-scheme: dark;
+  background-color: #0a0e27;
+  color: #e2e8f0;
+}
+html.light {
+  color-scheme: light;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-card);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.2);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 191, 36, 0.4);
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+  }
+}
+.glow-gold {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-fast {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.animate-pulse-fast {
+  animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes typing-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
+}
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--text-secondary);
+  animation: typing-bounce 0.9s infinite;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
