@@ -879,6 +879,45 @@ export default function Savings() {
     return (portfolioProfit / totalBuyValue) * 100;
   }, [investments, portfolioProfit]);
 
+  const portfolioReasoning = useMemo(() => {
+    if (investments.length === 0) return null;
+
+    const stats = investments.reduce((acc, inv) => {
+      const type = (inv.type || "").toLowerCase();
+      const buyValue = (inv.amount || 0) * (inv.buy_price || 0);
+      const profit = (inv.current_value || 0) - buyValue;
+      
+      let category = 'currencies';
+      if (type === 'gold') category = 'gold';
+      else if (type === 'silver') category = 'silver';
+
+      if (!acc[category]) acc[category] = 0;
+      acc[category] += profit;
+      return acc;
+    }, {});
+
+    const winners = Object.entries(stats)
+      .filter(([_, profit]) => profit > 1)
+      .map(([name]) => name === 'gold' ? 'Gold' : name === 'silver' ? 'Silver' : 'Currencies');
+    
+    const losers = Object.entries(stats)
+      .filter(([_, profit]) => profit < -1)
+      .map(([name]) => name === 'gold' ? 'Gold' : name === 'silver' ? 'Silver' : 'Currencies');
+
+    if (portfolioProfit > 0) {
+      if (winners.length === 0) return "Portfolio is stable with minor gains.";
+      if (winners.length === 1) return `Driven by gains in ${winners[0]}.`;
+      if (winners.length === 2) return `Growth led by ${winners[0]} and ${winners[1]}.`;
+      return "Broad growth across Gold, Silver, and Currencies.";
+    } else if (portfolioProfit < 0) {
+      if (losers.length === 0) return "Portfolio seeing minor market corrections.";
+      if (losers.length === 1) return `Impacted by dips in ${losers[0]}.`;
+      if (losers.length === 2) return `Down due to ${losers[0]} and ${losers[1]} trends.`;
+      return "Market decline affecting all asset classes.";
+    }
+    return "Asset values are currently matching your purchase costs.";
+  }, [investments, portfolioProfit]);
+
   const savingsTransactions = useMemo(
     () => transactions.filter(t => t.category_name?.toLowerCase()?.includes('savings')),
     [transactions]
@@ -1306,13 +1345,7 @@ export default function Savings() {
                   className={`text-[3rem] md:text-[5rem] leading-none font-black tracking-tight tabular-nums drop-shadow-[0_8px_30px_rgba(0,0,0,0.25)] cursor-help transition-all duration-300 ${
                     portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-white'
                   }`}
-                  title={
-                    portfolioProfit > 0 
-                      ? "Your total wealth is up because market rates exceed your buy prices." 
-                      : portfolioProfit < 0 
-                      ? "Your total wealth is down because market rates are currently lower than what you paid." 
-                      : "Your portfolio value matches your initial investment cost."
-                  }
+                  title={portfolioReasoning}
                 >
                   {fmt(animatedNetWorth)}
                 </h2>
@@ -1343,11 +1376,8 @@ export default function Savings() {
                       portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-blue-100/60'
                     }`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                      {portfolioProfit > 0 
-                        ? "Market Gain: Your assets have appreciated since purchase." 
-                        : portfolioProfit < 0 
-                        ? "Market Dip: Current rates are below your average buy price." 
-                        : "Neutral: Asset values are stable relative to purchase cost."}
+                      <span className="opacity-70">{portfolioProfit > 0 ? 'PROFIT: ' : portfolioProfit < 0 ? 'LOSS: ' : 'STABLE: '}</span>
+                      {portfolioReasoning}
                     </p>
                   </div>
                 )}
