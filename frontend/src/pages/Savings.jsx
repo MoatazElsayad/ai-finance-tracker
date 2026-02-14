@@ -39,8 +39,12 @@ import {
   Gem,
   Banknote,
   ArrowUpRight,
-  Flag
+  Flag,
+  Info
 } from "lucide-react";
+import toast from 'react-hot-toast';
+import { Card, Button, Skeleton, EmptyState } from '../components/UI';
+import Modal from '../components/Modal';
 import { formatAISummary, getModelInfo } from './DashboardUtils';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -306,7 +310,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
   const accentColor = activeTheme.accent;
 
   return (
-    <div id="investment-form-top" className={`relative w-full h-full overflow-hidden flex flex-col ${popupMode ? 'xl:flex-row' : 'lg:flex-row'} border ${popupMode ? 'rounded-[1.6rem] md:rounded-[2rem]' : 'rounded-[1.5rem] md:rounded-[2.5rem]'} ${isDark ? `bg-slate-900 border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${activeTheme.shadow}` : `bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${activeTheme.shadow}`} z-10 animate-in fade-in slide-in-from-top-8 duration-700 ${popupMode ? 'mb-0' : 'mb-8'}`}>
+    <Card 
+      animate={false} 
+      id="investment-form-top" 
+      className={`!p-0 !w-full !h-full !overflow-hidden !flex !flex-col ${popupMode ? 'xl:!flex-row' : 'lg:!flex-row'} !border ${popupMode ? '!rounded-[1.6rem] md:!rounded-[2rem]' : '!rounded-[1.5rem] md:!rounded-[2.5rem]'} ${isDark ? `!bg-slate-900 !border-slate-700 !shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${activeTheme.shadow}` : `!bg-white !border-slate-200 !shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${activeTheme.shadow}`} !z-10 animate-in fade-in slide-in-from-top-8 duration-700 ${popupMode ? '!mb-0' : '!mb-8'}`}
+    >
       
       {/* Decorative Background Gradients */}
       <div className={`absolute top-0 right-0 w-64 h-64 md:w-96 md:h-96 blur-[120px] opacity-20 -z-10 transition-colors duration-700 ${
@@ -329,60 +337,64 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
         </div>
 
         <div className={`grid grid-cols-2 ${popupMode ? 'xl:grid-cols-1' : 'lg:grid-cols-1'} gap-2 md:gap-3 flex-1`}>
-          <button 
+          <Button 
+            variant={activeTab === 'gold' ? 'primary' : 'ghost'}
             onClick={() => setActiveTab('gold')}
-            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'gold' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`!p-3 md:!p-4 !rounded-xl md:!rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'gold' ? '!bg-amber-500 !text-white !shadow-lg !shadow-amber-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'gold' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
               <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Gold</span>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
+            variant={activeTab === 'silver' ? 'primary' : 'ghost'}
             onClick={() => setActiveTab('silver')}
-            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'silver' ? 'bg-slate-400 text-white shadow-lg shadow-slate-400/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`!p-3 md:!p-4 !rounded-xl md:!rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'silver' ? '!bg-slate-400 !text-white !shadow-lg !shadow-slate-400/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'silver' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
               <Gem className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Silver</span>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
+            variant={activeTab === 'currency' ? 'primary' : 'ghost'}
             onClick={() => setActiveTab('currency')}
-            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'currency' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`!p-3 md:!p-4 !rounded-xl md:!rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'currency' ? '!bg-blue-600 !text-white !shadow-lg !shadow-blue-600/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'currency' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
               <Banknote className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Currency</span>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
+            variant={activeTab === 'cash' ? 'primary' : 'ghost'}
             onClick={() => setActiveTab('cash')}
-            className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'cash' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+            className={`!p-3 md:!p-4 !rounded-xl md:!rounded-2xl flex items-center gap-3 md:gap-4 transition-all duration-300 ${activeTab === 'cash' ? '!bg-emerald-500 !text-white !shadow-lg !shadow-emerald-500/20' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
           >
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${activeTab === 'cash' ? 'bg-white/20' : isDark ? 'bg-slate-800' : 'bg-white'}`}>
               <Wallet className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <span className="text-[10px] md:text-sm font-black uppercase tracking-wider">Cash</span>
-          </button>
+          </Button>
         </div>
 
         {activeTab !== 'cash' ? (
-          <div className={`mt-8 p-5 rounded-3xl border ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-white border-slate-100 shadow-sm'}`}>
+          <Card className={`!mt-8 !p-5 !rounded-3xl !border ${isDark ? '!bg-slate-800/50 !border-slate-700/50' : '!bg-white !border-slate-100 shadow-sm'}`}>
             <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Live Rate</span>
             <div className="mt-2 flex items-end justify-between gap-3">
               <span className={`text-2xl font-black leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentRate.toLocaleString()}</span>
               <span className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-blue-600/10 text-blue-500 border border-blue-500/20">EGP</span>
             </div>
-          </div>
+          </Card>
         ) : (
-          <div className={`mt-8 p-5 rounded-3xl border ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-100 shadow-sm'}`}>
+          <Card className={`!mt-8 !p-5 !rounded-3xl !border ${isDark ? '!bg-slate-800/40 !border-slate-700/50' : '!bg-white !border-slate-100 shadow-sm'}`}>
             <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Cash Transfer</span>
             <p className={`mt-2 text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No live market rate required.</p>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -414,9 +426,13 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               </div>
             </div>
             {!popupMode && (
-              <button onClick={onClose} className={`p-1.5 md:p-2 rounded-xl md:rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}>
+              <Button 
+                variant="ghost" 
+                onClick={onClose} 
+                className={`!p-1.5 md:!p-2 !rounded-xl md:!rounded-2xl ${isDark ? 'hover:bg-slate-800 text-slate-500' : 'hover:bg-slate-100 text-slate-400'} transition-all`}
+              >
                 <X className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -431,15 +447,16 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
           <div className="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-8 animate-pulse">
             Vault Updated Successfully
           </div>
-          <button 
+          <Button 
+            variant="primary"
             onClick={() => {
               setSuccess(false);
               onClose();
             }}
-            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-slate-800 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+            className="!w-full sm:!w-auto !px-10 !py-4 !rounded-2xl !bg-slate-800 !text-white !text-xs !font-black !uppercase !tracking-widest hover:!bg-slate-700 transition-all"
           >
             Back to Vault
-          </button>
+          </Button>
         </div>
       ) : (
           <div className={`flex-1 flex flex-col ${popupMode ? 'xl:flex-row' : 'lg:flex-row'} overflow-y-auto overflow-x-hidden min-h-0`}>
@@ -456,36 +473,37 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                       { label: '60M', value: '60M' },
                       { label: 'ALL', value: 'ALL' }
                     ].map((range) => (
-                      <button
+                      <Button
                         key={range.value}
-                        type="button"
+                        variant={chartRange === range.value ? 'primary' : 'ghost'}
+                        size="sm"
                         onClick={() => setChartRange(range.value)}
-                        className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded-lg transition-all active:scale-95 whitespace-nowrap ${
+                        className={`!text-[8px] md:!text-[9px] !font-black !px-2 !py-1 !rounded-lg transition-all active:scale-95 whitespace-nowrap ${
                           chartRange === range.value 
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                            ? '!bg-blue-600 !text-white !shadow-lg !shadow-blue-600/20' 
                             : isDark ? 'bg-slate-800 text-slate-500 hover:text-slate-300' : 'bg-white text-slate-400 hover:text-slate-600 shadow-sm'
                         }`}
                       >
                         {range.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                </div>
-               <div className="rounded-2xl md:rounded-3xl overflow-hidden border-2 border-slate-200/10 bg-slate-900/40 p-1 mb-4 md:mb-6">
+               <Card className="!rounded-2xl md:!rounded-3xl overflow-hidden !border-2 !border-slate-200/10 !bg-slate-900/40 !p-1 mb-4 md:mb-6">
                   <TradingViewChart symbol={activeTheme.symbol} isDark={isDark} height={180} dateRange={chartRange} />
-               </div>
+               </Card>
                <div className="grid grid-cols-2 gap-2 md:gap-4">
-                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                  <Card className={`!p-3 md:!p-5 !rounded-2xl md:!rounded-3xl !border ${isDark ? '!bg-slate-900 !border-slate-800' : '!bg-white !border-slate-100'}`}>
                     <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Status</span>
                     <div className={`flex items-center gap-1.5 md:gap-2 ${activeTheme.statusColor} font-black`}>
                       <TrendingUp className="w-3 md:w-4 h-3 md:h-4" />
                       <span className="text-[10px] md:text-sm">{activeTheme.status}</span>
                     </div>
-                  </div>
-                  <div className={`p-3 md:p-5 rounded-2xl md:rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                  </Card>
+                  <Card className={`!p-3 md:!p-5 !rounded-2xl md:!rounded-3xl !border ${isDark ? '!bg-slate-900 !border-slate-800' : '!bg-white !border-slate-100'}`}>
                     <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Volume</span>
                     <span className={`text-[10px] md:text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeTheme.volume}</span>
-                  </div>
+                  </Card>
                </div>
             </div>
             )}
@@ -503,32 +521,32 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                 <div className="space-y-4">
                   <div>
                     <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Cash Action</label>
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 rounded-2xl border ${isDark ? 'border-slate-700/70 bg-slate-900/30' : 'border-slate-200 bg-slate-50/70'}`}>
-                      <button
-                        type="button"
+                    <Card animate={false} className={`!p-1 !grid !grid-cols-1 sm:!grid-cols-2 !gap-2 !rounded-2xl !border ${isDark ? '!border-slate-700/70 !bg-slate-900/30' : '!border-slate-200 !bg-slate-50/70'}`}>
+                      <Button
+                        variant={!isExpense ? 'primary' : 'ghost'}
                         onClick={() => setIsExpense(false)}
-                        className={`flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${
+                        className={`!flex !items-center !justify-center !gap-2 !py-3.5 !rounded-xl !text-[10px] md:!text-xs !font-black !uppercase !tracking-widest transition-all ${
                           !isExpense
-                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
+                            ? '!bg-rose-500 !text-white !shadow-lg !shadow-rose-500/20'
                             : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'
                         }`}
                       >
                         <ArrowRight className="w-4 h-4 rotate-45" />
                         Withdraw
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant={isExpense ? 'primary' : 'ghost'}
                         onClick={() => setIsExpense(true)}
-                        className={`flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${
+                        className={`!flex !items-center !justify-center !gap-2 !py-3.5 !rounded-xl !text-[10px] md:!text-xs !font-black !uppercase !tracking-widest transition-all ${
                           isExpense
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                            ? '!bg-emerald-500 !text-white !shadow-lg !shadow-emerald-500/20'
                             : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'
                         }`}
                       >
                         <Plus className="w-4 h-4" />
                         Deposit
-                      </button>
-                    </div>
+                      </Button>
+                    </Card>
                   </div>
                 </div>
               )}
@@ -536,13 +554,13 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               {activeTab === 'currency' && (
                 <div>
                   <label className={`block text-xs font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Currency</label>
-                  <div className="flex gap-2 p-2 rounded-2xl border border-slate-200/10 bg-slate-900/20 overflow-x-auto pb-3 max-w-full">
+                  <Card animate={false} className="!p-2 !flex !gap-2 !rounded-2xl !border !border-slate-200/10 !bg-slate-900/20 !overflow-x-auto !pb-3 !max-w-full">
                     {currencyOptions.map((curr) => (
-                      <button
+                      <Button
                         key={curr.id}
-                        type="button"
+                        variant={selectedCurrency === curr.id ? 'primary' : 'ghost'}
                         onClick={() => setSelectedCurrency(curr.id)}
-                        className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all min-w-[64px] ${selectedCurrency === curr.id ? 'bg-blue-600 text-white shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
+                        className={`!p-2 !rounded-xl !flex !flex-col !items-center !gap-1 transition-all !min-w-[64px] ${selectedCurrency === curr.id ? '!bg-blue-600 !text-white !shadow-lg' : isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white text-slate-500'}`}
                       >
                         <img 
                           src={`https://flagcdn.com/w40/${curr.code}.png`} 
@@ -550,9 +568,9 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                           className="w-6 h-4 object-cover rounded-sm shadow-sm"
                         />
                         <span className="text-[10px] font-black">{curr.id}</span>
-                      </button>
+                      </Button>
                     ))}
-                  </div>
+                  </Card>
                 </div>
               )}
 
@@ -590,7 +608,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               </div>
 
               {(showWithdrawalWarning || activeTab === 'cash') && (
-                <div className={`p-5 md:p-6 rounded-3xl border-2 animate-in fade-in slide-in-from-top-4 duration-500 ${showWithdrawalWarning ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
+                <Card className={`!p-5 md:!p-6 !rounded-3xl !border-2 animate-in fade-in slide-in-from-top-4 duration-500 ${showWithdrawalWarning ? '!bg-rose-500/10 !border-rose-500/20' : '!bg-emerald-500/10 !border-emerald-500/20'}`}>
                   {showWithdrawalWarning && (
                     <div className="flex items-start gap-3 mb-4">
                       <div className="p-2 bg-rose-500 rounded-xl text-white shrink-0">
@@ -628,7 +646,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                       </div>
                     )}
 
-                    <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-white/50'} border ${showWithdrawalWarning ? 'border-rose-500/10' : 'border-emerald-500/10'}`}>
+                    <Card className={`!p-4 !rounded-2xl ${isDark ? '!bg-slate-900/50' : '!bg-white/50'} !border ${showWithdrawalWarning ? '!border-rose-500/10' : '!border-emerald-500/10'}`}>
                       <span className={`text-[9px] font-black uppercase tracking-widest block mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Transfer Preview</span>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
@@ -658,14 +676,14 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Card>
                   </div>
-                </div>
+                </Card>
               )}
 
               <div className="pt-2 md:pt-4">
                 {activeTab !== 'cash' ? (
-                  <div className={`p-4 md:p-5 rounded-2xl border-2 border-dashed ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'} mb-6`}>
+                  <Card className={`!p-4 md:!p-5 !rounded-2xl !border-2 !border-dashed ${isDark ? '!border-slate-800 !bg-slate-900/30' : '!border-slate-100 !bg-slate-50/50'} mb-6`}>
                     <div className="flex justify-between items-center">
                       <span className={`text-[10px] md:text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         <span className="md:inline hidden">Total Value</span>
@@ -673,9 +691,9 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                       </span>
                       <span className="text-base md:text-xl font-black text-blue-600">{(currentRate * (parseFloat(amount) || 0)).toLocaleString()} EGP</span>
                     </div>
-                  </div>
+                  </Card>
                 ) : (
-                  <div className={`p-4 md:p-5 rounded-2xl border mb-6 ${showWithdrawalWarning ? 'border-rose-500/20 bg-rose-500/5' : 'border-emerald-500/20 bg-emerald-500/5'}`}>
+                  <Card className={`!p-4 md:!p-5 !rounded-2xl !border mb-6 ${showWithdrawalWarning ? '!border-rose-500/20 !bg-rose-500/5' : '!border-emerald-500/20 !bg-emerald-500/5'}`}>
                     <div className="flex justify-between items-center">
                       <span className={`text-[10px] md:text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         Balance Impact
@@ -684,23 +702,22 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                         {showWithdrawalWarning ? '-' : '+'}{(parseFloat(amount) || 0).toLocaleString()} EGP
                       </span>
                     </div>
-                  </div>
+                  </Card>
                 )}
-                <button 
+                <Button 
                   type="submit" 
+                  loading={isSubmitting}
                   disabled={isSubmitting}
-                  className={`w-full py-4 rounded-2xl text-[10px] md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white transition-all transform hover:scale-[1.01] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? 'bg-slate-400 hover:bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'}`}
+                  className={`w-full py-4 !rounded-2xl text-[10px] md:text-sm !font-black !uppercase !tracking-[0.2em] md:!tracking-[0.3em] !text-white transition-all transform hover:scale-[1.01] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${showWithdrawalWarning ? '!bg-rose-500 hover:!bg-rose-600 shadow-rose-600/20' : activeTab === 'gold' ? '!bg-amber-500 hover:!bg-amber-600 shadow-amber-600/20' : activeTab === 'silver' ? '!bg-slate-400 hover:!bg-slate-500 shadow-slate-400/20' : activeTab === 'cash' ? '!bg-emerald-500 hover:!bg-emerald-600 shadow-emerald-600/20' : '!bg-blue-600 hover:!bg-blue-700 shadow-blue-600/20'}`}
                 >
-                  {isSubmitting ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                  <div className="flex items-center justify-center gap-2">
+                    {isSubmitting ? (
                       <span>Updating Vault...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2">
-                      <Plus className="w-4 h-4" />
-                         <span>
-                           {isExpense && activeTab === 'cash' ? 'Deposit' :
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        <span>
+                          {isExpense && activeTab === 'cash' ? 'Deposit' :
                             !isExpense && showWithdrawalWarning ? (
                               <>
                                 <span className="md:inline hidden">Confirm Withdrawal</span>
@@ -714,10 +731,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
                                 <span className="md:hidden">Secure</span>
                               </>
                             )}
-                         </span>
-                    </div>
-                  )}
-                </button>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </Button>
               </div>
             </form>
           </div>
@@ -727,7 +745,7 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
       {/* Vault Updated Toast */}
       {showToast && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-500">
-          <div className={`px-6 py-3 rounded-2xl ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border shadow-2xl flex items-center gap-3`}>
+          <Card animate={false} className={`!p-0 !px-6 !py-3 !rounded-2xl ${isDark ? '!bg-slate-800 !border-slate-700' : '!bg-white !border-slate-200'} !border !shadow-2xl !flex !items-center !gap-3`}>
             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white">
               <RefreshCw className="w-4 h-4" />
             </div>
@@ -735,11 +753,11 @@ const InvestmentForm = ({ onClose, onAddInvestment, isDark, rates, categories, c
               <p className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>Vault Updated</p>
               <p className={`text-[8px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Balances synchronized successfully</p>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>
-  </div>
+  </Card>
 );
 };
 
@@ -1093,7 +1111,12 @@ export default function Savings() {
   const handleAllocate = async (e) => {
     e?.preventDefault();
     const amount = parseFloat(monthlyInput);
-    if (!amount || isNaN(amount) || amount <= 0) return;
+    if (!amount || isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    const toastId = toast.loading("Adding to vault...");
     try {
       let savingsCat = categories.find(c => c.name?.toLowerCase().includes("savings"));
       if (!savingsCat) savingsCat = await initSavingsCategory();
@@ -1102,10 +1125,12 @@ export default function Savings() {
       await createTransaction(savingsCat.id, -Math.abs(amount), "Quick deposit to savings", new Date().toISOString().split("T")[0]);
       
       setMonthlyInput("");
+      toast.success("Added to vault!", { id: toastId });
       await loadAll();
       window.dispatchEvent(new CustomEvent('transaction-added'));
     } catch (e) {
       console.error(e);
+      toast.error("Failed to add to vault", { id: toastId });
     }
   };
 
@@ -1124,24 +1149,30 @@ export default function Savings() {
     if (!confirm("Remove investment?")) return;
     try {
       await deleteInvestment(id);
+      toast.success("Investment removed successfully");
       await loadAll();
       window.dispatchEvent(new CustomEvent('transaction-added'));
     } catch (e) {
       console.error(e);
-      alert("Failed to remove investment.");
+      toast.error("Failed to remove investment.");
     }
   };
 
   const saveMonthlyGoal = async (ev) => {
     ev?.preventDefault();
     const val = parseFloat(monthlyGoalInput);
-    if (isNaN(val) || val < 0) return;
+    if (isNaN(val) || val < 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
     try {
       await updateSavingsGoal(val);
+      toast.success("Savings goal updated!");
       setIsEditingGoal(false);
       await loadAll();
     } catch (e) {
       console.error(e);
+      toast.error("Failed to update goal.");
     }
   };
 
@@ -1161,6 +1192,7 @@ export default function Savings() {
 
   const refreshMarketRates = async () => {
     setIsRatesRefreshing(true);
+    const toastId = toast.loading("Refreshing market rates...");
     try {
       // 1. Force refresh the rates cache and get updated rates
       const updatedRates = await getSavingsRates(true);
@@ -1172,8 +1204,10 @@ export default function Savings() {
       setSavings(sData || {});
       if (sData?.monthly_goal) setMonthlyGoalInput(String(sData.monthly_goal));
       
+      toast.success("Market rates updated!", { id: toastId });
     } catch (err) {
       console.warn("Could not refresh rates:", err);
+      toast.error("Failed to refresh rates. Please try again.", { id: toastId });
     } finally {
       setIsRatesRefreshing(false);
     }
@@ -1271,7 +1305,7 @@ export default function Savings() {
 
   if (error) return (
     <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-[#0a0f1d]" : "bg-slate-50"}`}>
-      <div className={`max-w-md w-full p-12 text-center card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+      <Card className="max-w-md w-full p-12 text-center">
         <div className="mb-6 inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-rose-500/10 border-2 border-rose-500/20">
           <AlertCircle className="w-10 h-10 text-rose-500" />
         </div>
@@ -1279,14 +1313,15 @@ export default function Savings() {
           Vault Access Denied
         </h2>
         <p className={`mb-8 text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{error}</p>
-        <button 
+        <Button 
+          variant="primary"
           onClick={loadAll} 
-          className="btn-primary-unified w-full flex items-center justify-center gap-3 !bg-blue-600 hover:!bg-blue-700"
+          className="w-full flex items-center justify-center gap-3 !bg-blue-600 hover:!bg-blue-700"
         >
           <RefreshCw className="w-5 h-5" />
           Retry Connection
-        </button>
-      </div>
+        </Button>
+      </Card>
     </div>
   );
 
@@ -1298,7 +1333,7 @@ export default function Savings() {
       {/* Header Section */}
       <section className="relative z-10 pt-24 pb-12 px-4 md:px-10">
         <div className="max-w-[1400px] mx-auto">
-          <div className={`relative overflow-hidden rounded-[2.5rem] border-2 mb-12 animate-in fade-in slide-in-from-top-4 duration-700 ${
+          <Card animate={false} className={`relative overflow-hidden rounded-[2.5rem] border-2 mb-12 animate-in fade-in slide-in-from-top-4 duration-700 ${
             isDark
               ? 'border-blue-500/20 bg-gradient-to-br from-blue-600/20 via-[#0a1837] to-[#0a0e27]'
               : 'border-blue-200 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700'
@@ -1321,15 +1356,18 @@ export default function Savings() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <button 
+                  <Button 
+                    variant="ghost"
+                    size="md"
                     onClick={loadAll}
                     title="Refresh Vault Data"
                     className="p-4 rounded-2xl transition-all bg-white/10 hover:bg-white/20 border border-white/20 shadow-sm group"
                   >
                     <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500 text-white`} />
-                  </button>
-                  <button 
-                    className="btn-primary-unified !px-8 !bg-white !text-blue-700 hover:!bg-blue-50 relative overflow-hidden group" 
+                  </Button>
+                  <Button 
+                    variant="primary"
+                    className="!px-8 !bg-white !text-blue-700 hover:!bg-blue-50 relative overflow-hidden group border-none" 
                     onClick={() => {
                       if (showInvestmentForm) {
                         handleFormClose();
@@ -1340,7 +1378,7 @@ export default function Savings() {
                   >
                     <Plus className={`w-5 h-5 transition-transform duration-500 ${showInvestmentForm ? 'rotate-45' : 'group-hover:rotate-90'}`} />
                     {showInvestmentForm ? 'Close Form' : 'Add Investment'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -1391,30 +1429,26 @@ export default function Savings() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-md">
+                <Card className="!p-4 !bg-white/10 !border-white/20 backdrop-blur-md">
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-100/80">Vault Cash</p>
                   <p className="text-lg font-black text-white">{fmt(savings?.cash_balance || 0)}</p>
-                </div>
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-md">
+                </Card>
+                <Card className="!p-4 !bg-white/10 !border-white/20 backdrop-blur-md">
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-100/80">Investments</p>
                   <p className="text-lg font-black text-white">{fmt(totalInvestmentsValue)}</p>
-                </div>
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-md">
+                </Card>
+                <Card className="!p-4 !bg-white/10 !border-white/20 backdrop-blur-md">
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-100/80">Monthly Goal</p>
                   <p className="text-lg font-black text-white">{Math.round(monthlyProgress)}%</p>
-                </div>
+                </Card>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Utility Cards */}
-          <div className={`relative rounded-[2rem] p-3 md:p-4 mb-14 border animate-in fade-in slide-in-from-bottom-8 duration-700 ${
-            isDark ? 'bg-slate-900/50 border-slate-800/80' : 'bg-white/80 border-slate-200/80 shadow-xl shadow-blue-100/40'
-          }`}>
-            <div className={`absolute inset-0 rounded-[2rem] pointer-events-none ${isDark ? 'bg-gradient-to-br from-blue-600/5 via-transparent to-cyan-500/5' : 'bg-gradient-to-br from-blue-50/80 via-transparent to-cyan-50/80'}`} />
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
             {/* Quick Deposit */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} relative overflow-hidden group border-2 ${isDark ? 'border-blue-600/20 hover:border-blue-600/40' : 'border-blue-100 hover:border-blue-200'} transition-all duration-500 shadow-xl`}>
+            <Card className="relative overflow-hidden group">
               <div className="flex items-center justify-between mb-4">
                 <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                   Quick Deposit
@@ -1437,15 +1471,15 @@ export default function Savings() {
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500">EGP</span>
                 </div>
-                <button type="submit" className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all active:scale-95">
+                <Button type="submit" className="w-full">
                   Add to Vault
-                </button>
+                </Button>
               </form>
               <div className="absolute -right-8 -bottom-8 w-24 h-24 rounded-full bg-blue-600 blur-[40px] opacity-5" />
-            </div>
+            </Card>
 
             {/* Monthly Goal Card */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} relative overflow-hidden group border-2 ${isDark ? 'hover:border-blue-500/30 shadow-blue-900/20' : 'hover:border-blue-200 shadow-blue-600/10'} transition-all duration-500 shadow-xl`}>
+            <Card className="relative overflow-hidden group">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex flex-col">
                   <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -1455,12 +1489,14 @@ export default function Savings() {
                     <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {Math.round(monthlyProgress)}%
                     </span>
-                    <button 
+                    <Button 
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setIsEditingGoal(!isEditingGoal)}
-                      className={`p-1 rounded-md transition-all ${isDark ? 'hover:bg-slate-700 text-slate-500' : 'hover:bg-slate-100 text-slate-400'}`}
+                      className={`p-1 !rounded-md transition-all ${isDark ? 'hover:bg-slate-700 text-slate-500' : 'hover:bg-slate-100 text-slate-400'}`}
                     >
                       <Target className="w-3 h-3" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <div className="p-3 bg-blue-600/10 rounded-2xl border border-blue-600/20 text-blue-600">
@@ -1497,19 +1533,24 @@ export default function Savings() {
                       className="w-full rounded-xl px-3 py-2 text-xs font-bold bg-slate-800 border-2 border-slate-700 text-white outline-none focus:border-blue-600 transition-all" 
                     />
                     <div className="flex gap-2">
-                      <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider">
+                      <Button type="submit" size="sm" className="flex-1">
                         Save
-                      </button>
-                      <button type="button" onClick={() => setIsEditingGoal(false)} className="p-2 rounded-lg bg-slate-700 text-slate-300">
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsEditingGoal(false)} 
+                        className="p-2 !rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      >
                         <X className="w-3 h-3" />
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 </div>
               )}
               <div className="absolute -right-12 -bottom-12 w-32 h-32 rounded-full bg-blue-600 blur-[60px] opacity-10" />
-            </div>
-            </div>
+            </Card>
           </div>
 
         {shouldRenderForm && createPortal(
@@ -1555,13 +1596,15 @@ export default function Savings() {
                   <span className={`hidden md:inline-block text-[9px] font-black uppercase tracking-[0.16em] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                     Press Esc to close
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={handleFormClose}
-                    className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'}`}
+                    className={`p-2 !rounded-xl transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'}`}
                   >
                     <X className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </div>
                 <InvestmentForm 
                   onClose={handleFormClose}
@@ -1589,7 +1632,7 @@ export default function Savings() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className={`rounded-2xl p-4 border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <Card className="!p-4">
               <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Daily Movement</p>
               <div className="mt-3">
                 <WealthChangeIndicator
@@ -1599,9 +1642,9 @@ export default function Savings() {
                   label="Last 24h"
                 />
               </div>
-            </div>
+            </Card>
 
-            <div className={`rounded-2xl p-4 border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <Card className="!p-4">
               <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Weekly Movement</p>
               <div className="mt-3">
                 <WealthChangeIndicator
@@ -1611,9 +1654,9 @@ export default function Savings() {
                   label="Last 7 days"
                 />
               </div>
-            </div>
+            </Card>
 
-            <div className={`rounded-2xl p-4 border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <Card className="!p-4">
               <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Portfolio Mix</p>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center justify-between">
@@ -1631,12 +1674,12 @@ export default function Savings() {
                   />
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
           {/* Distribution Chart */}
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} lg:col-span-1 border-2 ${isDark ? 'border-slate-800 shadow-blue-900/10' : 'border-slate-50 shadow-blue-600/5'} shadow-xl group hover:border-blue-500/30 transition-all duration-500`}>
+          <Card className="lg:col-span-1 group">
             <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
               <PieChartIcon className="w-3 h-3 text-blue-600" /> Asset Distribution
             </h3>
@@ -1691,28 +1734,29 @@ export default function Savings() {
                 <span className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(totalWealth)}</span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Performance Chart */}
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} lg:col-span-2 border-2 ${isDark ? 'border-slate-800 shadow-blue-900/10' : 'border-slate-50 shadow-blue-600/5'} shadow-xl group hover:border-blue-500/30 transition-all duration-500`}>
+          <Card className="lg:col-span-2 group">
               <div className="flex items-center justify-between mb-8">
                 <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   <TrendingUp className="w-3 h-3 text-emerald-500" /> Growth Trajectory
                 </h3>
                 <div className="flex gap-2">
                   {['7D', '1M', '3M', '1Y'].map(t => (
-                  <button
-                    type="button"
+                  <Button
+                    variant={growthRange === t ? 'primary' : 'ghost'}
+                    size="sm"
                     key={t} 
                     onClick={() => setGrowthRange(t)}
-                    className={`text-[9px] font-black px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-95 ${
+                    className={`text-[9px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
                       growthRange === t 
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
                         : isDark ? 'bg-slate-800 text-slate-500 hover:text-slate-300' : 'bg-slate-100 text-slate-400 hover:text-slate-600'
                     }`}
                   >
                     {t}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -1760,7 +1804,7 @@ export default function Savings() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
         </div>
 
         <div className="flex items-center justify-between mb-5">
@@ -1773,158 +1817,160 @@ export default function Savings() {
             {/* Main Content Area - 2 columns */}
             <div className="lg:col-span-2 space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
               {/* Investments Section */}
-              <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className={`text-xl font-black flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    <div className="p-2 rounded-xl bg-blue-600/10 text-blue-600">
-                      <Coins className="w-5 h-5" />
-                    </div>
-                    <span className="uppercase tracking-[0.2em]">Asset Portfolio</span>
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    <div className={`hidden md:block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
-                      {investments.length} Active Assets
-                    </div>
-                    {investments.length > 4 && (
-                      <button 
-                        onClick={() => setIsPortfolioExpanded(!isPortfolioExpanded)}
-                        className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl transition-all ${
-                          isDark 
-                            ? 'bg-blue-600/10 text-blue-400 hover:bg-blue-600/20' 
-                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                        }`}
-                      >
-                        {isPortfolioExpanded ? 'Show Less' : 'View All'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-700 ease-in-out ${
-                    !isPortfolioExpanded && investments.length > 4 ? 'max-h-[600px] overflow-hidden' : 'max-h-[2000px]'
-                  }`}>
-                    {investments.length === 0 ? (
-                      <div className={`col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed ${isDark ? 'border-slate-800' : 'border-slate-100'} rounded-[2rem]`}>
-                        <PieChartIcon className={`w-12 h-12 mb-4 ${isDark ? 'text-slate-700' : 'text-slate-200'}`} />
-                        <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No investments tracked yet</p>
-                        <button onClick={() => setShowInvestmentForm(true)} className="mt-4 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] hover:underline">Start building your portfolio</button>
+              <Card className="p-0">
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className={`text-xl font-black flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <div className="p-2 rounded-xl bg-blue-600/10 text-blue-600">
+                        <Coins className="w-5 h-5" />
                       </div>
-                    ) : (
-                      (isPortfolioExpanded ? investments : investments.slice(0, 4)).map((inv) => {
-                        if (!inv) return null;
-                        const type = (inv.type || "Investment").toLowerCase();
-                        const isMetal = ["gold", "silver"].includes(type);
-                        const buyValue = (inv.amount || 0) * (inv.buy_price || 0);
-                        const invProfit = (inv.current_value || 0) - buyValue;
-                        const invProfitPercent = buyValue > 0 ? (invProfit / buyValue) * 100 : 0;
-                        const isPositive = invProfit >= 0;
+                      <span className="uppercase tracking-[0.2em]">Asset Portfolio</span>
+                    </h3>
+                    <div className="flex items-center gap-4">
+                      <div className={`hidden md:block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                        {investments.length} Active Assets
+                      </div>
+                      {investments.length > 4 && (
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsPortfolioExpanded(!isPortfolioExpanded)}
+                          className="text-[10px] font-black uppercase tracking-[0.2em]"
+                        >
+                          {isPortfolioExpanded ? 'Show Less' : 'View All'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-                        return (
-                          <div key={inv.id} className={`group p-6 rounded-[2rem] border-2 transition-all duration-300 ${
-                            isDark 
-                              ? `bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 shadow-xl ${
-                                  type === 'gold' ? 'shadow-amber-500/5' : 
-                                  type === 'silver' ? 'shadow-slate-400/5' : 
-                                  'shadow-blue-600/5'
-                                }` 
-                              : `bg-white border-slate-100 hover:border-blue-200 hover:shadow-2xl ${
-                                  type === 'gold' ? 'shadow-amber-500/10' : 
-                                  type === 'silver' ? 'shadow-slate-400/10' : 
-                                  'shadow-blue-600/10'
-                                }`
-                          }`}>
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
-                                  type === 'gold' ? 'bg-amber-500/10 text-amber-500 shadow-amber-500/10' : 
-                                  type === 'silver' ? 'bg-slate-400/10 text-slate-400 shadow-slate-400/10' : 
-                                  'bg-blue-600/10 text-blue-600 shadow-blue-600/10'
-                                }`}>
-                                  {type === 'gold' ? <Sparkles className="w-6 h-6" /> : 
-                                   type === 'silver' ? <Gem className="w-6 h-6" /> : 
-                                   <Banknote className="w-6 h-6" />}
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                    {inv.name || inv.type}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                      {inv.amount} {isMetal ? 'grams' : 'units'}
+                  <div className="relative">
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-700 ease-in-out ${
+                      !isPortfolioExpanded && investments.length > 4 ? 'max-h-[600px] overflow-hidden' : 'max-h-[2000px]'
+                    }`}>
+                      {investments.length === 0 ? (
+                        <div className="col-span-full">
+                          <EmptyState 
+                            icon={PieChartIcon}
+                            title="No investments tracked yet"
+                            description="Start building your portfolio to track your wealth growth over time."
+                            action={
+                              <Button 
+                                variant="primary" 
+                                size="sm" 
+                                onClick={() => setShowInvestmentForm(true)}
+                                className="mt-2 text-[10px] font-black uppercase tracking-[0.2em]"
+                              >
+                                Start building your portfolio
+                              </Button>
+                            }
+                          />
+                        </div>
+                      ) : (
+                        (isPortfolioExpanded ? investments : investments.slice(0, 4)).map((inv) => {
+                          if (!inv) return null;
+                          const type = (inv.type || "Investment").toLowerCase();
+                          const isMetal = ["gold", "silver"].includes(type);
+                          const buyValue = (inv.amount || 0) * (inv.buy_price || 0);
+                          const invProfit = (inv.current_value || 0) - buyValue;
+                          const invProfitPercent = buyValue > 0 ? (invProfit / buyValue) * 100 : 0;
+                          const isPositive = invProfit >= 0;
+
+                          return (
+                            <Card key={inv.id} className="group p-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+                                    type === 'gold' ? 'bg-amber-500/10 text-amber-500 shadow-amber-500/10' : 
+                                    type === 'silver' ? 'bg-slate-400/10 text-slate-400 shadow-slate-400/10' : 
+                                    'bg-blue-600/10 text-blue-600 shadow-blue-600/10'
+                                  }`}>
+                                    {type === 'gold' ? <Sparkles className="w-6 h-6" /> : 
+                                     type === 'silver' ? <Gem className="w-6 h-6" /> : 
+                                     <Banknote className="w-6 h-6" />}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                      {inv.name || inv.type}
                                     </span>
-                                    <span className="w-1 h-1 rounded-full bg-slate-700" />
-                                    <span className={`text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                                      {type}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        {inv.amount} {isMetal ? 'grams' : 'units'}
+                                      </span>
+                                      <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                      <span className={`text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                                        {type}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex flex-col items-end">
-                                <div className={`flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                  {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                  <span className="text-[10px] font-black">{isPositive ? '+' : ''}{invProfitPercent.toFixed(1)}%</span>
+                                <div className="flex flex-col items-end">
+                                  <div className={`flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                    <span className="text-[10px] font-black">{isPositive ? '+' : ''}{invProfitPercent.toFixed(1)}%</span>
+                                  </div>
+                                  <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Total Return</span>
                                 </div>
-                                <span className={`text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Total Return</span>
                               </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-3 mb-6">
-                              <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Current Value</p>
-                                <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(inv.current_value)}</p>
+                              <div className="grid grid-cols-2 gap-3 mb-6">
+                                <Card animate={false} className={`!p-4 !rounded-2xl ${isDark ? '!bg-slate-900/50' : '!bg-slate-50/50'} !border ${isDark ? '!border-slate-800' : '!border-slate-100'} transition-all group-hover:border-blue-500/20`}>
+                                  <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Current Value</p>
+                                  <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(inv.current_value)}</p>
+                                </Card>
+                                <Card animate={false} className={`!p-4 !rounded-2xl ${isDark ? '!bg-slate-900/50' : '!bg-slate-50/50'} !border ${isDark ? '!border-slate-800' : '!border-slate-100'} transition-all group-hover:border-blue-500/20`}>
+                                  <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Buy Price</p>
+                                  <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    EGP {(inv.buy_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </p>
+                                </Card>
                               </div>
-                              <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'} border ${isDark ? 'border-slate-800' : 'border-slate-100'} transition-all group-hover:border-blue-500/20`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Buy Price</p>
-                                <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                  EGP {(inv.buy_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </p>
-                              </div>
-                            </div>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-700/20">
-                              <div className="flex gap-2">
-                                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
-                                  isPositive 
-                                    ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
-                                    : (isDark ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600')
-                                }`}>
-                                  {isPositive ? '+' : ''}{fmt(invProfit)}
+                              <div className="flex items-center justify-between pt-4 border-t border-slate-700/20">
+                                <div className="flex gap-2">
+                                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
+                                    isPositive 
+                                      ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
+                                      : (isDark ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600')
+                                  }`}>
+                                    {isPositive ? '+' : ''}{fmt(invProfit)}
+                                  </div>
+                                  <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                                    {inv.buy_date ? new Date(inv.buy_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                                  </span>
                                 </div>
-                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-                                  {inv.buy_date ? new Date(inv.buy_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
-                                </span>
+                                <Button 
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeInvestment(inv.id)}
+                                  className={`p-2 !rounded-xl transition-all ${isDark ? 'hover:bg-rose-500/10 text-slate-600 hover:text-rose-500' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
-                              <button 
-                                onClick={() => removeInvestment(inv.id)}
-                                className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-rose-500/10 text-slate-600 hover:text-rose-500' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
+                            </Card>
+                          );
+                        })
+                      )}
+                    </div>
+                    
+                    {!isPortfolioExpanded && investments.length > 4 && (
+                      <div className={`absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t ${
+                        isDark ? 'from-slate-900 via-slate-900/80' : 'from-white via-white/80'
+                      } to-transparent pointer-events-none flex items-end justify-center pb-4`}>
+                        <Button 
+                          onClick={() => setIsPortfolioExpanded(true)}
+                          className="pointer-events-auto !px-8 !py-3 !text-[11px] shadow-2xl animate-bounce"
+                        >
+                          View Full Portfolio
+                        </Button>
+                      </div>
                     )}
                   </div>
-                  
-                  {!isPortfolioExpanded && investments.length > 4 && (
-                    <div className={`absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t ${
-                      isDark ? 'from-slate-900 via-slate-900/80' : 'from-white via-white/80'
-                    } to-transparent pointer-events-none flex items-end justify-center pb-4`}>
-                      <button 
-                        onClick={() => setIsPortfolioExpanded(true)}
-                        className="pointer-events-auto btn-primary-unified !px-8 !py-3 !text-[11px] shadow-2xl animate-bounce"
-                      >
-                        View Full Portfolio
-                      </button>
-                    </div>
-                  )}
                 </div>
-              </div>
+              </Card>
 
               {/* Transactions Section */}
-              <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+              <Card>
                 <div className="flex items-center justify-between mb-8">
                   <h3 className={`text-xl font-black flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <div className="p-2 rounded-xl bg-blue-600/10 text-blue-600">
@@ -1947,9 +1993,10 @@ export default function Savings() {
                     { id: "deposits", label: "Deposits" },
                     { id: "withdrawals", label: "Withdrawals" },
                   ].map((option) => (
-                    <button
+                    <Button
                       key={option.id}
-                      type="button"
+                      variant={activityFilter === option.id ? 'primary' : 'ghost'}
+                      size="sm"
                       onClick={() => setActivityFilter(option.id)}
                       className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
                         activityFilter === option.id
@@ -1960,7 +2007,7 @@ export default function Savings() {
                       }`}
                     >
                       {option.label}
-                    </button>
+                    </Button>
                   ))}
                   <div className={`ml-auto text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                     In: <span className="text-emerald-500">{fmt(activityMetrics.depositsAmount)}</span> | Out: <span className="text-rose-500">{fmt(activityMetrics.withdrawalsAmount)}</span>
@@ -1969,12 +2016,14 @@ export default function Savings() {
 
                 <div className="space-y-2.5">
                   {recentSavingsTransactions.length === 0 ? (
-                    <div className={`py-10 text-center rounded-2xl border ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-slate-50/70'}`}>
-                      <p className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No vault activity for this filter</p>
-                    </div>
+                    <EmptyState 
+                      icon={History}
+                      title="No activity found"
+                      description="Your recent vault transactions will appear here once you start saving or investing."
+                    />
                   ) : (
                     recentSavingsTransactions.map(tx => (
-                      <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all border ${isDark ? 'bg-slate-900/30 border-slate-800 hover:bg-slate-800/50 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-slate-200'}`}>
+                      <Card key={tx.id} className={`!flex !flex-row items-center justify-between !p-4 !rounded-2xl transition-all !border ${isDark ? '!bg-slate-900/30 !border-slate-800 hover:!bg-slate-800/50 hover:!border-slate-700' : '!bg-white !border-slate-100 hover:!bg-slate-50 hover:!border-slate-200'}`}>
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.amount > 0 ? 'bg-blue-600/10 text-blue-600' : 'bg-rose-500/10 text-rose-500'}`}>
                             {tx.amount > 0 ? <Plus className="w-5 h-5" /> : <ArrowRight className="w-5 h-5 rotate-45" />}
@@ -1998,17 +2047,17 @@ export default function Savings() {
                             {getRelativeTime(tx.date)}
                           </span>
                         </div>
-                      </div>
+                      </Card>
                     ))
                   )}
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Sidebar Widgets - 1 column */}
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000 lg:sticky lg:top-28 h-fit">
               {/* AI Suggestions Card */}
-              <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} bg-gradient-to-br ${isDark ? 'from-slate-900/90 to-blue-600/5' : 'from-white to-blue-50'}`}>
+              <Card className={`bg-gradient-to-br ${isDark ? 'from-slate-900/90 to-blue-600/5' : 'from-white to-blue-50'}`}>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className={`text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <Bot className="w-4 h-4 text-blue-600" /> AI Vault Insights
@@ -2025,15 +2074,15 @@ export default function Savings() {
                             const modelInfo = getModelInfo(currentTryingModel);
                             const isUrl = modelInfo.logo.startsWith('http');
                             return (
-                              <div className={`p-6 rounded-[2rem] border-2 shadow-2xl transition-all duration-500 ${
-                                isDark ? 'bg-blue-500/10 border-blue-500/20 shadow-blue-500/10' : 'bg-blue-50 border-blue-100 shadow-blue-200/50'
+                              <Card animate={false} className={`!p-6 !rounded-[2rem] !border-2 !shadow-2xl transition-all duration-500 ${
+                                isDark ? '!bg-blue-500/10 !border-blue-500/20 !shadow-blue-500/10' : '!bg-blue-50 !border-blue-100 !shadow-blue-200/50'
                               }`}>
                                 {isUrl ? (
                                   <img src={modelInfo.logo} alt={modelInfo.name} className="w-12 h-12 object-contain animate-pulse rounded-lg" />
                                 ) : (
                                   <span className="text-4xl animate-pulse inline-block">{modelInfo.logo}</span>
                                 )}
-                              </div>
+                              </Card>
                             );
                           } catch (e) {
                             return (
@@ -2077,7 +2126,8 @@ export default function Savings() {
                     <p className={`text-xs font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       Let our AI analyze your vault strategy and provide personalized growth recommendations.
                     </p>
-                    <button 
+                    <Button 
+                      variant="primary"
                       onClick={fetchAISummary} 
                       className={`w-full flex items-center justify-center gap-3 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
                         isDark ? 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700' : 'bg-white border-2 border-slate-100 hover:border-blue-200 text-slate-900'
@@ -2085,7 +2135,7 @@ export default function Savings() {
                     >
                       Generate Analysis
                       <ChevronRight className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -2116,19 +2166,21 @@ export default function Savings() {
                         )}
                         {!aiModelUsed && "Standard Analysis"}
                       </span>
-                      <button 
+                      <Button 
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setAiText("")}
                         className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
                       >
                         Clear
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
 
               {/* Market Rates */}
-              <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} border ${isDark ? 'border-slate-800' : 'border-slate-200'} overflow-hidden`}>
+              <Card className="border overflow-hidden">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -2138,14 +2190,15 @@ export default function Savings() {
                       {ratesUpdatedAt ? `Updated ${ratesUpdatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Using latest available rates'}
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={refreshMarketRates}
                     className={`p-2 rounded-xl border transition-colors ${isDark ? 'border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white' : 'border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-900'}`}
                     title="Refresh market rates"
                   >
                     <RefreshCw className={`w-4 h-4 ${isRatesRefreshing ? 'animate-spin' : ''}`} />
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="space-y-3">
@@ -2154,7 +2207,7 @@ export default function Savings() {
                     const isPositive = trendValue >= 0;
                     const trendWidth = Math.min(100, Math.max(8, Math.abs(trendValue) * 20));
                     return (
-                      <div key={rate.label} className={`rounded-2xl p-3.5 border transition-all ${isDark ? 'bg-slate-900/40 border-slate-800 hover:border-slate-700' : 'bg-slate-50/80 border-slate-100 hover:border-slate-200'}`}>
+                      <Card key={rate.label} className={`!rounded-2xl !p-3.5 !border transition-all ${isDark ? '!bg-slate-900/40 !border-slate-800 hover:!border-slate-700' : '!bg-slate-50/80 !border-slate-100 hover:!border-slate-200'}`}>
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2.5">
                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-white'} border ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
@@ -2177,11 +2230,11 @@ export default function Savings() {
                             style={{ width: `${trendWidth}%` }}
                           />
                         </div>
-                      </div>
+                      </Card>
                     );
                   })}
                 </div>
-              </div>
+              </Card>
             </div>
           </div>
         </div>

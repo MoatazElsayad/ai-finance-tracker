@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, register } from '../api';
 import { useTheme } from '../context/ThemeContext';
+import { Card, Button } from '../components/UI';
 import { 
   AlertTriangle, 
   ArrowLeft, 
@@ -77,9 +78,12 @@ function Login() {
           </div>
 
           {/* Form Card */}
-          <div className={`p-8 md:p-12 rounded-[3rem] transition-all border-2 duration-500 relative overflow-hidden group shadow-2xl ${
-            isDark ? 'bg-slate-800/40 border-slate-700 shadow-black/20' : 'bg-white border-slate-100 shadow-slate-200/50'
-          }`}>
+          <Card 
+            animate={true}
+            className={`!p-8 md:!p-12 !rounded-[3rem] transition-all border-2 duration-500 relative overflow-hidden group shadow-2xl ${
+              isDark ? 'shadow-black/20' : 'shadow-slate-200/50'
+            }`}
+          >
             {/* Decorative element */}
             <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl group-hover:bg-amber-500/10 transition-colors duration-700" />
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
@@ -105,7 +109,7 @@ function Login() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input-unified w-full pl-14"
+                    className={`w-full pl-14 pr-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                     placeholder="you@example.com"
                     required
                   />
@@ -124,7 +128,7 @@ function Login() {
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="input-unified w-full pl-14"
+                      className={`w-full pl-14 pr-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                       placeholder="johndoe"
                       required
                     />
@@ -143,7 +147,7 @@ function Login() {
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="input-unified w-full"
+                      className={`w-full px-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                       placeholder="John"
                       required
                     />
@@ -156,7 +160,7 @@ function Login() {
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="input-unified w-full"
+                      className={`w-full px-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                       placeholder="Doe"
                       required
                     />
@@ -177,7 +181,7 @@ function Login() {
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="input-unified w-full pl-14"
+                        className={`w-full pl-14 pr-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                         placeholder="+20..."
                       />
                     </div>
@@ -191,7 +195,7 @@ function Login() {
                       <select
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
-                        className="input-unified w-full pl-14 appearance-none cursor-pointer relative z-0 pr-12"
+                        className={`w-full pl-14 pr-12 py-4 rounded-2xl border-2 appearance-none cursor-pointer outline-none text-sm font-bold transition-all ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                       >
                         <option value="male" className={isDark ? 'bg-slate-900' : 'bg-white'}>Male</option>
                         <option value="female" className={isDark ? 'bg-slate-900' : 'bg-white'}>Female</option>
@@ -213,7 +217,7 @@ function Login() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input-unified w-full pl-14"
+                    className={`w-full pl-14 pr-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${isDark ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
                     placeholder="••••••••"
                     required
                   />
@@ -221,49 +225,48 @@ function Login() {
               </div>
 
               {/* Submit Button */}
-              <button
+              <Button
                 type="submit"
-                disabled={loading}
-                className="w-full py-6 bg-amber-500 text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 shadow-2xl shadow-amber-500/20 group/btn active:scale-95"
+                loading={loading}
+                variant="primary"
+                size="lg"
+                className="w-full !py-8 !rounded-[2.5rem] !font-black !uppercase !tracking-[0.2em] !text-xs !shadow-2xl !shadow-amber-500/20 group/btn"
+                icon={ChevronRight}
+                iconPosition="right"
               >
-                {loading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <>
-                    <span>{isLogin ? 'Sign In to Dashboard' : 'Create Intelligence Account'}</span>
-                    <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-2 transition-transform" strokeWidth={3} />
-                  </>
-                )}
-              </button>
+                {isLogin ? 'Sign In to Dashboard' : 'Create Intelligence Account'}
+              </Button>
             </form>
 
             {/* Toggle Login/Register */}
             <div className="mt-12 text-center relative z-10">
               <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
                 {isLogin ? "New to FinanceAI?" : "Already have an account?"}
-                <button
+                <Button
+                  variant="link"
                   onClick={() => {
                     setIsLogin(!isLogin);
                     setError('');
                   }}
-                  className="ml-3 text-amber-500 hover:text-amber-600 font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-105 active:scale-95"
+                  className="!ml-3 !p-0 !h-auto !text-amber-500 hover:!text-amber-600 !font-black !uppercase !tracking-[0.2em] !text-[10px] !transition-all hover:!scale-105 active:!scale-95"
                 >
                   {isLogin ? 'Create one here' : 'Sign in instead'}
-                </button>
+                </Button>
               </p>
             </div>
 
             {/* Back to Landing */}
             <div className="mt-8 text-center relative z-10">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/')}
-                className={`inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-600 hover:text-slate-400' : 'text-slate-400 hover:text-slate-600'} transition-all group/back active:scale-95`}
+                icon={ArrowLeft}
+                className={`!inline-flex !items-center !gap-3 !text-[10px] !font-black !uppercase !tracking-[0.2em] ${isDark ? '!text-slate-600 hover:!text-slate-400' : '!text-slate-400 hover:!text-slate-600'} !transition-all group/back active:!scale-95`}
               >
-                <ArrowLeft className="w-4 h-4 group-hover/back:-translate-x-2 transition-transform" strokeWidth={3} />
                 Back to landing
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
 
           {/* Features Preview */}
           <div className="mt-12 grid grid-cols-3 gap-6">
@@ -272,12 +275,16 @@ function Login() {
               { icon: <PieChartIcon />, label: 'Visuals' },
               { icon: <Target />, label: 'Goals' }
             ].map((item, idx) => (
-              <div key={idx} className={`p-6 ${isDark ? 'bg-slate-800/30 border-slate-700/50 hover:bg-slate-800/50' : 'bg-white border-slate-100 hover:bg-slate-50'} rounded-3xl border-2 flex flex-col items-center justify-center gap-3 transition-all hover:-translate-y-1 duration-300 shadow-lg shadow-black/5 group`}>
+              <Card 
+                key={idx} 
+                animate={true}
+                className={`!p-6 !rounded-3xl border-2 flex flex-col items-center justify-center gap-3 transition-all hover:-translate-y-1 duration-300 shadow-lg shadow-black/5 group`}
+              >
                 <div className="text-amber-500 group-hover:scale-110 transition-transform">
                   {item.icon}
                 </div>
                 <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'} group-hover:text-amber-500 transition-colors`}>{item.label}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </div>

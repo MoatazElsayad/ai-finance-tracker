@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Upload, Camera, Check, AlertTriangle, Loader, ArrowRight, RefreshCw, ScanLine, Calendar, Tag, FileText, X } from 'lucide-react';
 import { getCategories, uploadReceipt, confirmReceipt } from '../api';
+import { Card, Button } from '../components/UI';
 
 export default function ReceiptUpload() {
   const { theme } = useTheme();
@@ -129,8 +130,8 @@ export default function ReceiptUpload() {
   if (showSuccess) {
     return (
       <div className={`min-h-screen ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'} flex items-center justify-center px-6 py-12 transition-colors duration-500`}>
-        <div className="max-w-xl w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-12 text-center shadow-2xl relative overflow-hidden`}>
+        <div className="max-w-xl w-full">
+          <Card className="!p-12 text-center shadow-2xl relative overflow-hidden">
             {/* Background Decoration */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
@@ -147,30 +148,36 @@ export default function ReceiptUpload() {
               </p>
               
               <div className="flex flex-col gap-4">
-                <button
+                <Button
                   onClick={() => navigate('/transactions')}
-                  className="w-full py-5 bg-amber-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all shadow-xl shadow-amber-500/10"
+                  variant="primary"
+                  size="lg"
+                  className="w-full !py-5 !rounded-[1.5rem] !font-black !uppercase !tracking-[0.2em] !text-sm"
                 >
                   View Transactions
-                </button>
+                </Button>
                 <div className="grid grid-cols-2 gap-4">
-                  <button
+                  <Button
                     onClick={handleReset}
-                    className={`py-5 ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2`}
+                    variant="secondary"
+                    size="lg"
+                    icon={RefreshCw}
+                    className="!py-5 !rounded-[1.5rem] !font-black !uppercase !tracking-[0.2em] !text-[10px]"
                   >
-                    <RefreshCw className="w-4 h-4" />
                     Scan Another
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => navigate('/')}
-                    className={`py-5 ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] transition-all`}
+                    variant="secondary"
+                    size="lg"
+                    className="!py-5 !rounded-[1.5rem] !font-black !uppercase !tracking-[0.2em] !text-[10px]"
                   >
                     Dashboard
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     );
@@ -200,17 +207,19 @@ export default function ReceiptUpload() {
           </div>
           
           {extractedData && (
-             <button
+             <Button
               onClick={() => {
                 if (window.confirm('Discard changes and upload new?')) {
                    handleReset();
                 }
               }}
-              className={`px-8 py-4 ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white text-slate-600 border-2 border-slate-100 hover:bg-slate-50'} rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center gap-3 shadow-xl animate-in slide-in-from-right-8 duration-700`}
+              variant="secondary"
+              size="lg"
+              icon={RefreshCw}
+              className="!px-8 !py-4 !rounded-2xl !font-black !uppercase !tracking-[0.2em] !text-xs !shadow-xl animate-in slide-in-from-right-8 duration-700"
             >
-              <RefreshCw className="w-4 h-4" />
               New Upload
-            </button>
+            </Button>
           )}
         </div>
 
@@ -228,9 +237,9 @@ export default function ReceiptUpload() {
         {/* Main Content Area */}
         {!extractedData && !loading ? (
           // Upload Screen
-          <div className="max-w-3xl mx-auto mt-12 animate-in slide-in-from-bottom-12 duration-1000">
-            <div 
-              className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} relative group p-16 border-4 border-dashed transition-all duration-500 cursor-pointer text-center ${
+          <div className="max-w-3xl mx-auto mt-12">
+            <Card 
+              className={`relative group !p-16 border-4 border-dashed transition-all duration-500 cursor-pointer text-center ${
                 isDark 
                   ? 'border-slate-800 hover:border-amber-500/50 hover:bg-slate-800/80' 
                   : 'border-slate-200 hover:border-amber-500/50 hover:bg-white'
@@ -256,25 +265,29 @@ export default function ReceiptUpload() {
               </p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-6 relative z-10">
-                 <button 
+                 <Button 
                    onClick={(e) => {
                      e.stopPropagation();
                      fileInputRef.current?.click();
                    }}
-                   className="px-10 py-5 bg-amber-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all shadow-xl shadow-amber-500/10"
+                   variant="primary"
+                   size="lg"
+                   className="!px-10 !py-5 !rounded-[2rem] !font-black !uppercase !tracking-[0.2em] !text-sm"
                  >
                    Select File
-                 </button>
-                 <button 
+                 </Button>
+                 <Button 
                    onClick={(e) => {
                      e.stopPropagation();
                      cameraInputRef.current?.click();
                    }}
-                   className={`px-10 py-5 ${isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm transition-all flex items-center justify-center gap-3`}
+                   variant="secondary"
+                   size="lg"
+                   icon={Camera}
+                   className="!px-10 !py-5 !rounded-[2rem] !font-black !uppercase !tracking-[0.2em] !text-sm"
                  >
-                   <Camera className="w-5 h-5" />
                    Camera
-                 </button>
+                 </Button>
               </div>
 
               <input
@@ -292,7 +305,7 @@ export default function ReceiptUpload() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-            </div>
+            </Card>
             
             <div className={`mt-12 text-center ${isDark ? 'text-slate-600' : 'text-slate-400'} flex items-center justify-center gap-4`}>
               <div className="h-px w-12 bg-current opacity-20"></div>
@@ -319,9 +332,9 @@ export default function ReceiptUpload() {
           </div>
         ) : (
           // Results Split View
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start animate-in slide-in-from-bottom-8 duration-1000">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             {/* Left Column: Image Preview */}
-            <div className={`sticky top-8 card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden shadow-2xl`}>
+            <Card className="sticky top-8 !p-0 overflow-hidden shadow-2xl" animate={true}>
               <div className={`px-8 py-6 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                 <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   Original Receipt
@@ -337,10 +350,10 @@ export default function ReceiptUpload() {
                   <div className="absolute inset-0 bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl pointer-events-none"></div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Right Column: Edit Form */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} shadow-2xl overflow-hidden`}>
+            <Card className="!p-0 shadow-2xl overflow-hidden" animate={true}>
                <div className={`px-10 py-8 border-b ${isDark ? 'bg-slate-800/30 border-slate-800' : 'bg-slate-50/50 border-slate-100'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className={`text-2xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -373,7 +386,11 @@ export default function ReceiptUpload() {
                         value={editData.merchant}
                         onChange={(e) => setEditData({ ...editData, merchant: e.target.value })}
                         placeholder="e.g. Starbucks"
-                        className="input-unified w-full pl-14 pr-6 py-5"
+                        className={`w-full pl-14 pr-6 py-5 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${
+                          isDark 
+                            ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                            : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                        }`}
                       />
                     </div>
                   </div>
@@ -394,7 +411,11 @@ export default function ReceiptUpload() {
                           value={editData.amount}
                           onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
                           placeholder="0.00"
-                          className="input-unified w-full pl-16 pr-6 py-5"
+                          className={`w-full pl-16 pr-6 py-5 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${
+                            isDark 
+                              ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                              : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                          }`}
                         />
                       </div>
                     </div>
@@ -410,7 +431,11 @@ export default function ReceiptUpload() {
                           type="date"
                           value={editData.date}
                           onChange={(e) => setEditData({ ...editData, date: e.target.value })}
-                          className="input-unified w-full pl-14 pr-6 py-5"
+                          className={`w-full pl-14 pr-6 py-5 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${
+                            isDark 
+                              ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                              : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                          }`}
                         />
                       </div>
                     </div>
@@ -456,28 +481,28 @@ export default function ReceiptUpload() {
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                         rows="3"
                         placeholder="Add notes about this intelligence data..."
-                        className="input-unified w-full pl-14 pr-6 py-5 resize-none"
+                        className={`w-full pl-14 pr-6 py-5 rounded-2xl border-2 transition-all outline-none text-sm font-bold resize-none ${
+                          isDark 
+                            ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                            : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                        }`}
                       />
                     </div>
                   </div>
 
                   {/* Save Button */}
-                  <button
+                  <Button
                     onClick={handleConfirmReceipt}
-                    disabled={submitting}
-                    className="w-full py-6 bg-amber-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-xl shadow-amber-500/10 group"
+                    loading={submitting}
+                    variant="primary"
+                    size="lg"
+                    icon={Check}
+                    className="w-full !py-6 !rounded-[2rem] !font-black !uppercase !tracking-[0.2em] !text-sm group"
                   >
-                    {submitting ? (
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Check className="w-5 h-5 group-hover:scale-125 transition-transform" strokeWidth={3} />
-                        <span>Confirm & Save Transaction</span>
-                      </>
-                    )}
-                  </button>
+                    Confirm & Save Transaction
+                  </Button>
                </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>

@@ -2044,9 +2044,10 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
         }
 
     # Default fallback rates if API fails and no cache exists
+    # Updated to match current market rates from GoldPrice.org
     rates_data = {
-        "gold": 7151.64,
-        "silver": 123.34,
+        "gold": 7589.72,
+        "silver": 116.46,
         "usd": 48.9, "eur": 52.8, "gbp": 62.1,
         "sar": 13.0, "aed": 13.3, "kwd": 158.0,
         "qar": 13.4, "bhd": 129.0, "omr": 127.0,
@@ -2076,29 +2077,40 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
 
     try:
         async with httpx.AsyncClient() as client:
-            # 1. Gold & Silver (GoldPrice.org API) - Public endpoint, no key needed
-            # This API provides real market rates for Egypt which often differ from official rates
+            # 1. Gold (Coinbase PAXG-EGP) - Extremely reliable, free, and no-captcha
+            try:
+                gold_url = "https://api.coinbase.com/v2/prices/PAXG-EGP/spot"
+                async with httpx.AsyncClient(timeout=10.0) as cb_client:
+                    gold_resp = await cb_client.get(gold_url)
+                    if gold_resp.status_code == 200:
+                        gold_json = gold_resp.json()
+                        if "data" in gold_json and "amount" in gold_json["data"]:
+                            ounce_to_gram = 31.1035
+                            gold_price_ounce = float(gold_json["data"]["amount"])
+                            rates_data["gold"] = round(gold_price_ounce / ounce_to_gram, 2)
+                            print(f"Successfully fetched Gold rate from Coinbase: {rates_data['gold']} EGP/g")
+            except Exception as e:
+                print(f"Coinbase Gold API failed: {e}")
+
+            # 2. Silver & Fallback Gold (GoldPrice.org)
             try:
                 gp_url = "https://data-asg.goldprice.org/dbXRates/EGP"
-                # Use a custom transport to skip SSL verification if needed
-                # Added User-Agent because some APIs block default httpx/curl clients
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-                async with httpx.AsyncClient(verify=False, headers=headers) as gp_client:
-                    gp_resp = await gp_client.get(gp_url, timeout=15.0)
+                async with httpx.AsyncClient(verify=False, headers=headers, timeout=15.0) as gp_client:
+                    gp_resp = await gp_client.get(gp_url)
                     if gp_resp.status_code == 200:
                         gp_json = gp_resp.json()
                         if "items" in gp_json and len(gp_json["items"]) > 0:
                             item = gp_json["items"][0]
                             ounce_to_gram = 31.1035
-                            if "xauPrice" in item:
+                            # Only update gold if Coinbase failed or if this is more recent
+                            if "xauPrice" in item and rates_data["gold"] == 7589.72:
                                 rates_data["gold"] = round(item["xauPrice"] / ounce_to_gram, 2)
                             if "xagPrice" in item:
                                 rates_data["silver"] = round(item["xagPrice"] / ounce_to_gram, 2)
-                            print(f"Successfully fetched real Egypt gold rates: {rates_data['gold']} EGP/g")
-                        else:
-                            print("Invalid response format from GoldPrice API")
+                            print(f"Successfully fetched rates from GoldPrice: Gold={rates_data['gold']}, Silver={rates_data['silver']}")
                     else:
-                        print(f"GoldPrice API returned status {gp_resp.status_code}")
+                        print(f"GoldPrice API returned status {gp_resp.status_code} (Likely blocked by captcha)")
             except Exception as gp_err:
                 print(f"GoldPrice API failed: {gp_err}")
 
@@ -2117,9 +2129,9 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
                 except Exception as ce:
                     print(f"Currency API failed: {ce}")
 
-            # 3. Metals-API Fallback (Only if GoldPrice failed and we have a key)
-            # We request EGP directly to avoid manual conversion errors.
-            if METALS_API_KEY and (rates_data["gold"] == 7151.64 or (cached_record and rates_data["gold"] == cached_record.gold_egp_per_gram)):
+            # 3. Metals-API Fallback (Only if Gold/Silver failed and we have a key)
+            # Trigger if gold or silver are still at their default hardcoded values
+            if METALS_API_KEY and (rates_data["gold"] == 7589.72 or rates_data["silver"] == 116.46):
                 try:
                     # Requesting with base=EGP to get rates directly in Egyptian Pounds
                     metals_url = f"https://metals-api.com/api/latest?access_key={METALS_API_KEY}&base=EGP&symbols=XAU,XAG"
@@ -2182,7 +2194,6 @@ async def fetch_real_time_rates(db: Session, force_refresh: bool = False):
 async def get_savings_rates(request: Request, force: bool = False, db: Session = Depends(get_db)):
     """Public endpoint for rates (DB cached)"""
     check_rate_limit(request)
-    print(f"DEBUG: Manual refresh requested: {force}")
     return await fetch_real_time_rates(db, force_refresh=force)
 
 @app.get("/savings")

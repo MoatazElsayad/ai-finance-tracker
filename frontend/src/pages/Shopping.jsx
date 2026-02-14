@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { Card, Button } from "../components/UI";
 
 const INVENTORY_KEY = "shopping_inventory_items_v1";
 const SHOPPING_KEY = "shopping_list_items_v1";
@@ -106,26 +107,30 @@ function ItemModal({ open, initial, isDark, onClose, onSubmit }) {
               <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isDark ? "text-slate-500" : "text-slate-400"}`}>Shopping & Inventory</p>
               <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-slate-900"}`}>{form.id ? "Edit Item" : "Quick Add"}</h3>
             </div>
-            <button onClick={onClose} className={`p-2 rounded-xl ${isDark ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"}`}>
+            <Button
+              variant="secondary"
+              onClick={onClose}
+              className={`!p-2 !rounded-xl ${isDark ? "hover:!bg-slate-800 !text-slate-400" : "hover:!bg-slate-100 !text-slate-500"}`}
+            >
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="p-5 md:p-7 space-y-4">
             <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl border border-slate-400/20">
               {["inventory", "shopping"].map((mode) => (
-                <button
+                <Button
                   key={mode}
                   type="button"
                   onClick={() => setForm((s) => ({ ...s, mode }))}
-                  className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                  className={`!py-2.5 !rounded-xl !text-xs !font-black !uppercase !tracking-widest !transition-all ${
                     form.mode === mode
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                      : isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"
+                      ? "!bg-emerald-600 !text-white !shadow-lg !shadow-emerald-600/20"
+                      : isDark ? "!text-slate-400 hover:!bg-slate-800" : "!text-slate-600 hover:!bg-slate-100"
                   }`}
                 >
                   {mode === "inventory" ? "Inventory" : "Shopping"}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -186,8 +191,20 @@ function ItemModal({ open, initial, isDark, onClose, onSubmit }) {
             )}
 
             <div className="pt-2 flex gap-2">
-              <button type="button" onClick={onClose} className={`flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>Cancel</button>
-              <button type="submit" className="flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-emerald-600 text-white hover:bg-emerald-700">Save Item</button>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={onClose}
+                className={`!flex-1 !py-3 !rounded-2xl !text-xs !font-black !uppercase !tracking-wider ${isDark ? "!bg-slate-800 !text-slate-300 hover:!bg-slate-700" : "!bg-slate-100 !text-slate-700 hover:!bg-slate-200"}`}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="!flex-1 !py-3 !rounded-2xl !text-xs !font-black !uppercase !tracking-wider !bg-emerald-600 !text-white hover:!bg-emerald-700"
+              >
+                Save Item
+              </Button>
             </div>
           </form>
         </div>
@@ -754,75 +771,78 @@ export default function Shopping() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => openQuickAdd(activeTab)} className="btn-primary-unified !bg-white !text-emerald-700 hover:!bg-emerald-50 !px-7">
-                  <Plus className="w-5 h-5" /> Quick Add
-                </button>
+                <Button 
+                  onClick={() => openQuickAdd(activeTab)} 
+                  className="!bg-white !text-emerald-700 hover:!bg-emerald-50 !px-7 shadow-lg"
+                  icon={Plus}
+                >
+                  Quick Add
+                </Button>
               </div>
             </div>
           </div>
 
           {/* Tabs + AI toggle */}
           <div className={`p-2 rounded-2xl border mb-6 inline-flex gap-2 ${isDark ? "border-slate-700 bg-slate-900/50" : "border-slate-200 bg-white"}`}>
-            <button
+            <Button
               onClick={() => setActiveTab("inventory")}
-              className={`px-4 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider transition-all ${
-                activeTab === "inventory" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"
-              }`}
+              variant={activeTab === "inventory" ? "primary" : "ghost"}
+              size="sm"
+              className={`!rounded-xl ${activeTab === "inventory" ? "!bg-emerald-600 shadow-lg shadow-emerald-600/20" : ""}`}
+              icon={Package}
             >
-              <Package className="w-4 h-4 inline mr-2" /> My Inventory
-            </button>
-            <button
+              My Inventory
+            </Button>
+            <Button
               onClick={() => setActiveTab("shopping")}
-              className={`px-4 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider transition-all ${
-                activeTab === "shopping" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"
-              }`}
+              variant={activeTab === "shopping" ? "primary" : "ghost"}
+              size="sm"
+              className={`!rounded-xl ${activeTab === "shopping" ? "!bg-emerald-600 shadow-lg shadow-emerald-600/20" : ""}`}
+              icon={ShoppingCart}
             >
-              <ShoppingCart className="w-4 h-4 inline mr-2" /> Shopping List
-            </button>
-            <button
+              Shopping List
+            </Button>
+            <Button
               onClick={() => setShowInsightsCard((s) => !s)}
-              className={`px-4 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider transition-all ${
-                showInsightsCard ? "bg-amber-600 text-white shadow-lg shadow-amber-600/20" : isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"
-              }`}
+              variant={showInsightsCard ? "primary" : "ghost"}
+              size="sm"
+              className={`!rounded-xl ${showInsightsCard ? "!bg-amber-600 shadow-lg shadow-amber-600/20" : ""}`}
+              icon={Bot}
             >
-              <Bot className="w-4 h-4 inline mr-2" /> AI Insights
-            </button>
+              AI Insights
+            </Button>
           </div>
 
           {/* Category Filters */}
           <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
             {["All", ...CATEGORIES].map((cat) => (
-              <button
+              <Button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                  activeCategory === cat
-                    ? "bg-emerald-600 text-white shadow-lg"
-                    : isDark
-                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
+                variant={activeCategory === cat ? "primary" : "ghost"}
+                size="xs"
+                className={`!rounded-xl ${activeCategory === cat ? "!bg-emerald-600 shadow-lg" : isDark ? "!bg-slate-800 !text-slate-300 hover:!bg-slate-700" : "!bg-slate-100 !text-slate-700 hover:!bg-slate-200"}`}
               >
                 {cat}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Inventory Summary Card (only on Inventory tab) */}
           {activeTab === "inventory" && (outCount > 0 || lowCount > 0) && (
-            <div className={`p-6 rounded-3xl border ${isDark ? "bg-slate-900/60 border-slate-700" : "bg-white border-slate-200"} shadow-xl mb-8 text-center`}>
+            <Card className="mb-8 text-center p-6 !rounded-3xl">
               <p className="text-lg font-black tracking-wide">
                 Inventory Status:{" "}
                 <span className="text-rose-500 font-black"> {outCount} out of stock</span>{" "}
                 <span className="text-slate-500">•</span>{" "}
                 <span className="text-orange-500 font-black"> {lowCount} running low</span>
               </p>
-            </div>
+            </Card>
           )}
 
           {/* AI Insights Card */}
           <div className={`transition-all duration-500 ease-out overflow-hidden ${showInsightsCard ? "max-h-[1400px] opacity-100 translate-y-0 mb-16" : "max-h-0 opacity-0 -translate-y-3 mb-0"}`}>
-            <div className={`card-unified ${theme === "dark" ? "card-unified-dark" : "card-unified-light"} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden`}>
+            <Card className="p-10 !rounded-[2.5rem] relative overflow-hidden" animate={true}>
               {shoppingModelUsed && (
                 <div className="absolute top-8 right-8 z-10">
                   {(() => {
@@ -929,40 +949,45 @@ export default function Shopping() {
                     <p className="text-sm font-bold text-slate-500 leading-tight">Your shopping & pantry is being analyzed in real-time by AI models.</p>
                   </div>
 
-                  <button
+                  <Button
                     onClick={() => {
                       clearShoppingInsightsCache();
                       generateShoppingInsights();
                     }}
-                    disabled={shoppingInsightsLoading}
-                    className={`btn-primary-unified w-full !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 ${shoppingInsightsLoading ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] hover:-translate-y-1"}`}
+                    loading={shoppingInsightsLoading}
+                    variant="primary"
+                    className="w-full !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500"
+                    icon={RefreshCw}
                   >
-                    <RefreshCw className={`w-6 h-6 ${shoppingInsightsLoading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"}`} strokeWidth={3} />
-                    <span className="uppercase tracking-[0.2em]">{shoppingInsightsLoading ? "RECALCULATING..." : "REFRESH INSIGHTS"}</span>
-                  </button>
+                    REFRESH INSIGHTS
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Main Content */}
           {activeTab === "inventory" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {filteredInventoryItems.length === 0 ? (
-                <div className={`col-span-full p-10 rounded-3xl border-2 border-dashed text-center ${isDark ? "border-slate-700 bg-slate-900/40" : "border-slate-200 bg-white"}`}>
+                <Card className="col-span-full p-10 !rounded-3xl border-2 border-dashed text-center" animate={false}>
                   <Package className={`w-10 h-10 mx-auto mb-3 ${isDark ? "text-slate-600" : "text-slate-300"}`} />
                   <p className={`font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>No inventory items for this filter.</p>
-                  <button onClick={() => openQuickAdd("inventory")} className="mt-4 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider">
+                  <Button 
+                    onClick={() => openQuickAdd("inventory")} 
+                    className="mt-4 !rounded-xl"
+                    size="sm"
+                  >
                     Add First Item
-                  </button>
-                </div>
+                  </Button>
+                </Card>
               ) : (
                 filteredInventoryItems.map((item) => {
                   const status = getStatus(item);
                   return (
-                    <div
+                    <Card
                       key={item.id}
-                      className={`rounded-3xl border p-5 ${isDark ? "bg-slate-900/60 border-slate-700" : "bg-white border-slate-200"} shadow-lg`}
+                      className="p-5 !rounded-3xl shadow-lg"
                     >
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
@@ -984,84 +1009,111 @@ export default function Shopping() {
                       </div>
 
                       {status === "out" && (
-                        <button
+                        <Button
                           onClick={() => addRestockToShopping(item)}
-                          className="w-full mb-3 py-2.5 rounded-xl bg-rose-500 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
+                          variant="danger"
+                          className="w-full mb-3 !rounded-xl"
+                          size="sm"
+                          icon={Flame}
                         >
-                          <Flame className="w-4 h-4" /> Out! Add To Shopping
-                        </button>
+                          Out! Add To Shopping
+                        </Button>
                       )}
 
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <button
+                        <Button
                           onClick={() => adjustInventory(item.id, 1)}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-emerald-500/10 !text-emerald-400" : "!bg-emerald-50 !text-emerald-600"}`}
+                          icon={Plus}
                         >
-                          <Plus className="w-4 h-4 inline mr-1" /> +1
-                        </button>
-                        <button
+                          1
+                        </Button>
+                        <Button
                           onClick={() => adjustInventory(item.id, -1)}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-rose-500/10 text-rose-400" : "bg-rose-50 text-rose-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-rose-500/10 !text-rose-400" : "!bg-rose-50 !text-rose-600"}`}
+                          icon={Minus}
                         >
-                          <Minus className="w-4 h-4 inline mr-1" /> -1
-                        </button>
-                        <button
+                          1
+                        </Button>
+                        <Button
                           onClick={() => adjustInventory(item.id, 5)}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-emerald-500/10 !text-emerald-400" : "!bg-emerald-50 !text-emerald-600"}`}
+                          icon={Plus}
                         >
-                          <Plus className="w-4 h-4 inline mr-1" /> +5
-                        </button>
-                        <button
+                          5
+                        </Button>
+                        <Button
                           onClick={() => adjustInventory(item.id, 10)}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-emerald-500/10 !text-emerald-400" : "!bg-emerald-50 !text-emerald-600"}`}
+                          icon={Plus}
                         >
-                          <Plus className="w-4 h-4 inline mr-1" /> +10
-                        </button>
-                        <button
+                          10
+                        </Button>
+                        <Button
                           onClick={() => addRestockToShopping(item)}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-orange-500/10 text-orange-400" : "bg-orange-50 text-orange-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-orange-500/10 !text-orange-400" : "!bg-orange-50 !text-orange-600"}`}
                         >
                           Restock
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => openEdit(item, "inventory")}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-emerald-500/10 !text-emerald-400" : "!bg-emerald-50 !text-emerald-600"}`}
+                          icon={Edit}
                         >
-                          <Edit className="w-4 h-4 inline mr-1" /> Edit
-                        </button>
-                        <button
+                          Edit
+                        </Button>
+                        <Button
                           onClick={() => deleteInventory(item.id)}
-                          className="col-span-2 md:col-span-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-rose-500/10 text-rose-500"
+                          variant="ghost"
+                          size="xs"
+                          className="col-span-2 md:col-span-1 !rounded-xl !bg-rose-500/10 !text-rose-500 hover:!bg-rose-500/20"
+                          icon={Trash2}
                         >
-                          <Trash2 className="w-4 h-4 inline mr-1" /> Delete
-                        </button>
+                          Delete
+                        </Button>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })
               )}
             </div>
           ) : (
             <div>
-              <div className={`mb-6 p-5 md:p-6 rounded-3xl border ${isDark ? "bg-slate-900/60 border-slate-700" : "bg-white border-slate-200"} shadow-xl`}>
+              <Card className="mb-6 p-5 md:p-6 !rounded-3xl shadow-xl">
                 <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Estimated Total</p>
                 <h2 className={`text-3xl md:text-4xl font-black text-emerald-500 ${pulseTotal ? "animate-pulse" : ""}`}>
                   {formatEGP(shoppingTotal)}
                 </h2>
-              </div>
+              </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filteredShoppingItems.length === 0 ? (
-                  <div className={`col-span-full p-10 rounded-3xl border-2 border-dashed text-center ${isDark ? "border-slate-700 bg-slate-900/40" : "border-slate-200 bg-white"}`}>
+                  <Card className="col-span-full p-10 !rounded-3xl border-2 border-dashed text-center" animate={false}>
                     <ShoppingCart className={`w-10 h-10 mx-auto mb-3 ${isDark ? "text-slate-600" : "text-slate-300"}`} />
                     <p className={`font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>Shopping list is empty for this filter.</p>
-                    <button onClick={() => openQuickAdd("shopping")} className="mt-4 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider">
+                    <Button 
+                      onClick={() => openQuickAdd("shopping")} 
+                      className="mt-4 !rounded-xl"
+                      size="sm"
+                    >
                       Add To-Buy Item
-                    </button>
-                  </div>
+                    </Button>
+                  </Card>
                 ) : (
                   filteredShoppingItems.map((item) => (
-                    <div key={item.id} className={`rounded-3xl border p-5 ${isDark ? "bg-slate-900/60 border-slate-700" : "bg-white border-slate-200"} shadow-lg`}>
+                    <Card key={item.id} className="p-5 !rounded-3xl shadow-lg">
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
                           <p className={`text-lg font-black ${isDark ? "text-white" : "text-slate-900"}`}>{item.name}</p>
@@ -1096,26 +1148,35 @@ export default function Shopping() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <button
+                        <Button
                           onClick={() => openBoughtConfirm(item)}
-                          className="col-span-2 py-2.5 rounded-xl bg-emerald-500 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
+                          variant="primary"
+                          className="col-span-2 !rounded-xl !bg-emerald-500 hover:!bg-emerald-600"
+                          size="sm"
+                          icon={Check}
                         >
-                          <Check className="w-4 h-4" /> Mark As Bought
-                        </button>
-                        <button
+                          Mark As Bought
+                        </Button>
+                        <Button
                           onClick={() => openEdit(item, "shopping")}
-                          className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}
+                          variant="ghost"
+                          size="xs"
+                          className={`!rounded-xl ${isDark ? "!bg-emerald-500/10 !text-emerald-400" : "!bg-emerald-50 !text-emerald-600"}`}
+                          icon={Edit}
                         >
-                          <Edit className="w-4 h-4 inline mr-1" /> Edit
-                        </button>
-                        <button
+                          Edit
+                        </Button>
+                        <Button
                           onClick={() => deleteShopping(item.id)}
-                          className="py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-rose-500/10 text-rose-500"
+                          variant="ghost"
+                          size="xs"
+                          className="!rounded-xl !bg-rose-500/10 !text-rose-500 hover:!bg-rose-500/20"
+                          icon={Trash2}
                         >
-                          <Trash2 className="w-4 h-4 inline mr-1" /> Remove
-                        </button>
+                          Remove
+                        </Button>
                       </div>
-                    </div>
+                    </Card>
                   ))
                 )}
               </div>
@@ -1125,13 +1186,12 @@ export default function Shopping() {
       </section>
 
       {/* Floating Quick Add Button */}
-      <button
+      <Button
         onClick={() => openQuickAdd(activeTab)}
-        className="fixed bottom-8 right-6 z-40 w-14 h-14 rounded-2xl bg-emerald-600 text-white shadow-2xl shadow-emerald-600/30 flex items-center justify-center hover:bg-emerald-700 active:scale-95 transition-all"
+        className="fixed bottom-8 right-6 z-40 !w-14 !h-14 !rounded-2xl !bg-emerald-600 text-white shadow-2xl shadow-emerald-600/30 flex items-center justify-center hover:!bg-emerald-700 active:scale-95 transition-all"
         title="Quick Add Item"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+        icon={Plus}
+      />
 
       {/* Low/Out Floating Badge */}
       {inventoryItems.some((i) => getStatus(i) !== "ok") && (
@@ -1237,22 +1297,22 @@ export default function Shopping() {
                 )}
 
                 <div className="pt-2 flex gap-2">
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => setBuyConfirmOpen(false)}
                     disabled={buyConfirmSubmitting}
-                    className={`flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-wider ${isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-50" : "bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50"}`}
+                    variant="ghost"
+                    className="!flex-1 !py-3 !rounded-2xl"
                   >
                     Cancel
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
                     onClick={confirmBought}
-                    disabled={buyConfirmSubmitting}
-                    className="flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                    loading={buyConfirmSubmitting}
+                    variant="primary"
+                    className="!flex-1 !py-3 !rounded-2xl !bg-emerald-600 hover:!bg-emerald-700"
                   >
-                    {buyConfirmSubmitting ? "Saving..." : "Confirm Purchase"}
-                  </button>
+                    Confirm Purchase
+                  </Button>
                 </div>
               </div>
             </div>

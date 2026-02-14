@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { LineChart, Line, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
+import { Card, Button } from '../components/UI';
 import { 
   Rocket, 
   Brain, 
@@ -87,20 +88,30 @@ export default function Landing() {
                 Stop guessing and start growing. Get AI-powered insights, real-time tracking, and reach your goals faster.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-                <Link to="/register" className="group px-12 py-6 bg-amber-500 text-white rounded-[2rem] hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/40 transition-all shadow-2xl shadow-amber-500/20 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4 hover:-translate-y-1">
-                  Start Journey
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link to="/login" className={`px-12 py-6 ${isDark ? 'bg-slate-800/50 text-white border-slate-700 hover:bg-slate-800' : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50'} rounded-[2rem] transition-all border-2 font-black uppercase tracking-[0.2em] text-xs text-center shadow-2xl shadow-black/5 hover:-translate-y-1`}>
-                  Login
-                </Link>
-              </div>
+                <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
+                  <Button
+                    onClick={() => window.location.href = '/register'}
+                    variant="primary"
+                    size="lg"
+                    icon={ChevronRight}
+                    className="!rounded-[2rem] !px-12 !py-6 uppercase tracking-[0.2em] !text-xs"
+                  >
+                    Start Journey
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = '/login'}
+                    variant="outline"
+                    size="lg"
+                    className="!rounded-[2rem] !px-12 !py-6 uppercase tracking-[0.2em] !text-xs"
+                  >
+                    Login
+                  </Button>
+                </div>
             </div>
 
             {/* Dashboard Preview Widget */}
             <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-              <div className={`card-unified ${isDark ? 'card-unified-dark border-slate-700/50' : 'card-unified-light border-slate-200'} p-8 shadow-2xl relative overflow-hidden group`}>
+              <Card className="p-8 shadow-2xl relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
                 <div className="flex items-center justify-between mb-8">
@@ -176,7 +187,7 @@ export default function Landing() {
                     </ResponsiveContainer>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
           </div>
         </div>
@@ -203,7 +214,7 @@ export default function Landing() {
               { icon: <Target />, title: "Goal Tracking", desc: "Set and achieve financial milestones with precision tracking.", color: "blue" },
               { icon: <Shield />, title: "Bank-Grade Security", desc: "Your data is protected with industry-leading encryption.", color: "slate" },
             ].map((f, i) => (
-              <div key={i} className={`group p-12 rounded-[2.5rem] border-2 ${isDark ? 'bg-slate-800/30 border-slate-700/50 hover:border-amber-500/50' : 'bg-white border-slate-100 hover:border-amber-500/30'} transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(251,191,36,0.15)] hover:-translate-y-2`}>
+              <Card key={i} className="group !p-12 !rounded-[2.5rem] !border-2 hover:shadow-[0_20px_50px_-12px_rgba(251,191,36,0.15)] hover:-translate-y-2 transition-all duration-500">
                 <div className={`w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mb-10 shadow-xl shadow-amber-500/20 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500`}>
                   <div className="text-white">
                     {f.icon}
@@ -211,7 +222,7 @@ export default function Landing() {
                 </div>
                 <h3 className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'} mb-6`}>{f.title}</h3>
                 <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed font-medium text-lg`}>{f.desc}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -254,10 +265,15 @@ export default function Landing() {
             ))}
           </div>
 
-          <Link to="/register" className="group px-16 py-8 bg-amber-500 text-white rounded-[2.5rem] hover:bg-amber-600 hover:shadow-2xl hover:shadow-amber-500/40 transition-all shadow-2xl shadow-amber-500/20 font-black uppercase tracking-[0.2em] text-xs inline-flex items-center justify-center gap-6 hover:-translate-y-1">
+          <Button
+            onClick={() => window.location.href = '/register'}
+            variant="primary"
+            size="lg"
+            icon={Zap}
+            className="!rounded-[2.5rem] !px-16 !py-8 uppercase tracking-[0.2em] !text-xs"
+          >
             Try AI Insights
-            <Zap className="w-6 h-6 fill-current" />
-          </Link>
+          </Button>
         </div>
       </section>
 

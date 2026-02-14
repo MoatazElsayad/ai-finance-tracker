@@ -2,6 +2,7 @@ import { useState, memo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
 import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight, Landmark } from 'lucide-react';
 import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
+import { Card, Button } from '../components/UI';
 
 export const CustomTooltip = memo(({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
@@ -284,7 +285,10 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
   const suggestion = getTopUpSuggestion();
 
   return (
-    <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} flex flex-col relative group overflow-hidden`}>
+    <Card 
+      className="flex flex-col relative group overflow-hidden" 
+      animate={true}
+    >
       <div className="flex items-center justify-between mb-6">
         <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {label}
@@ -346,7 +350,7 @@ const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, cl
       <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
         color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
       }`} />
-    </div>
+    </Card>
   );
 };
 
@@ -369,7 +373,7 @@ export const ReportsSection = memo(({ theme, reportLoading, reportProgress, repo
           </div>
         </div>
 
-        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} animate-in fade-in slide-in-from-bottom-8 duration-700`}>
+        <Card className="animate-in fade-in slide-in-from-bottom-8 duration-700" animate={true}>
           <div className="relative z-10">
             <h3 className={`text-2xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <span className="uppercase tracking-[0.2em]">Export Your Data</span>
@@ -379,31 +383,24 @@ export const ReportsSection = memo(({ theme, reportLoading, reportProgress, repo
             </p>
             
             <div className="flex flex-wrap items-center gap-4">
-              <button
+              <Button
                 onClick={() => handleDownloadReport('pdf')}
-                disabled={reportLoading}
-                className="btn-primary-unified min-w-[200px] disabled:opacity-50"
+                loading={reportLoading}
+                className="min-w-[200px]"
+                icon={Sparkles}
               >
-                {reportLoading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Sparkles className="w-5 h-5" />
-                )}
                 {reportLoading ? 'Generating...' : 'Download PDF'}
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={() => handleDownloadReport('csv')}
                 disabled={reportLoading}
-                className={`flex items-center justify-center gap-2 px-8 py-4 rounded-[1.5rem] font-bold transition-all active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-[0.2em] ${
-                  isDark 
-                    ? 'bg-slate-800 hover:bg-slate-700 text-white border-2 border-slate-700' 
-                    : 'bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-900'
-                }`}
+                variant="secondary"
+                className="min-w-[200px] !py-4 !rounded-[1.5rem]"
+                icon={FileSpreadsheet}
               >
-                <FileSpreadsheet className="w-5 h-5" />
                 {reportLoading ? 'Preparing...' : 'Download CSV'}
-              </button>
+              </Button>
             </div>
 
             <div className="mt-12 max-w-md">
@@ -425,7 +422,7 @@ export const ReportsSection = memo(({ theme, reportLoading, reportProgress, repo
           </div>
           
           <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-amber-500/10 blur-[100px]" />
-        </div>
+        </Card>
       </div>
     </section>
   );
@@ -453,7 +450,7 @@ export const MainChartsSection = memo(({ theme, barData, pieData }) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+          <Card animate={true}>
             <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                 <TrendingUp className="w-5 h-5" />
@@ -500,9 +497,9 @@ export const MainChartsSection = memo(({ theme, barData, pieData }) => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
 
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+          <Card animate={true}>
             <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                 <Percent className="w-5 h-5" />
@@ -549,7 +546,7 @@ export const MainChartsSection = memo(({ theme, barData, pieData }) => {
               </ResponsiveContainer>
             )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </section>
@@ -578,7 +575,7 @@ export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailyS
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+          <Card animate={true}>
             <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                 <TrendingUp className="w-5 h-5" />
@@ -636,9 +633,9 @@ export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailyS
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
+          </Card>
 
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+          <Card animate={true}>
             <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                 <LayoutDashboard className="w-5 h-5" />
@@ -675,7 +672,7 @@ export const SpendingTrendsSection = memo(({ theme, dailySpendingData, avgDailyS
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </section>
@@ -704,7 +701,7 @@ export const ProgressComparisonSection = memo(({ theme, cumulativeSavingsData, m
         </div>
 
         <div className={`grid grid-cols-1 ${hasSavingsAccount ? 'lg:grid-cols-2' : ''} gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700`}>
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+          <Card animate={true}>
             <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                 <History className="w-5 h-5" />
@@ -724,10 +721,10 @@ export const ProgressComparisonSection = memo(({ theme, cumulativeSavingsData, m
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
 
           {hasSavingsAccount && (
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+            <Card animate={true}>
               <h3 className={`text-xl font-black mb-8 flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                   <Sparkles className="w-5 h-5" />
@@ -762,7 +759,7 @@ export const ProgressComparisonSection = memo(({ theme, cumulativeSavingsData, m
                   </ResponsiveContainer>
                 )}
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>
@@ -807,7 +804,7 @@ export const AIInsightsSection = memo(({
           </div>
         </div>
 
-        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} min-h-[600px] flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700`}>
+        <Card className="min-h-[600px] flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700" animate={true}>
           {(aiMode === 'summary' ? aiModelUsed : chatModelUsed) && (
             <div className="absolute top-8 right-8 z-20">
               {(() => {
@@ -854,26 +851,24 @@ export const AIInsightsSection = memo(({
           <div className="relative z-10 h-full flex flex-col">
             <div className="flex items-center justify-between mb-10">
               <div className={`flex items-center gap-2 ${isDark ? 'bg-slate-800/60' : 'bg-slate-200/60'} rounded-[1.5rem] p-1.5 border ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
-                <button
+                <Button
                   onClick={() => setAiMode('summary')}
-                  className={`px-8 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
-                    aiMode === 'summary'
-                      ? 'bg-amber-500 text-white shadow-lg'
-                      : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                  variant={aiMode === 'summary' ? 'primary' : 'ghost'}
+                  className={`!px-8 !py-2.5 !rounded-2xl !text-[10px] !uppercase !tracking-[0.2em] ${
+                    aiMode !== 'summary' ? (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900') : ''
                   }`}
                 >
                   Summary
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setAiMode('chat')}
-                  className={`px-8 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
-                    aiMode === 'chat'
-                      ? 'bg-amber-500 text-white shadow-lg'
-                      : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                  variant={aiMode === 'chat' ? 'primary' : 'ghost'}
+                  className={`!px-8 !py-2.5 !rounded-2xl !text-[10px] !uppercase !tracking-[0.2em] ${
+                    aiMode !== 'chat' ? (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900') : ''
                   }`}
                 >
                   Chat
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -889,13 +884,13 @@ export const AIInsightsSection = memo(({
                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                         <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.2em]">Analysis Complete</span>
                       </div>
-                      <button
+                      <Button
                         onClick={handleGenerateAI}
-                        className={`btn-primary-unified !px-6 !py-3 !rounded-xl !text-[10px] !uppercase !tracking-[0.2em]`}
+                        className="!px-6 !py-3 !rounded-xl !text-[10px] !uppercase !tracking-[0.2em]"
+                        icon={RefreshCw}
                       >
-                        <RefreshCw className="w-4 h-4" strokeWidth={3} />
                         Refresh
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -959,23 +954,14 @@ export const AIInsightsSection = memo(({
                         ? 'Our AI is processing your financial data and generating personalized insights.'
                         : 'Our AI analyzes your spending patterns, compares to last month, and provides actionable insights.'}
                     </p>
-                    <button
+                    <Button
                       onClick={handleGenerateAI}
-                      disabled={aiLoading}
-                      className="btn-primary-unified min-w-[240px]"
+                      loading={aiLoading}
+                      className="min-w-[240px]"
+                      icon={Sparkles}
                     >
-                      {aiLoading ? (
-                        <>
-                          <RefreshCw className="w-5 h-5 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-5 h-5" />
-                          Generate Insights
-                        </>
-                      )}
-                    </button>
+                      {aiLoading ? 'Analyzing...' : 'Generate Insights'}
+                    </Button>
                   </div>
                 )
               ) : (
@@ -1036,7 +1022,11 @@ export const AIInsightsSection = memo(({
                           onChange={(e) => setChatQuestion(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && !chatLoading && chatQuestion?.trim() && handleAskAI()}
                           placeholder="Ask anything about your finances..."
-                          className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} pr-32`}
+                          className={`w-full px-6 py-5 rounded-[1.5rem] border-2 transition-all outline-none text-sm font-bold pr-32 ${
+                            isDark 
+                              ? 'bg-slate-900/50 border-slate-700 text-white focus:border-amber-500/50' 
+                              : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                          }`}
                           disabled={chatLoading}
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
@@ -1048,20 +1038,20 @@ export const AIInsightsSection = memo(({
                           )}
                         </div>
                       </div>
-                      <button
+                      <Button
                         onClick={handleAskAI}
-                        disabled={chatLoading || !chatQuestion?.trim()}
-                        className={`p-5 rounded-[1.5rem] bg-amber-500 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:grayscale`}
-                      >
-                        <SendHorizonal className="w-6 h-6" />
-                      </button>
+                        loading={chatLoading}
+                        disabled={!chatQuestion?.trim()}
+                        className="!p-5 !rounded-[1.5rem] shadow-lg"
+                        icon={SendHorizonal}
+                      />
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );
@@ -1098,7 +1088,7 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
           </div>
         </div>
 
-        <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} animate-in fade-in slide-in-from-bottom-8 duration-700`}>
+        <Card className="animate-in fade-in slide-in-from-bottom-8 duration-700" animate={true}>
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-8">
               <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'} flex items-center gap-3`}>
@@ -1107,17 +1097,15 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
                 </div>
                 <span className="uppercase tracking-[0.2em]">Latest Transactions</span>
               </h3>
-              <a 
-                href="/history" 
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
-                  isDark 
-                    ? 'bg-slate-800 text-amber-400 hover:bg-slate-700' 
-                    : 'bg-slate-100 text-amber-600 hover:bg-slate-200'
-                }`}
+              <Button
+                variant="secondary"
+                size="sm"
+                className="!px-6 !py-2.5 !rounded-2xl !text-[10px] !uppercase !tracking-[0.2em]"
+                onClick={() => window.location.href = '/history'}
+                icon={ArrowRight}
               >
                 View All
-                <ArrowRight className="w-4 h-4" />
-              </a>
+              </Button>
             </div>
 
             {recentTransactions.length === 0 ? (
@@ -1127,9 +1115,12 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
                 </div>
                 <h4 className={`text-xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No transactions yet</h4>
                 <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mb-8 font-medium`}>Start tracking your finances today!</p>
-                <a href="/transactions" className="btn-primary-unified inline-flex">
+                <Button 
+                  onClick={() => window.location.href = '/transactions'}
+                  className="inline-flex"
+                >
                   Add Your First Transaction
-                </a>
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1213,7 +1204,7 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );
@@ -1221,23 +1212,12 @@ export const RecentActivitySection = ({ theme, recentTransactions }) => {
 
 export const ChatWidgetButton = ({ theme, isChatWidgetOpen, setIsChatWidgetOpen }) => {
   return (
-    <button
+    <Button
       onClick={() => setIsChatWidgetOpen((prev) => !prev)}
-      className={`
-        fixed bottom-6 right-6 z-50
-        rounded-[1.5rem] p-5
-        bg-amber-500
-        text-white
-        shadow-xl shadow-amber-500/25
-        transition-all duration-400
-        hover:shadow-amber-500/40 hover:-translate-y-1.5
-        active:scale-95
-        flex items-center justify-center
-      `}
+      className="fixed bottom-6 right-6 z-50 !p-5 !rounded-[1.5rem] shadow-xl shadow-amber-500/25 !bg-amber-500 hover:shadow-amber-500/40 hover:-translate-y-1.5"
       aria-label="Open AI Chat"
-    >
-      <Bot className="w-6 h-6" />
-    </button>
+      icon={Bot}
+    />
   );
 };
 
@@ -1280,12 +1260,13 @@ export const ChatWidgetPopup = ({
             )}
           </div>
         </div>
-        <button 
+        <Button 
+          variant="ghost"
+          size="sm"
           onClick={() => setIsChatWidgetOpen(false)} 
-          className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`}
-        >
-          <X className="w-5 h-5" />
-        </button>
+          className="!p-2 !rounded-xl"
+          icon={X}
+        />
       </div>
 
       <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
@@ -1324,16 +1305,20 @@ export const ChatWidgetPopup = ({
             onChange={(e) => setChatWidgetInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !chatWidgetLoading && chatWidgetInput?.trim() && handleWidgetAsk()}
             placeholder="Type your message..."
-            className={`input-unified ${isDark ? 'input-unified-dark' : 'input-unified-light'} !text-sm !py-3 !px-4`}
+            className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all outline-none text-sm font-bold ${
+              isDark 
+                ? 'bg-slate-900/50 border-slate-700 text-white focus:border-amber-500/50' 
+                : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+            }`}
             disabled={chatWidgetLoading}
           />
-          <button
+          <Button
             onClick={handleWidgetAsk}
-            disabled={chatWidgetLoading || !chatWidgetInput?.trim()}
-            className="p-3 bg-amber-500 text-white rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
-          >
-            <SendHorizonal className="w-5 h-5" />
-          </button>
+            loading={chatWidgetLoading}
+            disabled={!chatWidgetInput?.trim()}
+            className="!p-3 !rounded-xl shadow-lg"
+            icon={SendHorizonal}
+          />
         </div>
       </div>
     </div>

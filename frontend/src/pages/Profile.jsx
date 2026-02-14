@@ -7,6 +7,7 @@ import { getCurrentUser, updateUserProfile, generateReport } from '../api'; // A
 import { useTheme } from '../context/ThemeContext';
 import { User, Mail, Calendar, Shield, Edit, Save, X, Upload, FileText, ArrowLeftRight, RefreshCw } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
+import { Button, Card } from '../components/UI';
 
 function Profile() {
   const { theme } = useTheme();
@@ -163,11 +164,14 @@ function Profile() {
 
         <main className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-700 delay-200">
         {/* Main Profile Card */}
-        <div className={`p-8 md:p-12 rounded-[2.5rem] transition-all border-2 duration-500 relative overflow-hidden ${
-          theme === 'dark' 
-            ? 'bg-slate-800/40 border-slate-700 shadow-2xl shadow-black/20' 
-            : 'bg-white border-slate-100 shadow-xl'
-        }`}>
+        <Card 
+          animate={true}
+          className={`p-8 md:p-12 !rounded-[2.5rem] !border-2 ${
+            theme === 'dark' 
+              ? '!bg-slate-800/40 !border-slate-700 !shadow-2xl !shadow-black/20' 
+              : '!bg-white !border-slate-100 !shadow-xl'
+          }`}
+        >
           {/* Decorative Background Element */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
           
@@ -227,47 +231,39 @@ function Profile() {
               </h3>
 
               {!isEditing ? (
-                <button
+                <Button
                   onClick={() => setIsEditing(true)}
-                  className={`flex items-center gap-4 px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 group active:scale-95 ${
-                    theme === 'dark' 
-                      ? 'bg-slate-800 text-amber-400 hover:bg-amber-500 hover:text-white border-2 border-slate-700/50 shadow-xl shadow-black/20 hover:shadow-amber-500/20' 
-                      : 'bg-white text-amber-600 hover:bg-amber-500 hover:text-white border-2 border-slate-200 shadow-lg hover:shadow-amber-500/10'
-                  }`}
+                  variant="outline"
+                  size="lg"
+                  icon={Edit}
+                  className="!rounded-[1.5rem] !px-10 !py-5 uppercase tracking-[0.2em]"
                 >
-                  <Edit className="w-6 h-6 group-hover:rotate-12 transition-transform" strokeWidth={2.5} />
                   Edit Profile
-                </button>
+                </Button>
               ) : (
                 <div className="flex gap-4">
-                  <button
+                  <Button
                     onClick={() => {
                       setIsEditing(false);
                       setMessage({ text: '', type: '' });
                     }}
-                    className={`px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 ${
-                      theme === 'dark' 
-                        ? 'bg-slate-800 text-slate-400 hover:text-white border-2 border-slate-700/50 shadow-xl shadow-black/20' 
-                        : 'bg-white text-slate-500 hover:text-slate-900 border-2 border-slate-200 shadow-lg'
-                    }`}
+                    variant="secondary"
+                    size="lg"
+                    icon={X}
+                    className="!rounded-[1.5rem] !px-10 !py-5 uppercase tracking-[0.2em]"
                   >
-                    <X className="w-6 h-6 inline mr-2" strokeWidth={2.5} />
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleSubmit}
-                    disabled={saving}
-                    className="btn-primary-unified !rounded-[1.5rem] !py-5 !px-10 shadow-2xl shadow-amber-500/20 disabled:opacity-50 group active:scale-95"
+                    loading={saving}
+                    variant="primary"
+                    size="lg"
+                    icon={Save}
+                    className="!rounded-[1.5rem] !px-10 !py-5 shadow-2xl shadow-amber-500/20"
                   >
-                    {saving ? (
-                      <div className="animate-spin rounded-full h-6 w-6 border-3 border-white border-t-transparent"></div>
-                    ) : (
-                      <>
-                        <Save className="w-6 h-6 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
-                        <span className="tracking-[0.2em]">SAVE CHANGES</span>
-                      </>
-                    )}
-                  </button>
+                    <span className="tracking-[0.2em]">SAVE CHANGES</span>
+                  </Button>
                 </div>
               )}
             </div>
@@ -282,7 +278,11 @@ function Profile() {
                       name="first_name"
                       value={formData.first_name}
                       onChange={handleChange}
-                      className="input-unified w-full !text-xl"
+                      className={`w-full px-8 py-6 rounded-[1.5rem] border-2 transition-all outline-none !text-xl font-black ${
+                        theme === 'dark' 
+                          ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                          : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                      }`}
                       placeholder="John"
                     />
                   ) : (
@@ -300,7 +300,11 @@ function Profile() {
                       name="last_name"
                       value={formData.last_name}
                       onChange={handleChange}
-                      className="input-unified w-full !text-xl"
+                      className={`w-full px-8 py-6 rounded-[1.5rem] border-2 transition-all outline-none !text-xl font-black ${
+                        theme === 'dark' 
+                          ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                          : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                      }`}
                       placeholder="Doe"
                     />
                   ) : (
@@ -318,7 +322,11 @@ function Profile() {
                       name="username"
                       value={formData.username}
                       onChange={handleChange}
-                      className="input-unified w-full !text-xl"
+                      className={`w-full px-8 py-6 rounded-[1.5rem] border-2 transition-all outline-none !text-xl font-black ${
+                        theme === 'dark' 
+                          ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                          : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                      }`}
                       placeholder="Your username"
                     />
                   ) : (
@@ -344,7 +352,11 @@ function Profile() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="input-unified w-full !text-xl"
+                      className={`w-full px-8 py-6 rounded-[1.5rem] border-2 transition-all outline-none !text-xl font-black ${
+                        theme === 'dark' 
+                          ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                          : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                      }`}
                       placeholder="+1 (555) 123-4567"
                     />
                   ) : (
@@ -362,7 +374,11 @@ function Profile() {
                         name="gender"
                         value={formData.gender}
                         onChange={handleChange}
-                        className="input-unified w-full !text-xl appearance-none pr-12"
+                        className={`w-full px-8 py-6 rounded-[1.5rem] border-2 transition-all outline-none !text-xl font-black appearance-none pr-12 ${
+                          theme === 'dark' 
+                            ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                            : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                        }`}
                       >
                         <option value="">Select gender</option>
                         <option value="male">Male</option>
@@ -475,7 +491,7 @@ function Profile() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   </div>

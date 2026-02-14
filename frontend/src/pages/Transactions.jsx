@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getTransactions, createTransaction, deleteTransaction, getCategories, createCategory } from '../api';
 import { useTheme } from '../context/ThemeContext';
+import { Card, Button, EmptyState, Input, Modal } from '../components/UI';
 import { clearInsightsCache } from '../utils/cache';
 import { useDebounce } from '../utils/debounce';
 import { RefreshCw, TrendingUp, TrendingDown, Wallet, Hash, CirclePlus, Check, Trash2, Plus, CreditCard, BarChart3, DollarSign, Search, FileText, ArrowLeftRight, ArrowRight, ArrowLeft, Filter, ArrowDownAZ, SortDesc, Type, Sparkles } from 'lucide-react';
@@ -90,6 +91,7 @@ function Transactions() {
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isExpense, setIsExpense] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -249,8 +251,10 @@ function Transactions() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
 
     try {
+      setSubmitting(true);
       const finalAmount = isExpense ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount));
       const combinedDescription = notes && notes.trim()
         ? `${description.trim()} ||notes|| ${notes.trim()}`
@@ -276,6 +280,8 @@ function Transactions() {
       setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (error) {
       alert(error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -449,104 +455,100 @@ function Transactions() {
 
   // --- Initial Setup Modal ---
   const renderInitialSetupModal = () => {
-    if (!showInitialSetup) return null;
-
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 overflow-y-auto">
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-700" />
-        
-        <div className={`relative w-full max-w-2xl card-unified ${theme === 'dark' ? 'card-unified-dark border-slate-800' : 'card-unified-light border-slate-200'} shadow-2xl animate-in zoom-in slide-in-from-bottom-10 duration-500`}>
-          <div className="p-8 md:p-12">
-            <div className="flex flex-col items-center text-center mb-12">
-              <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center border-2 border-amber-500/20 mb-6 animate-bounce-slow">
-                <Sparkles className="w-10 h-10 text-amber-500" />
-              </div>
-              <h1 className={`text-3xl md:text-4xl font-black tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                Let's personalize your tracker
-              </h1>
-              <p className={`text-lg ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-md`}>
-                Add the categories you spend on most to get started with your financial journey.
-              </p>
-            </div>
+      <Modal
+        isOpen={showInitialSetup}
+        onClose={() => {}} // Force setup
+        showClose={false}
+        maxWidth="max-w-2xl"
+      >
+        <div className="flex flex-col items-center text-center mb-12">
+          <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center border-2 border-amber-500/20 mb-6 animate-bounce-slow">
+            <Sparkles className="w-10 h-10 text-amber-500" />
+          </div>
+          <h1 className={`text-3xl md:text-4xl font-black tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            Let's personalize your tracker
+          </h1>
+          <p className={`text-lg ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} max-w-md`}>
+            Add the categories you spend on most to get started with your financial journey.
+          </p>
+        </div>
 
-            <div className="space-y-6 mb-12">
-              {initialCategories.map((cat, idx) => (
-                <div key={idx} className={`p-6 rounded-3xl border-2 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'} focus-within:border-amber-500/50 group relative`}>
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                      <button
-                        onClick={() => setActivePickerIdx(activePickerIdx === idx ? null : idx)}
-                        className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-110 duration-300 relative group/icon ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
-                      >
-                        {cat.icon}
-                        <div className="absolute inset-0 bg-amber-500/0 group-hover/icon:bg-amber-500/10 transition-all flex items-center justify-center rounded-2xl">
-                          <Search className="w-4 h-4 text-amber-500 opacity-0 group-hover/icon:opacity-100 transition-all scale-50 group-hover/icon:scale-100" />
-                        </div>
-                      </button>
-                      <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-[10px] font-black text-white uppercase tracking-widest">
-                        {cat.type}
-                      </div>
-
-                      {/* Emoji Picker Popover */}
-                      {activePickerIdx === idx && (
-                        <div className="absolute bottom-full left-0 mb-4 z-[110]">
-                          <EmojiPicker 
-                            onSelect={(emoji) => {
-                              updateInitialCategory(idx, 'icon', emoji);
-                              setActivePickerIdx(null);
-                            }}
-                            onClose={() => setActivePickerIdx(null)}
-                            categoryName={cat.name}
-                          />
-                        </div>
-                      )}
+        <div className="space-y-6 mb-12">
+          {initialCategories.map((cat, idx) => (
+            <div key={idx} className={`p-6 rounded-3xl border-2 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'} focus-within:border-amber-500/50 group relative`}>
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <button
+                    onClick={() => setActivePickerIdx(activePickerIdx === idx ? null : idx)}
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-110 duration-300 relative group/icon ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
+                  >
+                    {cat.icon}
+                    <div className="absolute inset-0 bg-amber-500/0 group-hover/icon:bg-amber-500/10 transition-all flex items-center justify-center rounded-2xl">
+                      <Search className="w-4 h-4 text-amber-500 opacity-0 group-hover/icon:opacity-100 transition-all scale-50 group-hover/icon:scale-100" />
                     </div>
-                    
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={cat.name}
-                        onChange={(e) => updateInitialCategory(idx, 'name', e.target.value)}
-                        placeholder={idx === 0 ? "e.g., Grocery" : idx === 1 ? "e.g., Transport" : "e.g., Salary"}
-                        className={`w-full bg-transparent border-none outline-none text-xl font-bold p-0 ${theme === 'dark' ? 'text-white placeholder:text-slate-700' : 'text-slate-900 placeholder:text-slate-300'}`}
+                  </button>
+                  <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-[10px] font-black text-white uppercase tracking-widest">
+                    {cat.type}
+                  </div>
+
+                  {/* Emoji Picker Popover */}
+                  {activePickerIdx === idx && (
+                    <div className="absolute bottom-full left-0 mb-4 z-[110]">
+                      <EmojiPicker 
+                        onSelect={(emoji) => {
+                          updateInitialCategory(idx, 'icon', emoji);
+                          setActivePickerIdx(null);
+                        }}
+                        onClose={() => setActivePickerIdx(null)}
+                        categoryName={cat.name}
                       />
-                      <div className="h-0.5 w-full bg-slate-800/50 mt-2 rounded-full overflow-hidden">
-                        <div className={`h-full bg-amber-500 transition-all duration-500 ${cat.name ? 'w-full' : 'w-0'}`} />
-                      </div>
                     </div>
+                  )}
+                </div>
+                
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={cat.name}
+                    onChange={(e) => updateInitialCategory(idx, 'name', e.target.value)}
+                    placeholder={idx === 0 ? "e.g., Grocery" : idx === 1 ? "e.g., Transport" : "e.g., Salary"}
+                    className={`w-full bg-transparent border-none outline-none text-xl font-bold p-0 ${theme === 'dark' ? 'text-white placeholder:text-slate-700' : 'text-slate-900 placeholder:text-slate-300'}`}
+                  />
+                  <div className="h-0.5 w-full bg-slate-800/50 mt-2 rounded-full overflow-hidden">
+                    <div className={`h-full bg-amber-500 transition-all duration-500 ${cat.name ? 'w-full' : 'w-0'}`} />
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-
-
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={handleInitialSetupSubmit}
-                disabled={loading || initialCategories.filter(c => c.name.trim()).length < 3}
-                className="w-full h-16 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-black text-lg rounded-2xl transition-all shadow-xl shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-3"
-              >
-                {loading ? <RefreshCw className="w-6 h-6 animate-spin" /> : (
-                  <>
-                    Continue to add transaction
-                    <ArrowRight className="w-6 h-6" />
-                  </>
-                )}
-              </button>
-              <p className={`text-center text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                Add at least 3 categories to continue
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
+
+        <div className="flex flex-col gap-4">
+          <Button
+            onClick={handleInitialSetupSubmit}
+            disabled={loading || initialCategories.filter(c => c.name.trim()).length < 3}
+            loading={loading}
+            variant="primary"
+            size="lg"
+            className="w-full !h-16 !font-black !text-lg !rounded-2xl !shadow-xl !shadow-amber-500/20"
+            icon={ArrowRight}
+            iconPosition="right"
+          >
+            Continue to add transaction
+          </Button>
+          <p className={`text-center text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+            Add at least 3 categories to continue
+          </p>
+        </div>
+      </Modal>
     );
   };
 
   if (loading) {
     return (
       <div className={`flex justify-center items-center min-h-screen ${theme === 'dark' ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-        <div className="text-center p-12 card-unified bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] shadow-2xl">
+        <Card className="text-center !p-12 !bg-white/5 !backdrop-blur-xl !border-white/10 !rounded-[3rem] !shadow-2xl" animate={true}>
           <div className="relative mb-8">
             <div className="animate-spin rounded-full h-24 w-24 border-b-4 border-amber-500 mx-auto"></div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -555,7 +557,7 @@ function Transactions() {
           </div>
           <h2 className={`text-2xl font-black mb-2 uppercase tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Loading Transactions</h2>
           <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} font-bold`}>Crunching your financial data...</p>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -601,17 +603,18 @@ function Transactions() {
       <div className="mb-12 flex flex-col lg:flex-row lg:items-center justify-between gap-8 animate-in fade-in slide-in-from-top-20 duration-700 delay-100">
         <div className={`p-2 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/40' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200'} flex gap-2 w-fit shadow-xl shadow-black/5`}>
           {['monthly', 'yearly', 'overall'].map((mode) => (
-            <button
+            <Button
               key={mode}
+              variant={viewMode === mode ? 'primary' : 'ghost'}
               onClick={() => setViewMode(mode)}
-              className={`px-10 py-4 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 ${
+              className={`!px-10 !py-4 !rounded-[1.5rem] !font-black !text-sm !uppercase !tracking-[0.2em] transition-all duration-500 ${
                 viewMode === mode
-                  ? 'bg-amber-500 text-white shadow-xl shadow-amber-500/30 scale-105'
-                  : `${theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/30' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`
+                  ? '!bg-amber-500 !text-white !shadow-xl !shadow-amber-500/30 !scale-105'
+                  : `${theme === 'dark' ? '!text-slate-500 hover:!text-slate-300 hover:!bg-slate-700/30' : '!text-slate-400 hover:!text-slate-600 hover:!bg-slate-50'}`
               }`}
             >
               {mode}
-            </button>
+            </Button>
           ))}
         </div>
         
@@ -619,43 +622,43 @@ function Transactions() {
           <div className={`flex items-center gap-4 p-2 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-800/40' : 'bg-white'} border-2 ${theme === 'dark' ? 'border-amber-500/20' : 'border-amber-500/10'} shadow-xl shadow-black/5`}>
             {viewMode === 'monthly' && (
               <>
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => changeMonth(-1)}
-                  className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 hover:text-amber-400 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 hover:text-amber-500 hover:bg-white'} transition-all shadow-sm group`}
-                >
-                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                </button>
+                  icon={ArrowLeft}
+                  className={`!p-4 !rounded-[1.25rem] ${theme === 'dark' ? '!bg-slate-700/50 !text-slate-400 hover:!text-amber-400 hover:!bg-slate-700' : '!bg-slate-50 !text-slate-500 hover:!text-amber-500 hover:!bg-white'} transition-all shadow-sm group`}
+                />
                 <span className={`text-xl font-black tracking-[0.1em] uppercase min-w-[200px] text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                   {new Date(selectedMonth.year, selectedMonth.month - 1, 1).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long'
                   })}
                 </span>
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => changeMonth(1)}
-                  className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 hover:text-amber-400 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 hover:text-amber-500 hover:bg-white'} transition-all shadow-sm group`}
-                >
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                  icon={ArrowRight}
+                  className={`!p-4 !rounded-[1.25rem] ${theme === 'dark' ? '!bg-slate-700/50 !text-slate-400 hover:!text-amber-400 hover:!bg-slate-700' : '!bg-slate-50 !text-slate-500 hover:!text-amber-500 hover:!bg-white'} transition-all shadow-sm group`}
+                />
               </>
             )}
             {viewMode === 'yearly' && (
               <>
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => changeYear(-1)}
-                  className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 hover:text-amber-400 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 hover:text-amber-500 hover:bg-white'} transition-all shadow-sm group`}
-                >
-                  <ArrowLeftRight className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
-                </button>
+                  icon={ArrowLeftRight}
+                  className={`!p-4 !rounded-[1.25rem] ${theme === 'dark' ? '!bg-slate-700/50 !text-slate-400 hover:!text-amber-400 hover:!bg-slate-700' : '!bg-slate-50 !text-slate-500 hover:!text-amber-500 hover:!bg-white'} transition-all shadow-sm group !rotate-180`}
+                />
                 <span className={`text-xl font-black tracking-[0.1em] uppercase min-w-[120px] text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                   {selectedMonth.year}
                 </span>
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => changeYear(1)}
-                  className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-700/50 text-slate-400 hover:text-amber-400 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 hover:text-amber-500 hover:bg-white'} transition-all shadow-sm group`}
-                >
-                  <ArrowLeftRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                  icon={ArrowLeftRight}
+                  className={`!p-4 !rounded-[1.25rem] ${theme === 'dark' ? '!bg-slate-700/50 !text-slate-400 hover:!text-amber-400 hover:!bg-slate-700' : '!bg-slate-50 !text-slate-500 hover:!text-amber-500 hover:!bg-white'} transition-all shadow-sm group`}
+                />
               </>
             )}
           </div>
@@ -670,7 +673,7 @@ function Transactions() {
           { label: 'Net Balance', value: totals.net, icon: Wallet, color: 'amber' },
           { label: 'Total Count', value: totals.count, icon: Hash, color: 'blue' }
         ].map((stat, i) => (
-          <div key={i} className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-8 group hover:-translate-y-2 transition-all duration-500`}>
+          <Card key={i} className="p-8 group hover:-translate-y-2 transition-all duration-500">
             <div className="flex items-center justify-between mb-6">
               <span className={`text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>{stat.label}</span>
               <div className={`p-4 rounded-2xl bg-${stat.color}-500/10 border-2 border-${stat.color}-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
@@ -685,28 +688,28 @@ function Transactions() {
             }`}>
               {stat.label === 'Total Count' ? stat.value : `EGP ${Math.abs(stat.value).toLocaleString()}`}
             </p>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Quick Add Button */}
       {!showForm && (
         <div className="mb-16 flex justify-center animate-in fade-in zoom-in duration-500 delay-300">
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="btn-primary-unified !rounded-[2rem] !py-6 !px-12 shadow-2xl shadow-amber-500/20 hover:scale-[1.05] active:scale-95 transition-all duration-500 group flex items-center gap-4"
+            className="!rounded-[2rem] !py-10 !px-12 shadow-2xl shadow-amber-500/20 hover:scale-[1.05] active:scale-95 transition-all duration-500 group flex items-center gap-4"
           >
             <div className="p-2 bg-white/20 rounded-xl group-hover:rotate-90 transition-transform duration-500">
               <CirclePlus className="w-8 h-8 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-xl font-black tracking-[0.1em] uppercase">Record New Transaction</span>
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Add Transaction Form */}
       {showForm && (
-        <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 mb-16 animate-in slide-in-from-top-10 duration-700 shadow-2xl relative overflow-hidden`}>
+        <Card className="p-10 mb-16 animate-in slide-in-from-top-10 duration-700 shadow-2xl relative overflow-hidden">
           {/* Decorative Background Element */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
           
@@ -717,38 +720,38 @@ function Transactions() {
               </div>
               <span className="uppercase tracking-[0.1em]">New Transaction</span>
             </h2>
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setShowForm(false)}
-              className={`p-4 rounded-2xl ${theme === 'dark' ? 'bg-slate-800/50 hover:bg-rose-500/10 text-slate-500 hover:text-rose-500' : 'bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500'} transition-all group`}
-            >
-              <Trash2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-            </button>
+              icon={Trash2}
+              className={`!p-4 !rounded-2xl ${theme === 'dark' ? '!bg-slate-800/50 hover:!bg-rose-500/10 !text-slate-500 hover:!text-rose-500' : '!bg-slate-100 hover:!bg-rose-50 !text-slate-400 hover:!text-rose-500'} transition-all group`}
+            />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
             <div className={`p-2 rounded-[2rem] ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'} border-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'} flex gap-2 w-fit mb-12 shadow-inner`}>
-              <button
+              <Button
                 type="button"
                 onClick={() => setIsExpense(true)}
-                className={`px-10 py-4 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 ${
+                className={`!px-10 !py-4 !rounded-[1.5rem] !font-black !text-sm !uppercase !tracking-[0.2em] transition-all duration-500 ${
                   isExpense
-                    ? 'bg-rose-500 text-white shadow-xl shadow-rose-500/30 scale-105'
-                    : `${theme === 'dark' ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`
+                    ? '!bg-rose-500 !text-white !shadow-xl !shadow-rose-500/30 !scale-105'
+                    : `${theme === 'dark' ? '!text-slate-500 hover:!text-slate-300' : '!text-slate-400 hover:!text-slate-600'}`
                 }`}
               >
                 Expense
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setIsExpense(false)}
-                className={`px-10 py-4 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 ${
+                className={`!px-10 !py-4 !rounded-[1.5rem] !font-black !text-sm !uppercase !tracking-[0.2em] transition-all duration-500 ${
                   !isExpense
-                    ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-105'
-                    : `${theme === 'dark' ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`
+                    ? '!bg-emerald-500 !text-white !shadow-xl !shadow-emerald-500/30 !scale-105'
+                    : `${theme === 'dark' ? '!text-slate-500 hover:!text-slate-300' : '!text-slate-400 hover:!text-slate-600'}`
                 }`}
               >
                 Income
-              </button>
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
@@ -762,7 +765,7 @@ function Transactions() {
                     required
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="input-unified w-full !pl-16 !text-2xl"
+                    className={`w-full !pl-16 !text-2xl px-8 py-6 rounded-[2rem] border-2 transition-all outline-none font-black ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'} shadow-inner group-focus-within:shadow-2xl group-focus-within:shadow-amber-500/10`}
                     placeholder="0.00"
                   />
                 </div>
@@ -782,7 +785,7 @@ function Transactions() {
                         setIsExpense(true);
                       }
                     }}
-                    className="input-unified flex-1"
+                    className={`flex-1 px-8 py-6 rounded-[2rem] border-2 transition-all outline-none font-black text-sm uppercase tracking-widest cursor-pointer ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'} shadow-inner`}
                   >
                     <option value="">Select category</option>
                     {filteredCategories.map(cat => (
@@ -791,14 +794,14 @@ function Transactions() {
                       </option>
                     ))}
                   </select>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => setShowCustomCategoryCreator(!showCustomCategoryCreator)}
-                    className={`p-4 rounded-[1.25rem] ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-400' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-amber-600'} border-2 transition-all shadow-sm`}
+                    icon={CirclePlus}
+                    className={`!p-4 !rounded-[1.25rem] ${theme === 'dark' ? '!bg-slate-800 hover:!bg-slate-700 !border-slate-700 !text-amber-400' : '!bg-slate-50 hover:!bg-slate-100 !border-slate-200 !text-amber-600'} !border-2 transition-all shadow-sm`}
                     title="Create custom category"
-                  >
-                    <CirclePlus className="w-6 h-6" />
-                  </button>
+                  />
                 </div>
               </div>
 
@@ -809,46 +812,39 @@ function Transactions() {
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="input-unified w-full"
+                  className={`w-full px-8 py-6 rounded-[2rem] border-2 transition-all outline-none font-black text-sm uppercase tracking-widest ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'} shadow-inner`}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Description</label>
-                <input
-                  type="text"
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="input-unified w-full"
-                  placeholder="What was this for?"
-                />
-              </div>
-              <div className="space-y-4">
-                <label className={`block text-xs font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Notes (Optional)</label>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="input-unified w-full"
-                  placeholder="Additional details..."
-                />
-              </div>
+              <Input
+                label="Description"
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What was this for?"
+              />
+              <Input
+                label="Notes (Optional)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Additional details..."
+              />
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="btn-primary-unified w-full !rounded-[2rem] !py-6 shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 group"
+              loading={submitting}
+              className="w-full !rounded-[2rem] !py-10 shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 group"
             >
               <div className="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
                 <Check className="w-7 h-7 text-white" strokeWidth={3} />
               </div>
               <span className="text-xl font-black tracking-[0.1em] uppercase">Complete Transaction</span>
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
       )}
 
       {/* Custom Category Creator Modal */}
@@ -863,18 +859,17 @@ function Transactions() {
       />
 
       {/* Transactions History Card */}
-      <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500 shadow-2xl relative`}>
+      <Card className="!p-0 overflow-hidden mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-500 shadow-2xl relative">
         {/* Integrated Minimal Filter */}
         <div className={`px-10 py-8 border-b-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'} flex flex-col lg:flex-row items-center gap-8 ${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-50/50'} backdrop-blur-md`}>
           {/* Search with Aa icon */}
           <div className="flex-1 w-full relative group">
-            <Type className={`absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} group-focus-within:text-amber-500 transition-all duration-300`} />
-            <input
-              type="text"
+            <Input
+              icon={Type}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search history..."
-              className={`w-full pl-16 pr-6 py-4 rounded-2xl border-2 transition-all outline-none text-sm font-bold ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'}`}
+              className="!py-4"
             />
           </div>
 
@@ -908,13 +903,14 @@ function Transactions() {
             </div>
 
             {/* Sort Order with Descending icon */}
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className={`p-4 rounded-2xl border-2 transition-all group ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              className={`!p-4 !rounded-2xl !border-2 transition-all group ${theme === 'dark' ? '!bg-slate-900/50 !border-slate-800 !text-slate-400 hover:!bg-slate-800' : '!bg-white !border-slate-200 !text-slate-600 hover:!bg-slate-50'}`}
               title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
             >
               <SortDesc className={`w-6 h-6 transition-all duration-500 ${sortOrder === 'asc' ? 'rotate-180 text-amber-500' : 'text-amber-500'}`} />
-            </button>
+            </Button>
           </div>
         </div>
         <div className={`overflow-x-auto transition-all duration-700 ${!showAllTransactions ? 'max-h-[600px]' : 'max-h-[1200px]'} overflow-y-auto custom-scrollbar`}>
@@ -1017,15 +1013,17 @@ function Transactions() {
                           </div>
                         </td>
                         <td className="px-10 py-8 text-center">
-                          <button
+                          <Button
+                            variant="danger"
+                            size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(txn.id);
                             }}
-                            className={`p-4 rounded-2xl ${theme === 'dark' ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white'} transition-all shadow-sm group/btn hover:scale-110 active:scale-95`}
+                            className="!p-4 !rounded-2xl transition-all shadow-sm group/btn hover:scale-110 active:scale-95"
                           >
                             <Trash2 className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -1035,10 +1033,11 @@ function Transactions() {
               ) : (
                 <tr>
                   <td colSpan="5" className="px-10 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 opacity-50">
-                      <Hash className="w-12 h-12" />
-                      <p className="text-xl font-bold uppercase tracking-widest">No transactions found</p>
-                    </div>
+                    <EmptyState
+                      icon={Hash}
+                      title="No transactions found"
+                      message={searchQuery ? "Try adjusting your filters or search query" : "Start recording your finances to see them here"}
+                    />
                   </td>
                 </tr>
               )}
@@ -1048,32 +1047,29 @@ function Transactions() {
         
         {!showAllTransactions && filteredTransactions.length > displayTransactions.length && (
           <div className={`absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t ${theme === 'dark' ? 'from-[#0a0e27] via-[#0a0e27]/80' : 'from-slate-50 via-slate-50/80'} to-transparent z-20 flex items-end justify-center pb-10`}>
-            <button
+            <Button
               onClick={() => setShowAllTransactions(true)}
-              className={`px-12 py-5 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-4 ${
-                theme === 'dark' 
-                  ? 'bg-amber-500 text-white shadow-[0_20px_50px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95' 
-                  : 'bg-amber-500 text-white shadow-[0_20px_50px_rgba(245,158,11,0.2)] hover:scale-105 active:scale-95'
-              }`}
+              className="!px-12 !py-5 !rounded-[2rem] !font-black !text-sm !uppercase !tracking-[0.2em] transition-all duration-500 flex items-center gap-4 !bg-amber-500 !text-white !shadow-[0_20px_50px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95"
             >
               <span>View All History</span>
               <div className="p-2 bg-white/20 rounded-lg">
                 <Plus className="w-4 h-4" strokeWidth={3} />
               </div>
-            </button>
+            </Button>
           </div>
         )}
 
         {showAllTransactions && filteredTransactions.length > 5 && (
           <div className={`p-10 border-t-2 ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'} text-center ${theme === 'dark' ? 'bg-slate-800/20' : 'bg-slate-50/50'}`}>
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setShowAllTransactions(false)}
-              className={`px-10 py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${
-                theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-900'
+              className={`!px-10 !py-4 !rounded-[1.5rem] !font-black !text-xs !uppercase !tracking-[0.2em] transition-all duration-500 ${
+                theme === 'dark' ? '!text-slate-500 hover:!text-white' : '!text-slate-400 hover:!text-slate-900'
               }`}
             >
               Minimize History
-            </button>
+            </Button>
           </div>
         )}
 
@@ -1088,7 +1084,7 @@ function Transactions() {
             </p>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   </div>
 );

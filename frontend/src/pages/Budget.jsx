@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { getMonthlyAnalytics, getTransactions, getBudgets, createBudget, updateBudget, deleteBudget, getCategories, copyLastMonthBudgets, createTransaction, getCurrentUser } from '../api';
 import { getModelInfo } from '../pages/DashboardUtils';
 import { useTheme } from '../context/ThemeContext';
+import { Card, Button } from '../components/UI';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { getCacheKey, clearInsightsCache, loadCachedInsights, saveInsightsToCache } from '../utils/cache';
 import { RefreshCw, Target, DollarSign, Wallet, HeartPulse, Bot, Trash2, Pencil, Copy, History, ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle } from 'lucide-react';
@@ -720,9 +721,9 @@ function BudgetPlanning() {
                 { label: 'Remaining', value: totalRemaining, icon: Wallet, color: 'emerald', desc: 'Left to spend' },
                 { label: 'Budget Health', value: totalBudgeted > 0 ? (totalActual / totalBudgeted) * 100 : 0, icon: HeartPulse, color: 'amber', isPercent: true, desc: 'Of budget used' }
               ].map((card, i) => (
-                <div 
+                <Card 
                   key={i}
-                  className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} group animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-hidden relative`}
+                  className="group animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-hidden relative"
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
                   <div className="flex items-center justify-between mb-8">
@@ -754,12 +755,12 @@ function BudgetPlanning() {
                   <card.icon 
                     className={`absolute -bottom-8 -right-8 w-40 h-40 text-slate-500 -rotate-12 group-hover:rotate-0 transition-all duration-700 ease-out`}
                   />
-                </div>
+                </Card>
               ))}
             </div>
 
             {/* AI Budget Insights - Smart Caching */}
-            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden mb-16`} style={{ animationDelay: '400ms' }}>
+            <Card className="p-10 animate-in fade-in slide-in-from-bottom-10 duration-700 relative overflow-hidden mb-16" style={{ animationDelay: '400ms' }}>
               {/* Model Badge */}
               {budgetModelUsed && (
                 <div className="absolute top-8 right-8 z-10">
@@ -879,20 +880,20 @@ function BudgetPlanning() {
                     <p className="text-sm font-bold text-slate-500 leading-tight">Your financial health is being monitored in real-time by AI models.</p>
                   </div>
 
-                  <button
+                  <Button
                     onClick={() => {
                       clearInsightsCache();
                       generateBudgetInsights();
                     }}
-                    disabled={budgetInsightsLoading}
-                    className={`btn-primary-unified w-full !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 ${budgetInsightsLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:-translate-y-1'}`}
+                    loading={budgetInsightsLoading}
+                    className="w-full !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1"
                   >
                     <RefreshCw className={`w-6 h-6 ${budgetInsightsLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'}`} strokeWidth={3} />
                     <span className="uppercase tracking-[0.2em]">{budgetInsightsLoading ? 'RECALCULATING...' : 'REFRESH INSIGHTS'}</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         </section>
 
@@ -913,7 +914,7 @@ function BudgetPlanning() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-16">
               {/* Budget vs Actual Bar Chart */}
-              <div className={`lg:col-span-8 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
+              <Card className="lg:col-span-8 p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden">
                 <div className="flex items-center justify-between mb-10">
                   <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Spending vs Limit</h3>
                   <div className={`px-4 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-slate-100/50'} border-2 border-slate-700/10 flex items-center gap-2`}>
@@ -969,10 +970,10 @@ function BudgetPlanning() {
                     />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
+              </Card>
 
               {/* Budget Performance Pie Chart */}
-              <div className={`lg:col-span-4 card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden`}>
+              <Card className="lg:col-span-4 p-8 hover:shadow-2xl transition-all duration-700 relative overflow-hidden">
                 <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-10`}>Performance</h3>
                 <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4 flex items-center gap-2 uppercase tracking-[0.2em]`}>
                   <span className="text-green-400">🎯</span>
@@ -1021,12 +1022,12 @@ function BudgetPlanning() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-              </div>
+              </Card>
             </div>
 
             {/* Create/Edit Budget Form */}
             {showBudgetForm && (
-              <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} p-10 mb-16 animate-in slide-in-from-top-10 duration-500 relative overflow-hidden`}>
+              <Card className="p-10 mb-16 animate-in slide-in-from-top-10 duration-500 relative overflow-hidden">
                 <h3 className={`text-2xl font-black tracking-[0.2em] uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-8`}>
                   {editingBudget ? 'Update Budget Plan' : 'New Budget Strategy'}
                 </h3>
@@ -1036,7 +1037,11 @@ function BudgetPlanning() {
                     <select
                       value={newBudget.category_id}
                       onChange={(e) => setNewBudget({...newBudget, category_id: e.target.value})}
-                      className="input-unified w-full"
+                      className={`w-full px-6 py-4 rounded-[1.5rem] border-2 transition-all outline-none font-black text-sm ${
+                        theme === 'dark' 
+                          ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                          : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                      }`}
                     >
                       <option value="">Select category</option>
                       {categories
@@ -1058,38 +1063,39 @@ function BudgetPlanning() {
                         min="0"
                         value={newBudget.amount}
                         onChange={(e) => setNewBudget({...newBudget, amount: e.target.value})}
-                        className="input-unified w-full pl-12"
+                        className={`w-full pl-16 pr-6 py-4 rounded-[1.5rem] border-2 transition-all outline-none font-black text-sm ${
+                          theme === 'dark' 
+                            ? 'bg-slate-900/50 border-slate-800 text-white focus:border-amber-500/50' 
+                            : 'bg-white border-slate-200 text-slate-900 focus:border-amber-500/50'
+                        }`}
                         placeholder="0.00"
                       />
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button
+                  <Button
                     onClick={editingBudget ? handleUpdateBudget : handleCreateBudget}
-                    disabled={!newBudget.category_id || !newBudget.amount || budgetLoading}
-                    className={`btn-primary-unified flex-1 !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 ${budgetLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:-translate-y-1'}`}
+                    loading={budgetLoading}
+                    disabled={!newBudget.category_id || !newBudget.amount}
+                    className="flex-1 !rounded-[1.5rem] !py-5 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1"
                   >
-                    {budgetLoading ? (
-                      <RefreshCw className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Target className="w-6 h-6" strokeWidth={3} />
-                    )}
+                    <Target className="w-6 h-6" strokeWidth={3} />
                     <span className="uppercase tracking-[0.2em] font-black">{editingBudget ? 'SAVE CHANGES' : 'ESTABLISH BUDGET'}</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={cancelForm}
-                    disabled={budgetLoading}
-                    className={`px-10 py-5 rounded-[1.5rem] font-black text-sm tracking-[0.2em] transition-all duration-500 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-400 border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-600 border-slate-200'} border-2 uppercase disabled:opacity-50 hover:scale-[1.02] hover:-translate-y-1`}
+                    variant="secondary"
+                    className="px-10 py-5 rounded-[1.5rem] font-black text-sm tracking-[0.2em] transition-all duration-500 uppercase hover:scale-[1.02] hover:-translate-y-1"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             )}
 
             {/* Budget Categories Table */}
-            <div className={`card-unified ${theme === 'dark' ? 'card-unified-dark' : 'card-unified-light'} overflow-hidden shadow-2xl relative`}>
+            <Card className="overflow-hidden shadow-2xl relative">
               <div className={`p-8 ${theme === 'dark' ? 'border-b-2 border-slate-700/30' : 'border-b-2 border-slate-100'}`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div>
@@ -1097,21 +1103,22 @@ function BudgetPlanning() {
                     <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'} mt-1`}>Manage your spending limits by category</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-4">
-                    <button
+                    <Button
                       onClick={handleCopyLastMonth}
-                      disabled={budgetLoading}
-                      className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'} border-2 disabled:opacity-50 hover:scale-105`}
+                      loading={budgetLoading}
+                      variant="secondary"
+                      className="!px-6 !py-3 !rounded-2xl !text-xs uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-3 hover:scale-105"
                     >
                       <Copy className="w-4 h-4" />
                       <span>Copy Previous</span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setShowBudgetForm(true)}
-                      className="btn-primary-unified !px-6 !py-3 !rounded-2xl !text-xs shadow-xl hover:scale-105"
+                      className="!px-6 !py-3 !rounded-2xl !text-xs shadow-xl hover:scale-105"
                     >
                       <Target className="w-4 h-4" strokeWidth={3} />
                       <span className="uppercase tracking-[0.2em]">ADD CATEGORY</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1167,20 +1174,22 @@ function BudgetPlanning() {
                           </td>
                           <td className="px-8 py-6 text-center">
                             <div className="flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-x-0 translate-x-4">
-                              <button
+                              <Button
                                 onClick={() => handleEditBudget(budget)}
-                                className={`p-3 rounded-xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-amber-600 border-slate-200'} border-2 hover:scale-110 shadow-lg`}
+                                variant="secondary"
+                                className={`!p-3 !rounded-xl transition-all duration-300 ${theme === 'dark' ? '!bg-slate-800 hover:!bg-slate-700 !text-amber-400 !border-slate-700' : '!bg-slate-100 hover:!bg-slate-200 !text-amber-600 !border-slate-200'} border-2 hover:scale-110 shadow-lg`}
                                 title="Edit Strategy"
                               >
                                 <Pencil className="w-5 h-5" />
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => handleDeleteBudget(budget.id)}
-                                className={`p-3 rounded-xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 hover:bg-rose-900/40 text-rose-400 border-slate-700' : 'bg-slate-100 hover:bg-rose-100 text-rose-600 border-slate-200'} border-2 hover:scale-110 shadow-lg`}
+                                variant="secondary"
+                                className={`!p-3 !rounded-xl transition-all duration-300 ${theme === 'dark' ? '!bg-slate-800 hover:!bg-rose-900/40 !text-rose-400 !border-slate-700' : '!bg-slate-100 hover:!bg-rose-100 !text-rose-600 !border-slate-200'} border-2 hover:scale-110 shadow-lg`}
                                 title="Dissolve Allocation"
                               >
                                 <Trash2 className="w-5 h-5" />
-                              </button>
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -1197,25 +1206,27 @@ function BudgetPlanning() {
                       Take control of your spending by setting monthly limits for your expense categories.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-6">
-                      <button
+                      <Button
                         onClick={handleCopyLastMonth}
-                        className={`px-8 py-4 rounded-[1.5rem] font-black text-sm tracking-[0.2em] transition-all duration-500 flex items-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 hover:bg-slate-700 text-white border-slate-700' : 'bg-slate-100/80 hover:bg-slate-200 text-slate-900 border-slate-200'} border-2 uppercase hover:scale-105 hover:-translate-y-1`}
+                        variant="secondary"
+                        loading={budgetLoading}
+                        className="!px-8 !py-4 !rounded-[1.5rem] !text-sm tracking-[0.2em] transition-all duration-500 flex items-center gap-3 uppercase hover:scale-105 hover:-translate-y-1"
                       >
                         <History className="w-5 h-5" />
                         <span>Copy Previous</span>
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setShowBudgetForm(true)}
-                        className="btn-primary-unified !px-8 !py-4 !rounded-[1.5rem] !text-sm shadow-2xl hover:scale-105"
+                        className="!px-8 !py-4 !rounded-[1.5rem] !text-sm shadow-2xl hover:scale-105"
                       >
                         <Target className="w-5 h-5" strokeWidth={3} />
                         <span className="uppercase tracking-[0.2em]">Create First Budget</span>
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         </section>
 

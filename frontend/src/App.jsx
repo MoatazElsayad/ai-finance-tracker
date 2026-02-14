@@ -25,10 +25,22 @@ import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <ThemeProvider>
       <SidebarProvider>
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+          }} 
+        />
         <AppContent />
       </SidebarProvider>
     </ThemeProvider>

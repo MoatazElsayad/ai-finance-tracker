@@ -1,5 +1,6 @@
 import { useTheme } from '../context/ThemeContext';
 import FloatingIcons from '../components/FloatingIcons';
+import { Card, Button } from '../components/UI';
 import { 
   Info, 
   Code2, 
@@ -104,7 +105,7 @@ function About() {
             isDark={isDark}
           />
           
-          <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} grid lg:grid-cols-2 gap-12 items-center mb-16`}>
+          <Card className="grid lg:grid-cols-2 gap-12 items-center mb-16">
             <div className="relative z-10">
               <h3 className={`text-3xl font-black mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 <span className="uppercase tracking-[0.15em]">Unified Intelligence</span>
@@ -140,7 +141,7 @@ function About() {
                 <Info className="absolute -right-10 -bottom-10 w-40 h-40 opacity-5 group-hover:scale-110 transition-transform duration-700" />
               </blockquote>
             </div>
-          </div>
+          </Card>
         </div>
       </section>
 
@@ -156,13 +157,13 @@ function About() {
           
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             {features.map((feature, i) => (
-              <div key={i} className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} group hover:-translate-y-2 transition-all duration-500`}>
+              <Card key={i} className="group hover:-translate-y-2 transition-all duration-500">
                 <div className={`w-16 h-16 rounded-2xl ${feature.bgColor} ${feature.borderColor} border-2 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                   <feature.icon className={`w-8 h-8 ${feature.color}`} />
                 </div>
                 <h4 className={`text-xl font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'} mb-4`}>{feature.title}</h4>
                 <p className={`text-lg font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{feature.desc}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -180,7 +181,7 @@ function About() {
           
           <div className="grid lg:grid-cols-3 gap-8 mb-16">
             {/* Engineering Bar Card */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} lg:col-span-2`}>
+            <Card className="lg:col-span-2">
               <h3 className={`text-xs font-black uppercase tracking-[0.25em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-10`}>Development Distribution</h3>
               
               <div className="w-full h-12 rounded-2xl overflow-hidden flex shadow-inner border-4 border-slate-700/10 mb-10">
@@ -205,10 +206,10 @@ function About() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
             {/* Tech Stack Icons Card */}
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'}`}>
+            <Card>
               <h3 className={`text-xs font-black uppercase tracking-[0.25em] ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-10`}>The Tech Stack</h3>
               <div className="grid grid-cols-3 gap-4">
                 {[
@@ -232,7 +233,7 @@ function About() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
@@ -248,25 +249,25 @@ function About() {
           />
           
           <div className="grid lg:grid-cols-2 gap-8 mb-16">
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-12 group overflow-hidden relative flex flex-col justify-center items-center text-center`}>
+            <Card className="p-12 group overflow-hidden relative flex flex-col justify-center items-center text-center">
               <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 group-hover:scale-110">
                 <Github className="w-64 h-64" />
               </div>
               <p className={`text-2xl font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} mb-10 leading-relaxed max-w-lg`}>
                 The source code is open for review and contributions. Help us build the future of private finance.
               </p>
-              <a
-                href="https://github.com/moataz-finance/ai-finance-tracker"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-4 px-10 py-6 rounded-[2rem] bg-amber-500 text-white font-black text-sm uppercase tracking-[0.2em] hover:bg-amber-600 transition-all duration-500 shadow-xl shadow-amber-500/20 group/btn hover:-translate-y-1"
+              <Button
+                onClick={() => window.open('https://github.com/moataz-finance/ai-finance-tracker', '_blank')}
+                variant="primary"
+                size="lg"
+                icon={Github}
+                className="!rounded-[2rem] !px-10 !py-6 uppercase tracking-[0.2em]"
               >
-                <Github className="w-6 h-6 group-hover/btn:rotate-12 transition-transform" />
                 Explore Repository
-              </a>
-            </div>
+              </Button>
+            </Card>
 
-            <div className={`card-unified ${isDark ? 'card-unified-dark' : 'card-unified-light'} p-12 relative overflow-hidden group flex flex-col justify-center items-center text-center`}>
+            <Card className="p-12 relative overflow-hidden group flex flex-col justify-center items-center text-center">
               <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-emerald-500/5 rounded-full blur-[100px] group-hover:bg-emerald-500/10 transition-colors duration-700" />
               <div className="p-6 bg-emerald-500/10 rounded-3xl border-2 border-emerald-500/20 mb-8">
                 <User className="w-12 h-12 text-emerald-500" strokeWidth={3} />
@@ -277,7 +278,7 @@ function About() {
               <p className={`text-xl font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed max-w-lg italic`}>
                 "Dedicated to crafting high-performance applications that empower users with actionable data and beautiful interfaces."
               </p>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
