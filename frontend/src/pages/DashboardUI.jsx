@@ -1,6 +1,6 @@
 import { useState, memo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, Scale, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight, Landmark } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
 import { Card, Button } from '../components/UI';
 
@@ -161,7 +161,7 @@ export const SectionHeaderAndSummary = memo(({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <StatCard
             label="Total Income"
             value={analytics?.total_income ?? '—'}
@@ -192,31 +192,6 @@ export const SectionHeaderAndSummary = memo(({
             isCurrency={true}
             analytics={analytics}
           />
-
-          <StatCard
-            label="Net Worth"
-            value={analytics?.total_net_worth ?? '—'}
-            icon={<Scale className="w-6 h-6" />}
-            className="text-purple-600 dark:text-purple-400"
-            color="indigo"
-            isDark={isDark}
-            isCurrency={true}
-            analytics={analytics}
-          />
-
-          {hasSavingsAccount && (
-            <StatCard
-              label="Savings Vault"
-              value={analytics?.total_savings ?? '—'}
-              icon={<Landmark className="w-6 h-6" />}
-              className="text-blue-600 dark:text-blue-400"
-              color="blue"
-              isDark={isDark}
-              isCurrency={true}
-              analytics={analytics}
-              history={analytics?.recent_savings}
-            />
-          )}
 
           {hasSavingsAccount && (
             <StatCard

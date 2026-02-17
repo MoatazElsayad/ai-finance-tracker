@@ -3239,93 +3239,108 @@ def _monthly_trend(db: Session, user_id: int, months: int = 6) -> Dict[str, List
     return {"labels": labels, "incomes": incomes, "expenses": expenses}
 
 def _plot_monthly_trend(trend: Dict[str, List]) -> bytes:
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import FuncFormatter
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from matplotlib.ticker import FuncFormatter
 
-    # Professional Styling
-    plt.style.use('bmh')
-    fig, ax = plt.subplots(figsize=(8, 4), dpi=150)
-    
-    x = list(range(len(trend["labels"])))
-    
-    # Fill area for better visual
-    ax.fill_between(x, trend["incomes"], color="#10b981", alpha=0.1)
-    ax.fill_between(x, trend["expenses"], color="#ef4444", alpha=0.1)
-    
-    ax.plot(x, trend["incomes"], label="Income", color="#10b981", linewidth=2.5, marker='o', markersize=4)
-    ax.plot(x, trend["expenses"], label="Expenses", color="#ef4444", linewidth=2.5, marker='s', markersize=4)
-    
-    ax.set_xticks(x)
-    ax.set_xticklabels(trend["labels"], rotation=30, ha="right", fontsize=9)
-    
-    # Format Y axis as currency
-    def currency_formatter(x, pos):
-        return f'EGP {x:,.0f}'
-    ax.yaxis.set_major_formatter(FuncFormatter(currency_formatter))
-    
-    ax.legend(frameon=True, facecolor='white', framealpha=0.8, loc='upper left', fontsize=9)
-    ax.set_title("Financial Trends", fontsize=12, fontweight='bold', pad=15)
-    
-    # Remove top/right spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    
-    buf = io.BytesIO()
-    plt.tight_layout()
-    fig.savefig(buf, format="png", dpi=150, transparent=True)
-    plt.close(fig)
-    return buf.getvalue()
+        # Professional Styling
+        plt.style.use('bmh')
+        fig, ax = plt.subplots(figsize=(8, 4), dpi=150)
+        
+        x = list(range(len(trend["labels"])))
+        
+        # Fill area for better visual
+        ax.fill_between(x, trend["incomes"], color="#10b981", alpha=0.1)
+        ax.fill_between(x, trend["expenses"], color="#ef4444", alpha=0.1)
+        
+        ax.plot(x, trend["incomes"], label="Income", color="#10b981", linewidth=2.5, marker='o', markersize=4)
+        ax.plot(x, trend["expenses"], label="Expenses", color="#ef4444", linewidth=2.5, marker='s', markersize=4)
+        
+        ax.set_xticks(x)
+        ax.set_xticklabels(trend["labels"], rotation=30, ha="right", fontsize=9)
+        
+        # Format Y axis as currency
+        def currency_formatter(x, pos):
+            return f'EGP {x:,.0f}'
+        ax.yaxis.set_major_formatter(FuncFormatter(currency_formatter))
+        
+        ax.legend(frameon=True, facecolor='white', framealpha=0.8, loc='upper left', fontsize=9)
+        ax.set_title("Financial Trends", fontsize=12, fontweight='bold', pad=15)
+        
+        # Remove top/right spines
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
+        buf = io.BytesIO()
+        plt.tight_layout()
+        fig.savefig(buf, format="png", dpi=150, transparent=True)
+        plt.close(fig)
+        return buf.getvalue()
+    except Exception as e:
+        print(f"Warning: Could not generate monthly trend plot: {e}")
+        return b""
 
 def _plot_category_pie(categories: List[Dict]) -> bytes:
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    
-    # Filter only expenses for pie chart as it makes more sense
-    expense_cats = [c for c in categories if c["amount"] > 0][:7]
-    
-    labels = [c["name"] for c in expense_cats]
-    sizes = [c["amount"] for c in expense_cats]
-    
-    if not sizes:
-        sizes = [1]
-        labels = ["No data"]
-    
-    fig, ax = plt.subplots(figsize=(6, 5), dpi=150)
-    
-    # Modern color palette (Amber/Slate based)
-    colors = ["#f59e0b", "#fbbf24", "#fcd34d", "#fb923c", "#f97316", "#10b981", "#34d399"]
-    
-    wedges, texts, autotexts = ax.pie(
-        sizes, 
-        labels=labels, 
-        autopct="%1.0f%%", 
-        colors=colors,
-        startangle=140,
-        pctdistance=0.85,
-        explode=[0.05] * len(sizes), # Explode all slightly
-        wedgeprops={'width': 0.5, 'edgecolor': 'white', 'linewidth': 1} # Donut style
-    )
-    
-    plt.setp(autotexts, size=8, weight="bold", color="white")
-    plt.setp(texts, size=9)
-    
-    ax.set_title("Spending Breakdown", fontsize=12, fontweight='bold', pad=10)
-    ax.axis("equal")
-    
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=150, transparent=True)
-    plt.close(fig)
-    return buf.getvalue()
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        
+        # Filter only expenses for pie chart as it makes more sense
+        expense_cats = [c for c in categories if c["amount"] > 0][:7]
+        
+        labels = [c["name"] for c in expense_cats]
+        sizes = [c["amount"] for c in expense_cats]
+        
+        if not sizes:
+            sizes = [1]
+            labels = ["No data"]
+        
+        fig, ax = plt.subplots(figsize=(6, 5), dpi=150)
+        
+        # Modern color palette (Amber/Slate based)
+        colors = ["#f59e0b", "#fbbf24", "#fcd34d", "#fb923c", "#f97316", "#10b981", "#34d399"]
+        
+        wedges, texts, autotexts = ax.pie(
+            sizes, 
+            labels=labels, 
+            autopct="%1.0f%%", 
+            colors=colors,
+            startangle=140,
+            pctdistance=0.85,
+            explode=[0.05] * len(sizes), # Explode all slightly
+            wedgeprops={'width': 0.5, 'edgecolor': 'white', 'linewidth': 1} # Donut style
+        )
+        
+        plt.setp(autotexts, size=8, weight="bold", color="white")
+        plt.setp(texts, size=9)
+        
+        ax.set_title("Spending Breakdown", fontsize=12, fontweight='bold', pad=10)
+        ax.axis("equal")
+        
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=150, transparent=True)
+        plt.close(fig)
+        return buf.getvalue()
+    except Exception as e:
+        print(f"Warning: Could not generate category pie plot: {e}")
+        return b""
 
 def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, pie_png: bytes, transactions: List[Transaction], budget_status: List[Dict] | None, rec_text: str | None, rec_model: str | None, goals: List[Dict] | None = None) -> bytes:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, ListFlowable, ListItem, HRFlowable, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, ListFlowable, ListItem, HRFlowable, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+    except ImportError:
+        print("Error: reportlab is not installed. PDF generation is disabled.")
+        raise HTTPException(
+            status_code=424, 
+            detail="PDF generation engine (reportlab) is not installed on the server. Please contact the administrator or try exporting as CSV."
+        )
     
     buf = io.BytesIO()
     
@@ -3486,16 +3501,28 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     story.append(Spacer(1, 24))
 
     # 3. Visual Analysis
-    story.append(Paragraph("Market Trends & Performance", styles["SectionHeader"]))
-    
-    # Large centered charts
-    trend_img = Image(io.BytesIO(trend_png), width=6.5*inch, height=3*inch)
-    story.append(trend_img)
-    story.append(Spacer(1, 20))
-    
-    pie_img = Image(io.BytesIO(pie_png), width=5*inch, height=4*inch)
-    story.append(pie_img)
-    story.append(Spacer(1, 24))
+    if trend_png or pie_png:
+        story.append(Paragraph("Market Trends & Performance", styles["SectionHeader"]))
+        
+        if trend_png:
+            try:
+                trend_img = Image(io.BytesIO(trend_png), width=6.5*inch, height=3*inch)
+                story.append(trend_img)
+                story.append(Spacer(1, 20))
+            except Exception as e:
+                print(f"Error adding trend image to PDF: {e}")
+        
+        if pie_png:
+            try:
+                pie_img = Image(io.BytesIO(pie_png), width=5*inch, height=4*inch)
+                story.append(pie_img)
+                story.append(Spacer(1, 24))
+            except Exception as e:
+                print(f"Error adding pie image to PDF: {e}")
+    else:
+        story.append(Paragraph("Visual Analysis (Unavailable)", styles["SectionHeader"]))
+        story.append(Paragraph("Graphs could not be generated because the plotting engine is missing on the server.", styles["NormalFancy"]))
+        story.append(Spacer(1, 24))
 
     # 4. Savings Goals
     if goals:
@@ -3681,27 +3708,33 @@ def _build_pdf(user: User, period_label: str, summary: Dict, trend_png: bytes, p
     return buf.getvalue()
 
 def _build_csv(transactions: List[Transaction]) -> bytes:
-    import pandas as pd
-    rows = []
+    import csv
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(["date", "merchant", "category", "description", "amount", "type"])
+    
     for t in transactions:
         cat_name = t.category.name if t.category else "Uncategorized"
         typ = "income" if t.amount > 0 else "expense"
         desc = t.description or ""
         merch = ""
         if desc.lower().startswith("receipt:"):
-            merch = desc.split(":", 1)[1].strip()
-        rows.append({
-            "date": t.date.strftime("%Y-%m-%d"),
-            "merchant": merch or "",
-            "category": cat_name,
-            "description": desc,
-            "amount": t.amount,
-            "type": typ
-        })
-    df = pd.DataFrame(rows)
-    buf = io.StringIO()
-    df.to_csv(buf, index=False)
-    return buf.getvalue().encode("utf-8")
+            parts = desc.split(":", 1)
+            if len(parts) > 1:
+                merch = parts[1].strip()
+        
+        writer.writerow([
+            t.date.strftime("%Y-%m-%d") if t.date else "",
+            merch,
+            cat_name,
+            desc,
+            t.amount,
+            typ
+        ])
+    
+    return output.getvalue().encode("utf-8")
 
 @app.post("/reports/generate")
 def generate_report(
