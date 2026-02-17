@@ -30,6 +30,122 @@ export const CustomTooltip = memo(({ active, payload, label, theme }) => {
 
 CustomTooltip.displayName = 'CustomTooltip';
 
+const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history, analytics }) => {
+  const colors = {
+    green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
+    red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',
+    amber: isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-600 bg-amber-50 border-amber-100',
+    blue: isDark ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-600 bg-blue-50 border-blue-100',
+    indigo: isDark ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' : 'text-indigo-600 bg-indigo-50 border-indigo-100',
+  };
+
+  const textColors = {
+    green: isDark ? 'text-green-400' : 'text-green-600',
+    red: isDark ? 'text-red-400' : 'text-red-600',
+    amber: isDark ? 'text-amber-400' : 'text-amber-600',
+    blue: isDark ? 'text-blue-400' : 'text-blue-600',
+    indigo: isDark ? 'text-indigo-400' : 'text-indigo-600',
+  };
+
+  const formatValue = (v) => {
+    if (v === '—' || v === null || v === undefined) return '—';
+    if (isPercent) {
+      const num = typeof v === 'number' ? v : parseFloat(v);
+      return isNaN(num) ? '—' : `${num.toFixed(1)}%`;
+    }
+    const formatted = Math.abs(v || 0)?.toLocaleString('en-EG', { 
+      maximumFractionDigits: 0 
+    }) || '0';
+    return `EGP ${formatted}`;
+  };
+
+  const getTopUpSuggestion = () => {
+    if (!isPercent || label !== 'Savings Rate' || value === '—') return null;
+    const rate = typeof value === 'number' ? value : parseFloat(value);
+    const availableBalance = analytics?.net_savings || 0;
+    
+    if (rate < 20 && availableBalance > 100) {
+      const suggestedAmount = Math.min(availableBalance * 0.3, 500);
+      return {
+        message: `Boost your rate! Move EGP ${Math.round(suggestedAmount)} to your vault.`,
+        type: 'boost'
+      };
+    }
+    return null;
+  };
+
+  const suggestion = getTopUpSuggestion();
+
+  return (
+    <Card 
+      className="flex flex-col relative group overflow-hidden" 
+      animate={true}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          {label}
+        </span>
+        <div className={`p-3 rounded-2xl ${colors[color]} border shadow-sm group-hover:scale-110 transition-transform duration-500`}>
+          {icon}
+        </div>
+      </div>
+      
+      <div className="flex flex-col gap-1">
+        <p className={`text-3xl font-black tracking-tight ${className || textColors[color]}`}>
+          {formatValue(value)}
+        </p>
+        
+        {suggestion && (
+          <div className="animate-in fade-in slide-in-from-left-4 duration-700 delay-300">
+            <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+              isDark ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'
+            }`}>
+              <Sparkles className="w-3 h-3" />
+              <span className="text-[10px] font-bold leading-tight">{suggestion.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {history && history.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-slate-500/10">
+          <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            Recent Activity
+          </p>
+          <div className="space-y-3">
+            {history.map((txn, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} line-clamp-1`}>
+                    {txn.description.split('||notes||')[0]}
+                  </span>
+                  <span className={`text-[9px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {new Date(txn.date).toLocaleDateString('en-EG', { day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+                <span className={`text-xs font-black ${
+                  label === 'Savings Vault' 
+                    ? 'text-blue-500'
+                    : (txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500')
+                }`}>
+                  {label === 'Savings Vault'
+                    ? (txn.amount < 0 ? '+' : '-')
+                    : (txn.amount > 0 ? '+' : '-')
+                  }EGP {Math.abs(txn.amount).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
+        color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
+      }`} />
+    </Card>
+  );
+};
+
 export const SectionHeaderAndSummary = memo(({
   theme,
   user,
@@ -213,121 +329,7 @@ export const SectionHeaderAndSummary = memo(({
 
 SectionHeaderAndSummary.displayName = 'SectionHeaderAndSummary';
 
-const StatCard = ({ label, value, icon, color, isDark, isPercent, isCurrency, className, history, analytics }) => {
-  const colors = {
-    green: isDark ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-green-600 bg-green-50 border-green-100',
-    red: isDark ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-red-600 bg-red-50 border-red-100',
-    amber: isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-600 bg-amber-50 border-amber-100',
-    blue: isDark ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-600 bg-blue-50 border-blue-100',
-    indigo: isDark ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' : 'text-indigo-600 bg-indigo-50 border-indigo-100',
-  };
 
-  const textColors = {
-    green: isDark ? 'text-green-400' : 'text-green-600',
-    red: isDark ? 'text-red-400' : 'text-red-600',
-    amber: isDark ? 'text-amber-400' : 'text-amber-600',
-    blue: isDark ? 'text-blue-400' : 'text-blue-600',
-    indigo: isDark ? 'text-indigo-400' : 'text-indigo-600',
-  };
-
-  const formatValue = (v) => {
-    if (v === '—' || v === null || v === undefined) return '—';
-    if (isPercent) {
-      const num = typeof v === 'number' ? v : parseFloat(v);
-      return isNaN(num) ? '—' : `${num.toFixed(1)}%`;
-    }
-    const formatted = Math.abs(v || 0)?.toLocaleString('en-EG', { 
-      maximumFractionDigits: 0 
-    }) || '0';
-    return `EGP ${formatted}`;
-  };
-
-  const getTopUpSuggestion = () => {
-    if (!isPercent || label !== 'Savings Rate' || value === '—') return null;
-    const rate = typeof value === 'number' ? value : parseFloat(value);
-    const availableBalance = analytics?.net_savings || 0;
-    
-    if (rate < 20 && availableBalance > 100) {
-      const suggestedAmount = Math.min(availableBalance * 0.3, 500);
-      return {
-        message: `Boost your rate! Move EGP ${Math.round(suggestedAmount)} to your vault.`,
-        type: 'boost'
-      };
-    }
-    return null;
-  };
-
-  const suggestion = getTopUpSuggestion();
-
-  return (
-    <Card 
-      className="flex flex-col relative group overflow-hidden" 
-      animate={true}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-          {label}
-        </span>
-        <div className={`p-3 rounded-2xl ${colors[color]} border shadow-sm group-hover:scale-110 transition-transform duration-500`}>
-          {icon}
-        </div>
-      </div>
-      
-      <div className="flex flex-col gap-1">
-        <p className={`text-3xl font-black tracking-tight ${className || textColors[color]}`}>
-          {formatValue(value)}
-        </p>
-        
-        {suggestion && (
-          <div className="animate-in fade-in slide-in-from-left-4 duration-700 delay-300">
-            <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
-              isDark ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'
-            }`}>
-              <Sparkles className="w-3 h-3" />
-              <span className="text-[10px] font-bold leading-tight">{suggestion.message}</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {history && history.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-500/10">
-          <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-            Recent Activity
-          </p>
-          <div className="space-y-3">
-            {history.map((txn, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className={`text-[11px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} line-clamp-1`}>
-                    {txn.description.split('||notes||')[0]}
-                  </span>
-                  <span className={`text-[9px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {new Date(txn.date).toLocaleDateString('en-EG', { day: 'numeric', month: 'short' })}
-                  </span>
-                </div>
-                <span className={`text-xs font-black ${
-                  label === 'Savings Vault' 
-                    ? 'text-blue-500'
-                    : (txn.amount > 0 ? 'text-emerald-500' : 'text-rose-500')
-                }`}>
-                  {label === 'Savings Vault'
-                    ? (txn.amount < 0 ? '+' : '-')
-                    : (txn.amount > 0 ? '+' : '-')
-                  }EGP {Math.abs(txn.amount).toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-[50px] opacity-10 ${
-        color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : color === 'amber' ? 'bg-amber-500' : color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
-      }`} />
-    </Card>
-  );
-};
 
 export const ReportsSection = memo(({ theme, reportLoading, reportProgress, reportStatus, handleDownloadReport }) => {
   const isDark = theme === 'dark';
