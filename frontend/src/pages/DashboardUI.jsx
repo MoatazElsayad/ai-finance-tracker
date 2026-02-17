@@ -1,6 +1,6 @@
 import { useState, memo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine, Brush } from 'recharts';
-import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { RefreshCw, Sparkles, Bot, TrendingUp, TrendingDown, Wallet, Percent, LayoutDashboard, History, ArrowLeftRight, FileText, FileSpreadsheet, SendHorizonal, X, ChevronLeft, ChevronRight, ArrowRight, Scale } from 'lucide-react';
 import { CHART_COLORS, getModelInfo, formatAISummary } from './DashboardUtils';
 import { Card, Button } from '../components/UI';
 
