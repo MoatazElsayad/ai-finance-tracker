@@ -1024,6 +1024,25 @@ def build_all_time_financial_context(db: Session, user_id: int):
         for g in specific_goals
     ]
 
+    # 8. Shopping List & Inventory
+    shopping_state = db.query(ShoppingState).filter(ShoppingState.user_id == user_id).first()
+    shopping_list = []
+    inventory_list = []
+    if shopping_state:
+        import json
+        try:
+            shopping_list = json.loads(shopping_state.shopping_json)
+            inventory_list = json.loads(shopping_state.inventory_json)
+        except:
+            pass
+
+    # 9. Budgets (All Time / Current Active)
+    budgets = db.query(Budget).options(joinedload(Budget.category)).filter(Budget.user_id == user_id).all()
+    budget_summary = [
+        {"category": b.category.name if b.category else "Uncategorized", "amount": b.amount, "month": b.month, "year": b.year}
+        for b in budgets
+    ]
+
     return {
         "overview": {
             "total_income": round(total_income, 2),
@@ -1035,7 +1054,10 @@ def build_all_time_financial_context(db: Session, user_id: int):
         "monthly_history": monthly_data,
         "top_categories_all_time": top_categories_all_time,
         "investments": investment_summary,
-        "goals": goals_summary + specific_goals_summary
+        "goals": goals_summary + specific_goals_summary,
+        "shopping_list": shopping_list,
+        "inventory": inventory_list,
+        "budgets": budget_summary
     }
 
 def build_rich_financial_context(db: Session, user_id: int, year: int, month: int):
@@ -1272,6 +1294,15 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
     investments_summary_list = "\n".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units" for i in all_time.get('investments', [])[:5]])
     if not investments_summary_list: investments_summary_list = "- No active investments"
 
+    # NEW: Shopping & Inventory
+    shopping_list_data = all_time.get('shopping_list', [])
+    shopping_summary = ", ".join([item.get('name', 'Item') for item in shopping_list_data[:5]])
+    if not shopping_summary: shopping_summary = "None"
+    
+    inventory_data = all_time.get('inventory', [])
+    inventory_summary = ", ".join([item.get('name', 'Item') for item in inventory_data[:5]])
+    if not inventory_summary: inventory_summary = "None"
+
     # Build comprehensive prompt including historical data
     prompt_text = f"""You are a professional financial advisor analyzing a user's finances. You have access to their entire financial history. Provide a comprehensive but concise analysis.
 
@@ -1293,6 +1324,9 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 
     📈 INVESTMENTS:
     {investments_summary_list}
+
+    🛒 SHOPPING LIST (Top 5): {shopping_summary}
+    📦 INVENTORY (Top 5): {inventory_summary}
 
     📈 MONTHLY TRENDS (vs Last Month):
 - Income: {context['trends']['income_change']:+.1f}%
@@ -1916,6 +1950,19 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     investments_list = "\n    ".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units (bought at ${i.get('buy_price', 0):,.2f})" for i in investments[:10]])
     if not investments_list: investments_list = "- No active investments"
 
+    # NEW DATA: Shopping List, Inventory, Budgets
+    shopping_list_data = all_time.get('shopping_list', [])
+    shopping_list_str = "\n    ".join([f"- {item.get('name', 'Item')} (Qty: {item.get('quantity', 1)})" for item in shopping_list_data[:15]])
+    if not shopping_list_str: shopping_list_str = "- No active shopping list items"
+    
+    inventory_data = all_time.get('inventory', [])
+    inventory_str = "\n    ".join([f"- {item.get('name', 'Item')} (Qty: {item.get('quantity', 1)})" for item in inventory_data[:15]])
+    if not inventory_str: inventory_str = "- No inventory items"
+    
+    budgets_data = all_time.get('budgets', [])
+    budgets_str = "\n    ".join([f"- {b.get('category', 'Category')}: ${b.get('amount', 0):,.2f} (Month: {b.get('month')}/{b.get('year')})" for b in budgets_data[:10]])
+    if not budgets_str: budgets_str = "- No active budgets"
+
     system_prompt = f"""You are a financial assistant with access to the user's entire financial history.
     
     📊 ALL-TIME FINANCIAL OVERVIEW:
@@ -1931,6 +1978,15 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     {investments_list}
     - Total Invested Value: ${total_invested:,.2f}
 
+    🛒 SHOPPING LIST:
+    {shopping_list_str}
+    
+    📦 INVENTORY:
+    {inventory_str}
+    
+    💰 BUDGETS:
+    {budgets_str}
+
     📅 CURRENT MONTH ({year}-{month:02d}) STATUS:
     - Income: ${current.get('total_income', 0):,.2f}
     - Expenses: ${current.get('total_expenses', 0):,.2f}
@@ -1939,6 +1995,7 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     Answer the user's question using this comprehensive data. Be specific, concise, and helpful.
     If the user asks about "total" or "history", use the All-Time data.
     If the user asks about "this month" or "recent", use the Current Month data.
+    If the user asks about shopping or inventory, use the respective lists.
     """
 
     prompt = {
@@ -1951,18 +2008,18 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     
     prompt_content = f"""You are a helpful financial assistant. Answer the user's question about their finances.
     
-📊 CURRENT MONTH DATA:
-- Income: ${summary['income']:,.2f}
-- Expenses: ${summary['expenses']:,.2f}
-- Savings: ${summary['savings']:,.2f}
-- Savings Rate: {summary['savings_rate']}%
+    📊 CURRENT MONTH DATA:
+    - Income: ${summary['income']:,.2f}
+    - Expenses: ${summary['expenses']:,.2f}
+    - Savings: ${summary['savings']:,.2f}
+    - Savings Rate: {summary['savings_rate']}%
 
-💰 TOP CATEGORIES:
-{top_cats}
+    💰 TOP CATEGORIES:
+    {top_cats}
 
-USER QUESTION: {question}
+    USER QUESTION: {question}
 
-Provide a clear, specific answer based on the data above. Be concise (under 150 words)."""
+    Provide a clear, specific answer based on the data above. Be concise (under 150 words)."""
 
     user_msg = {
         "role": "user",
