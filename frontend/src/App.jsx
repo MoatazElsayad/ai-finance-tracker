@@ -86,6 +86,8 @@ function AppContent() {
           element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Landing />}
         />
       </Routes>
+      {/* Global Chat Widget - Available on ALL pages */}
+      <GlobalChatWidget />
     </BrowserRouter>
   );
 }
@@ -255,9 +257,6 @@ function Layout() {
         </div>
         <Footer />
       </main>
-
-      {/* Global Chat Widget */}
-      <GlobalChatWidget />
     </div>
   );
 }

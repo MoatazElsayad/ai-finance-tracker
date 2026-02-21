@@ -1010,11 +1010,18 @@ def build_all_time_financial_context(db: Session, user_id: int):
         for i in investments
     ]
 
-    # 6. Savings Goals
+    # 6. Savings Goals (Long Term Single Goal)
     goals = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).all()
     goals_summary = [
-        {"target": g.target_amount, "date": g.target_date.strftime("%Y-%m-%d") if g.target_date else "None"} 
+        {"name": "Long Term Goal", "target": g.target_amount, "date": g.target_date.strftime("%Y-%m-%d") if g.target_date else "None"} 
         for g in goals
+    ]
+
+    # 7. Goals (Specific Targets)
+    specific_goals = db.query(Goal).filter(Goal.user_id == user_id).all()
+    specific_goals_summary = [
+        {"name": g.name, "target": g.target_amount, "current": g.current_amount, "date": g.target_date.strftime("%Y-%m-%d") if g.target_date else "None"}
+        for g in specific_goals
     ]
 
     return {
@@ -1028,7 +1035,7 @@ def build_all_time_financial_context(db: Session, user_id: int):
         "monthly_history": monthly_data,
         "top_categories_all_time": top_categories_all_time,
         "investments": investment_summary,
-        "goals": goals_summary
+        "goals": goals_summary + specific_goals_summary
     }
 
 def build_rich_financial_context(db: Session, user_id: int, year: int, month: int):
@@ -1258,6 +1265,13 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
         yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month or historically'})}\n\n"
         return
 
+    # Format lists for summary prompt
+    goals_summary_list = "\n".join([f"- {g.get('name', 'Goal')}: Target ${g.get('target', 0):,.2f} (by {g.get('date', 'N/A')})" for g in all_time.get('goals', [])[:5]])
+    if not goals_summary_list: goals_summary_list = "- No active savings goals"
+
+    investments_summary_list = "\n".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units" for i in all_time.get('investments', [])[:5]])
+    if not investments_summary_list: investments_summary_list = "- No active investments"
+
     # Build comprehensive prompt including historical data
     prompt_text = f"""You are a professional financial advisor analyzing a user's finances. You have access to their entire financial history. Provide a comprehensive but concise analysis.
 
@@ -1269,12 +1283,18 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 - Transactions: {context['current_month']['transaction_count']}
 
 🗓️ ALL-TIME OVERVIEW (Since {all_time['overview']['first_transaction_date'] if all_time else 'N/A'}):
-- Total Income: ${all_time['overview']['total_income']:,.2f}
-- Total Expenses: ${all_time['overview']['total_expenses']:,.2f}
-- Net Worth (Approx): ${all_time['overview']['net_savings']:,.2f}
-- Total Transactions: {all_time['overview']['transaction_count']}
+    - Total Income: ${all_time['overview']['total_income']:,.2f}
+    - Total Expenses: ${all_time['overview']['total_expenses']:,.2f}
+    - Net Worth (Approx): ${all_time['overview']['net_savings']:,.2f}
+    - Total Transactions: {all_time['overview']['transaction_count']}
 
-📈 MONTHLY TRENDS (vs Last Month):
+    🎯 SAVINGS GOALS:
+    {goals_summary_list}
+
+    📈 INVESTMENTS:
+    {investments_summary_list}
+
+    📈 MONTHLY TRENDS (vs Last Month):
 - Income: {context['trends']['income_change']:+.1f}%
 - Expenses: {context['trends']['expense_change']:+.1f}%
 - Savings: {context['trends']['savings_change']:+.1f}%
@@ -1301,7 +1321,7 @@ PROVIDE A CONCISE ANALYSIS (150-250 words max):
 1. **Financial Health** (1-2 sentences) - Assess both current month and overall long-term health.
 2. **Key Win** (1 sentence) - One main achievement (current or historical).
 3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget.
-4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps based on all-time trends or current issues.
+4. **Top 2 Actions** (2 bullet points) - Specific steps based on trends, goals, or investments.
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
@@ -1889,6 +1909,13 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     
     total_invested = sum(i.get('amount', 0) for i in investments)
     
+    # Format lists for prompt
+    goals_list = "\n    ".join([f"- {g.get('name', 'Goal')}: Target ${g.get('target', 0):,.2f} (by {g.get('date', 'N/A')})" for g in goals[:10]])
+    if not goals_list: goals_list = "- No active savings goals"
+
+    investments_list = "\n    ".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units (bought at ${i.get('buy_price', 0):,.2f})" for i in investments[:10]])
+    if not investments_list: investments_list = "- No active investments"
+
     system_prompt = f"""You are a financial assistant with access to the user's entire financial history.
     
     📊 ALL-TIME FINANCIAL OVERVIEW:
@@ -1896,8 +1923,13 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     - Total Expenses: ${all_time.get('overview', {}).get('total_expenses', 0):,.2f}
     - Net Worth (Approx): ${all_time.get('overview', {}).get('net_savings', 0):,.2f}
     - Total Transactions: {all_time.get('overview', {}).get('transaction_count', 0)}
-    - Active Savings Goals: {len(goals)}
-    - Total Investments: ${total_invested:,.2f}
+    
+    🎯 SAVINGS GOALS:
+    {goals_list}
+
+    📈 INVESTMENTS:
+    {investments_list}
+    - Total Invested Value: ${total_invested:,.2f}
 
     📅 CURRENT MONTH ({year}-{month:02d}) STATUS:
     - Income: ${current.get('total_income', 0):,.2f}
