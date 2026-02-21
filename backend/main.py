@@ -1905,30 +1905,7 @@ def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict
         "top_merchants": top_merchants,
     }
 
-async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int, month: int, question: str):
-    ctx = build_chat_context(db, user_id, year, month)
-    # Allow chat even if current month has no transactions, as long as there is some history
-    if ctx["summary"]["current_month"]["transaction_count"] == 0 and not ctx["all_time"]:
-        yield f"data: {json.dumps({'type': 'error', 'message': 'No financial data found.'})}\n\n"
-        return
-        
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    if not OPENROUTER_API_KEY:
-        yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
-        await asyncio.sleep(1)
-        mock_answer = "Answer: " + (question or "No question provided") + "\n\nContext accessed: budgets, categories, transactions, trend, merchants."
-        yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model-for-testing', 'answer': mock_answer})}\n\n"
-        return
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8001",
-        "X-Title": "Finance Tracker AI",
-    }
-    MODELS = FREE_MODELS.copy()
-    random.shuffle(MODELS)
-    
+def construct_financial_system_prompt(ctx: Dict[str, Any], year: int, month: int) -> str:
     # Enhanced System Prompt with All-Time Data
     all_time = ctx.get("all_time") or {}
     summary = ctx.get("summary", {})
@@ -1966,64 +1943,73 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     system_prompt = f"""You are a financial assistant with access to the user's entire financial history.
     
     📊 ALL-TIME FINANCIAL OVERVIEW:
-    - Total Income: ${all_time.get('overview', {}).get('total_income', 0):,.2f}
-    - Total Expenses: ${all_time.get('overview', {}).get('total_expenses', 0):,.2f}
-    - Net Worth (Approx): ${all_time.get('overview', {}).get('net_savings', 0):,.2f}
-    - Total Transactions: {all_time.get('overview', {}).get('transaction_count', 0)}
+    - Total Income: ${{all_time.get('overview', {{}}).get('total_income', 0):,.2f}}
+    - Total Expenses: ${{all_time.get('overview', {{}}).get('total_expenses', 0):,.2f}}
+    - Net Worth (Approx): ${{all_time.get('overview', {{}}).get('net_savings', 0):,.2f}}
+    - Total Transactions: {{all_time.get('overview', {{}}).get('transaction_count', 0)}}
     
     🎯 SAVINGS GOALS:
-    {goals_list}
+    {{goals_list}}
 
     📈 INVESTMENTS:
-    {investments_list}
-    - Total Invested Value: ${total_invested:,.2f}
+    {{investments_list}}
+    - Total Invested Value: ${{total_invested:,.2f}}
 
     🛒 SHOPPING LIST:
-    {shopping_list_str}
+    {{shopping_list_str}}
     
     📦 INVENTORY:
-    {inventory_str}
+    {{inventory_str}}
     
     💰 BUDGETS:
-    {budgets_str}
+    {{budgets_str}}
 
-    📅 CURRENT MONTH ({year}-{month:02d}) STATUS:
-    - Income: ${current.get('total_income', 0):,.2f}
-    - Expenses: ${current.get('total_expenses', 0):,.2f}
-    - Savings Rate: {summary.get('savings_rate', 0)}%
+    📅 CURRENT MONTH ({{year}}-{{month:02d}}) STATUS:
+    - Income: ${{current.get('total_income', 0):,.2f}}
+    - Expenses: ${{current.get('total_expenses', 0):,.2f}}
+    - Savings Rate: {{summary.get('savings_rate', 0)}}%
     
     Answer the user's question using this comprehensive data. Be specific, concise, and helpful.
     If the user asks about "total" or "history", use the All-Time data.
     If the user asks about "this month" or "recent", use the Current Month data.
     If the user asks about shopping or inventory, use the respective lists.
     """
+    return system_prompt
+
+async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int, month: int, question: str):
+    ctx = build_chat_context(db, user_id, year, month)
+    # Allow chat even if current month has no transactions, as long as there is some history
+    if ctx["summary"]["current_month"]["transaction_count"] == 0 and not ctx["all_time"]:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'No financial data found.'})}\n\n"
+        return
+        
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    if not OPENROUTER_API_KEY:
+        yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
+        await asyncio.sleep(1)
+        mock_answer = "Answer: " + (question or "No question provided") + "\n\nContext accessed: budgets, categories, transactions, trend, merchants."
+        yield f"data: {json.dumps({'type': 'success', 'model': 'mock-model-for-testing', 'answer': mock_answer})}\n\n"
+        return
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8001",
+        "X-Title": "Finance Tracker AI",
+    }
+    MODELS = FREE_MODELS.copy()
+    random.shuffle(MODELS)
+    
+    system_prompt = construct_financial_system_prompt(ctx, year, month)
 
     prompt = {
         "role": "system",
         "content": system_prompt
     }
-    # Build simplified context for chat
-    summary = ctx["summary"]["current_month"]
-    top_cats = "\n".join([f"- {c['name']}: ${c['amount']:,.2f}" for c in ctx["summary"]["category_breakdown"][:5]])
-    
-    prompt_content = f"""You are a helpful financial assistant. Answer the user's question about their finances.
-    
-    📊 CURRENT MONTH DATA:
-    - Income: ${summary['income']:,.2f}
-    - Expenses: ${summary['expenses']:,.2f}
-    - Savings: ${summary['savings']:,.2f}
-    - Savings Rate: {summary['savings_rate']}%
-
-    💰 TOP CATEGORIES:
-    {top_cats}
-
-    USER QUESTION: {question}
-
-    Provide a clear, specific answer based on the data above. Be concise (under 150 words)."""
 
     user_msg = {
         "role": "user",
-        "content": prompt_content
+        "content": question
     }
     for model_id in MODELS:
         yield f"data: {json.dumps({'type': 'trying_model', 'model': model_id})}\n\n"
@@ -2127,8 +2113,13 @@ async def ai_chat(
     }
     MODELS = FREE_MODELS.copy()
     random.shuffle(MODELS)
-    prompt = {"role": "system", "content": "You are a financial assistant. Answer precisely using provided data."}
-    user_msg = {"role": "user", "content": json.dumps({"question": data.question, "data": ctx})}
+    
+    # Use the unified rich system prompt
+    system_prompt = construct_financial_system_prompt(ctx, year, month)
+    
+    prompt = {"role": "system", "content": system_prompt}
+    user_msg = {"role": "user", "content": data.question}
+    
     for model_id in MODELS:
         payload = {"model": model_id, "messages": [prompt, user_msg], "max_tokens": 600, "temperature": 0.4}
         async with httpx.AsyncClient(verify=False) as client:
