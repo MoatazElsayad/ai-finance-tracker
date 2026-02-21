@@ -23,9 +23,7 @@ import {
   SpendingTrendsSection,
   ProgressComparisonSection,
   AIInsightsSection,
-  RecentActivitySection,
-  ChatWidgetButton,
-  ChatWidgetPopup
+  RecentActivitySection
 } from './DashboardUI';
 
 function Dashboard() {
@@ -42,13 +40,8 @@ function Dashboard() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatTryingModel, setChatTryingModel] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
-  const [isChatWidgetOpen, setIsChatWidgetOpen] = useState(false);
-  const [chatWidgetMessages, setChatWidgetMessages] = useState([]);
-  const [chatWidgetInput, setChatWidgetInput] = useState('');
-  const [chatWidgetLoading, setChatWidgetLoading] = useState(false);
-  const [chatWidgetTryingModel, setChatWidgetTryingModel] = useState(null);
-  const [chatWidgetModelUsed, setChatWidgetModelUsed] = useState(null);
   const [user, setUser] = useState(null);
+
   const [hasSavingsAccount, setHasSavingsAccount] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -79,12 +72,6 @@ function Dashboard() {
       setChatMessages([{ role: 'assistant', text: 'Hi! How can I help you?' }]);
     }
   }, [aiMode]);
-
-  useEffect(() => {
-    if (isChatWidgetOpen && chatWidgetMessages.length === 0) {
-      setChatWidgetMessages([{ role: 'assistant', text: 'Hi! How can I help you?' }]);
-    }
-  }, [isChatWidgetOpen]);
 
   const getDateRange = () => {
     const pad = (num) => String(num).padStart(2, '0');
@@ -767,25 +754,6 @@ function Dashboard() {
       <RecentActivitySection 
         theme={theme}
         recentTransactions={recentTransactions}
-      />
-
-      <ChatWidgetButton 
-        theme={theme}
-        isChatWidgetOpen={isChatWidgetOpen}
-        setIsChatWidgetOpen={setIsChatWidgetOpen}
-      />
-
-      <ChatWidgetPopup 
-        theme={theme}
-        isChatWidgetOpen={isChatWidgetOpen}
-        chatWidgetMessages={chatWidgetMessages}
-        chatWidgetInput={chatWidgetInput}
-        setChatWidgetInput={setChatWidgetInput}
-        chatWidgetLoading={chatWidgetLoading}
-        chatWidgetTryingModel={chatWidgetTryingModel}
-        chatWidgetModelUsed={chatWidgetModelUsed}
-        handleWidgetAsk={handleWidgetAsk}
-        setIsChatWidgetOpen={setIsChatWidgetOpen}
       />
     </div>
   );

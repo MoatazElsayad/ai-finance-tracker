@@ -958,6 +958,79 @@ def get_budget_comparison(db: Session, user_id: int, year: int, month: int):
         })
     return comparison
 
+def build_all_time_financial_context(db: Session, user_id: int):
+    """
+    Build comprehensive financial context including all historical data
+    """
+    # 1. Get All Transactions
+    all_tx = db.query(Transaction).options(joinedload(Transaction.category)).filter(
+        Transaction.user_id == user_id
+    ).order_by(Transaction.date.asc()).all()
+
+    if not all_tx:
+        return None
+
+    is_savings = lambda t: (t.category and t.category.name and 'savings' in t.category.name.lower())
+
+    # 2. Calculate All-Time Totals
+    total_income = sum(t.amount for t in all_tx if t.amount > 0 and not is_savings(t))
+    total_expenses = abs(sum(t.amount for t in all_tx if t.amount < 0 and not is_savings(t)))
+    
+    # 3. Monthly Aggregates (for trends)
+    monthly_data = {}
+    for t in all_tx:
+        key = t.date.strftime("%Y-%m")
+        if key not in monthly_data:
+            monthly_data[key] = {"income": 0, "expenses": 0, "savings": 0}
+        
+        if is_savings(t):
+            monthly_data[key]["savings"] += t.amount
+        elif t.amount > 0:
+            monthly_data[key]["income"] += t.amount
+        else:
+            monthly_data[key]["expenses"] += abs(t.amount)
+
+    # 4. Spending by Category (All Time)
+    category_spending = {}
+    for t in all_tx:
+        if t.amount < 0 and not is_savings(t):
+            cat_name = t.category.name if t.category else "Uncategorized"
+            category_spending[cat_name] = category_spending.get(cat_name, 0) + abs(t.amount)
+
+    top_categories_all_time = sorted(
+        [{"name": k, "amount": round(v, 2)} for k, v in category_spending.items()],
+        key=lambda x: x["amount"],
+        reverse=True
+    )[:10]
+
+    # 5. Investments & Assets
+    investments = db.query(Investment).filter(Investment.user_id == user_id).all()
+    investment_summary = [
+        {"type": i.type, "amount": i.amount, "buy_price": i.buy_price, "date": i.buy_date.strftime("%Y-%m-%d")} 
+        for i in investments
+    ]
+
+    # 6. Savings Goals
+    goals = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).all()
+    goals_summary = [
+        {"target": g.target_amount, "date": g.target_date.strftime("%Y-%m-%d") if g.target_date else "None"} 
+        for g in goals
+    ]
+
+    return {
+        "overview": {
+            "total_income": round(total_income, 2),
+            "total_expenses": round(total_expenses, 2),
+            "net_savings": round(total_income - total_expenses, 2), # Simplified net
+            "first_transaction_date": all_tx[0].date.strftime("%Y-%m-%d"),
+            "transaction_count": len(all_tx)
+        },
+        "monthly_history": monthly_data,
+        "top_categories_all_time": top_categories_all_time,
+        "investments": investment_summary,
+        "goals": goals_summary
+    }
+
 def build_rich_financial_context(db: Session, user_id: int, year: int, month: int):
     """
     Build comprehensive financial context for AI analysis
@@ -1175,15 +1248,18 @@ def build_savings_analysis_context(db: Session, user_id: int):
 async def create_ai_progress_generator(db: Session, user_id: int, year: int, month: int):
     """Async generator that yields SSE events for AI model progress"""
 
-    # Get rich context
+    # Get rich context (Current Month)
     context = build_rich_financial_context(db, user_id, year, month)
+    
+    # Get All-Time Context
+    all_time = build_all_time_financial_context(db, user_id)
 
-    if context["current_month"]["transaction_count"] == 0:
-        yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
+    if context["current_month"]["transaction_count"] == 0 and (not all_time or all_time["overview"]["transaction_count"] == 0):
+        yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month or historically'})}\n\n"
         return
 
-    # Build comprehensive prompt
-    prompt_text = f"""You are a professional financial advisor analyzing a user's finances. Provide a comprehensive but concise analysis.
+    # Build comprehensive prompt including historical data
+    prompt_text = f"""You are a professional financial advisor analyzing a user's finances. You have access to their entire financial history. Provide a comprehensive but concise analysis.
 
 📊 CURRENT MONTH ({month}/{year}):
 - Income: ${context['current_month']['income']:,.2f}
@@ -1192,13 +1268,22 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 - Savings Rate: {context['current_month']['savings_rate']}%
 - Transactions: {context['current_month']['transaction_count']}
 
-📈 TRENDS (vs Last Month):
+🗓️ ALL-TIME OVERVIEW (Since {all_time['overview']['first_transaction_date'] if all_time else 'N/A'}):
+- Total Income: ${all_time['overview']['total_income']:,.2f}
+- Total Expenses: ${all_time['overview']['total_expenses']:,.2f}
+- Net Worth (Approx): ${all_time['overview']['net_savings']:,.2f}
+- Total Transactions: {all_time['overview']['transaction_count']}
+
+📈 MONTHLY TRENDS (vs Last Month):
 - Income: {context['trends']['income_change']:+.1f}%
 - Expenses: {context['trends']['expense_change']:+.1f}%
 - Savings: {context['trends']['savings_change']:+.1f}%
 
-💰 TOP SPENDING CATEGORIES:
+💰 TOP SPENDING CATEGORIES (This Month):
 {chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown'][:5]])}
+
+🏆 TOP SPENDING CATEGORIES (All Time):
+{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f}" for cat in all_time['top_categories_all_time'][:5]]) if all_time else 'N/A'}
 
 🔥 BIGGEST CATEGORY CHANGES (vs Last Month):
 {chr(10).join([f"- {cat['category']}: {cat['change_percent']:+.1f}% (${cat['current']:,.2f} now vs ${cat['previous']:,.2f} before)" for cat in context['category_changes'][:3]])}
@@ -1206,17 +1291,17 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 {'🎯 BUDGET STATUS:' if context['budget_status'] else ''}
 {chr(10).join([f"- {b['category']}: ${b['spent']:,.2f} / ${b['budgeted']:,.2f} ({b['percentage']:.1f}%) - {'⚠️ OVER BUDGET' if b['status'] == 'over' else '✅ On Track' if b['status'] == 'on_track' else '✅ Good'}" for b in context['budget_status']]) if context['budget_status'] else ''}
 
-🚨 LARGEST EXPENSES:
+🚨 LARGEST EXPENSES (This Month):
 {chr(10).join([f"- ${exp['amount']:,.2f} - {exp['description']} ({exp['category']}) on {exp['date']}" for exp in context['unusual_expenses'][:3]])}
 
 📊 SPENDING FREQUENCY:
 {chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
 
 PROVIDE A CONCISE ANALYSIS (150-250 words max):
-1. **Financial Health** (1-2 sentences) - Savings rate assessment
-2. **Key Win** (1 sentence) - One main achievement
-3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget and which are UNDER/ON TRACK with specific numbers (e.g., "Food: $500 budget, $600 spent - OVER by $100").
-4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending.
+1. **Financial Health** (1-2 sentences) - Assess both current month and overall long-term health.
+2. **Key Win** (1 sentence) - One main achievement (current or historical).
+3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget.
+4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps based on all-time trends or current issues.
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
@@ -1730,6 +1815,7 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
 
 def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict[str, Any]:
     base = build_rich_financial_context(db, user_id, year, month)
+    all_time = build_all_time_financial_context(db, user_id)  # Add all-time context
     start = date(year, month, 1)
     end = _month_range_end(start)
     tx = _fetch_transactions(db, user_id, start, end)
@@ -1757,6 +1843,7 @@ def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict
     top_merchants = sorted([{"merchant": m, "spent": v} for m, v in merchants.items()], key=lambda x: x["spent"], reverse=True)[:5]
     return {
         "summary": base,
+        "all_time": all_time,  # Include all-time data
         "transactions": tx_list,
         "categories": cat_list,
         "budgets": bud_list,
@@ -1766,9 +1853,11 @@ def build_chat_context(db: Session, user_id: int, year: int, month: int) -> Dict
 
 async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int, month: int, question: str):
     ctx = build_chat_context(db, user_id, year, month)
-    if ctx["summary"]["current_month"]["transaction_count"] == 0:
-        yield f"data: {json.dumps({'type': 'error', 'message': 'No transactions found for this month'})}\n\n"
+    # Allow chat even if current month has no transactions, as long as there is some history
+    if ctx["summary"]["current_month"]["transaction_count"] == 0 and not ctx["all_time"]:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'No financial data found.'})}\n\n"
         return
+        
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     if not OPENROUTER_API_KEY:
         yield f"data: {json.dumps({'type': 'trying_model', 'model': 'mock-model-for-testing'})}\n\n"
@@ -1785,9 +1874,35 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     }
     MODELS = FREE_MODELS.copy()
     random.shuffle(MODELS)
+    
+    # Enhanced System Prompt with All-Time Data
+    all_time = ctx.get("all_time", {})
+    summary = ctx.get("summary", {})
+    current = summary.get("current_month", {})
+    
+    system_prompt = f"""You are a financial assistant with access to the user's entire financial history.
+    
+    📊 ALL-TIME FINANCIAL OVERVIEW:
+    - Total Income: ${all_time.get('overview', {}).get('total_income', 0):,.2f}
+    - Total Expenses: ${all_time.get('overview', {}).get('total_expenses', 0):,.2f}
+    - Net Worth (Approx): ${all_time.get('overview', {}).get('net_savings', 0):,.2f}
+    - Total Transactions: {all_time.get('overview', {}).get('transaction_count', 0)}
+    - Active Savings Goals: {len(all_time.get('goals', {}).get('active_goals', []))}
+    - Total Investments: ${all_time.get('investments', {}).get('total_invested', 0):,.2f}
+
+    📅 CURRENT MONTH ({year}-{month:02d}) STATUS:
+    - Income: ${current.get('total_income', 0):,.2f}
+    - Expenses: ${current.get('total_expenses', 0):,.2f}
+    - Savings Rate: {summary.get('savings_rate', 0)}%
+    
+    Answer the user's question using this comprehensive data. Be specific, concise, and helpful.
+    If the user asks about "total" or "history", use the All-Time data.
+    If the user asks about "this month" or "recent", use the Current Month data.
+    """
+
     prompt = {
         "role": "system",
-        "content": "You are a financial assistant. Answer the user's question using provided data. Be specific, concise, and numeric where possible."
+        "content": system_prompt
     }
     # Build simplified context for chat
     summary = ctx["summary"]["current_month"]

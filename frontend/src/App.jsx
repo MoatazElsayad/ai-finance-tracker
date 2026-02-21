@@ -24,6 +24,7 @@ import About from './pages/About';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import GlobalChatWidget from './components/GlobalChatWidget';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -246,12 +247,17 @@ function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className={`transition-all duration-500 ${isCollapsed ? 'md:ml-24' : 'md:ml-72'} min-h-screen flex flex-col ${isDark ? 'bg-[#0a0e27]' : 'bg-slate-50'}`}>
-        <div className="animate-in fade-in duration-700 flex-grow">
-          <Outlet />
+      <main className={`transition-all duration-500 p-4 md:p-8 ${
+        isCollapsed ? 'md:ml-24' : 'md:ml-72'
+      }`}>
+        <div className="max-w-[1600px] mx-auto min-h-[calc(100vh-10rem)]">
+          <Outlet context={{ user }} />
         </div>
         <Footer />
       </main>
+
+      {/* Global Chat Widget */}
+      <GlobalChatWidget />
     </div>
   );
 }
