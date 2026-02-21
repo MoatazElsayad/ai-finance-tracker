@@ -1876,9 +1876,18 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     random.shuffle(MODELS)
     
     # Enhanced System Prompt with All-Time Data
-    all_time = ctx.get("all_time", {})
+    all_time = ctx.get("all_time") or {}
     summary = ctx.get("summary", {})
     current = summary.get("current_month", {})
+    
+    # Calculate derived values safely
+    goals = all_time.get('goals', [])
+    if not isinstance(goals, list): goals = []
+    
+    investments = all_time.get('investments', [])
+    if not isinstance(investments, list): investments = []
+    
+    total_invested = sum(i.get('amount', 0) for i in investments)
     
     system_prompt = f"""You are a financial assistant with access to the user's entire financial history.
     
@@ -1887,8 +1896,8 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
     - Total Expenses: ${all_time.get('overview', {}).get('total_expenses', 0):,.2f}
     - Net Worth (Approx): ${all_time.get('overview', {}).get('net_savings', 0):,.2f}
     - Total Transactions: {all_time.get('overview', {}).get('transaction_count', 0)}
-    - Active Savings Goals: {len(all_time.get('goals', {}).get('active_goals', []))}
-    - Total Investments: ${all_time.get('investments', {}).get('total_invested', 0):,.2f}
+    - Active Savings Goals: {len(goals)}
+    - Total Investments: ${total_invested:,.2f}
 
     📅 CURRENT MONTH ({year}-{month:02d}) STATUS:
     - Income: ${current.get('total_income', 0):,.2f}
