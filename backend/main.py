@@ -1565,17 +1565,19 @@ async def create_savings_ai_progress_generator(db: Session, user_id: int):
 {recurring_str}
 
 RULES: 
-- Always use EGP. 
-- Many Egyptians prefer gold or USD holdings over pure cash for long-term value. 
-- Typical middle-income Cairo savings rate benchmark: 10–20%. 
-- If long-term goal is < 24 months away and progress < 40%, treat it as urgent. 
+- Always use EGP — never $. 
+- Many Egyptians prefer gold or USD as long-term stores of value over pure cash. 
+- Typical middle-income Cairo savings rate benchmark: 10–20% — compare the user's rate to this. 
+- If long-term goal date is less than 24 months away and progress < 40%, treat it as urgent. 
+- NEVER invent numbers. Use only provided data. 
+- Keep total answer 150–220 words. 
 
-Structure your answer exactly like this (150–220 words max): 
-1. Savings Performance (2 sentences) — closeness to monthly goal + benchmark comparison 
-2. Wealth Building (2 sentences) — cash vs investments balance + gold/USD comment if relevant 
-3. Strategic Advice (exactly 2 bullet points) — concrete, numbered steps to accelerate long-term goal 
+You MUST use exactly this structure — do not change section titles or order: 
+1. Savings Performance (exactly 2 sentences) — closeness to monthly goal + comparison to 10–20% Cairo benchmark 
+2. Wealth Building (exactly 2 sentences) — cash vs investments balance + comment on gold/USD preference if relevant 
+3. Strategic Advice (exactly 2 bullet points) — concrete, specific steps to accelerate the long-term goal (emphasize urgency if <24 months remain) 
 
-Be professional, data-driven, encouraging but honest. Use 1–2 emojis max.
+Tone: professional, data-driven, encouraging but honest. Use 1–2 emojis maximum.
 """
 
     # AI Model Loop
@@ -1731,18 +1733,20 @@ async def generate_savings_analysis(
 🔄 RECURRING OBLIGATIONS (Impact on Savings):
 {recurring_str}
 
-RULES: 
-- Always use EGP. 
-- Many Egyptians prefer gold or USD holdings over pure cash for long-term value. 
-- Typical middle-income Cairo savings rate benchmark: 10–20%. 
-- If long-term goal is < 24 months away and progress < 40%, treat it as urgent. 
+RULES YOU MUST FOLLOW: 
+- Always use EGP — never $. 
+- Many Egyptians prefer gold or USD as long-term stores of value over pure cash. 
+- Typical middle-income Cairo savings rate benchmark: 10–20% — compare the user's rate to this. 
+- If long-term goal date is less than 24 months away and progress < 40%, treat it as urgent. 
+- NEVER invent numbers. Use only provided data. 
+- Keep total answer 150–220 words. 
 
-Structure your answer exactly like this (150–220 words max): 
-1. Savings Performance (2 sentences) — closeness to monthly goal + benchmark comparison 
-2. Wealth Building (2 sentences) — cash vs investments balance + gold/USD comment if relevant 
-3. Strategic Advice (exactly 2 bullet points) — concrete, numbered steps to accelerate long-term goal 
+You MUST use exactly this structure — do not change section titles or order: 
+1. Savings Performance (exactly 2 sentences) — closeness to monthly goal + comparison to 10–20% Cairo benchmark 
+2. Wealth Building (exactly 2 sentences) — cash vs investments balance + comment on gold/USD preference if relevant 
+3. Strategic Advice (exactly 2 bullet points) — concrete, specific steps to accelerate the long-term goal (emphasize urgency if <24 months remain) 
 
-Be professional, data-driven, encouraging but honest. Use 1–2 emojis max."""
+Tone: professional, data-driven, encouraging but honest. Use 1–2 emojis maximum."""
 
     # Re-use the same model selection logic as the dashboard
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -1857,10 +1861,12 @@ async def generate_ai_summary(
 {chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
 
 PROVIDE A CONCISE ANALYSIS (150-250 words max):
-1. **Financial Health** (1-2 sentences) - Savings rate assessment
-2. **Key Win** (1 sentence) - One main achievement
-3. **Budget Performance** (2-4 sentences) - ALWAYS include this. If no budgets exist, suggest setting them. If budgets exist, explicitly state which are OVER.
-4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending (check recurring expenses!).
+You MUST output EXACTLY these 5 labeled sections in this order — do not merge, skip, rename, or omit any:
+1. Financial Health Snapshot (2–3 sentences max)
+2. Key Win (exactly 1 sentence)
+3. Budget Performance & Red Flags (2–4 sentences — ALWAYS include, use fallback text if no budgets)
+4. Most Important Warning / Risk (exactly 1 clear sentence — highlight biggest danger: income drop, low savings rate, recurring overspend, aggressive goals at risk, etc.)
+5. Top 2–3 Concrete Actions (numbered list — ALWAYS include 2 or 3 specific, realistic, number-based suggestions. Prioritize recurring expenses, biggest overspends, savings rate improvement)
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
@@ -2036,6 +2042,7 @@ def construct_financial_system_prompt(ctx: Dict[str, Any], year: int, month: int
  
  You ALWAYS follow this exact structure in every answer (unless the user explicitly asks for something else): 
  
+ You MUST output EXACTLY these 5 labeled sections in this order — do not merge, skip, rename, or omit any:
  1. Financial Health Snapshot (2–3 sentences max) 
     - Current month savings rate + net flow 
     - Quick comment on whether the situation is improving / stable / deteriorating vs last month 
@@ -2048,16 +2055,16 @@ def construct_financial_system_prompt(ctx: Dict[str, Any], year: int, month: int
     - When over budget: ALWAYS write how much over (in EGP and %) + short consequence 
     - Highlight the 1–2 most concerning items first 
  
- 3. Biggest Wins This Month (1 sentence) 
+ 3. Key Win (exactly 1 sentence)
     - Choose ONE genuine positive highlight (can be from current month or trend) 
  
- 4. Most Important Warning / Risk (1 sentence) 
-    - If anything looks worrying (recurring overspend, savings rate < 10%, big negative change) say it clearly 
+ 4. Most Important Warning / Risk (exactly 1 clear sentence)
+    - Highlight biggest danger: income drop, low savings rate, recurring overspend, aggressive goals at risk, etc.
  
  5. Top 2–3 Concrete Actions (numbered list) 
-    - Very specific, realistic, Egypt-context-aware suggestions 
+    - ALWAYS include 2 or 3 specific, realistic, number-based suggestions. 
+    - Prioritize recurring expenses, biggest overspends, savings rate improvement.
     - Include numbers whenever possible ("cut coffee from 1200 to 500 EGP") 
-    - Prioritize highest-leverage actions first (biggest overspend category, recurring subscriptions, savings rate) 
  
  Additional strict rules you MUST follow: 
  
