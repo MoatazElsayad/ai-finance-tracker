@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { askAIQuestion } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,17 +8,13 @@ import {
   X, 
   Bot, 
   Minimize2, 
-  Paperclip, 
-  Smile, 
   Check, 
-  CheckCheck, 
-  MoreVertical, 
-  Phone, 
-  Video 
+  CheckCheck
 } from 'lucide-react';
 
 export default function GlobalChatWidget() {
   const { theme } = useTheme();
+  const location = useLocation();
   const isDark = theme === 'dark';
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState(() => {
@@ -31,6 +28,39 @@ export default function GlobalChatWidget() {
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Dynamic Theme Colors based on Route
+  const getThemeColors = () => {
+    const path = location.pathname;
+    if (path.startsWith('/savings')) {
+      return {
+        avatarBg: isDark ? 'bg-blue-500/20' : 'bg-blue-100',
+        botIcon: isDark ? 'text-blue-400' : 'text-blue-600',
+        userBubble: 'bg-blue-600',
+        sendButton: 'bg-blue-600 hover:bg-blue-700',
+        fab: 'bg-blue-600 hover:bg-blue-700',
+      };
+    }
+    if (path.startsWith('/shopping')) {
+      return {
+        avatarBg: isDark ? 'bg-green-500/20' : 'bg-green-100',
+        botIcon: isDark ? 'text-green-400' : 'text-green-600',
+        userBubble: 'bg-green-600',
+        sendButton: 'bg-green-600 hover:bg-green-700',
+        fab: 'bg-green-600 hover:bg-green-700',
+      };
+    }
+    // Default Amber
+    return {
+      avatarBg: isDark ? 'bg-amber-500/20' : 'bg-amber-100',
+      botIcon: isDark ? 'text-amber-400' : 'text-amber-600',
+      userBubble: 'bg-amber-500',
+      sendButton: 'bg-amber-500 hover:bg-amber-600',
+      fab: 'bg-amber-500 hover:bg-amber-600',
+    };
+  };
+
+  const colors = getThemeColors();
 
   // Save to localStorage
   useEffect(() => {
@@ -243,10 +273,8 @@ export default function GlobalChatWidget() {
             }`}>
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isDark ? 'bg-amber-500/20' : 'bg-amber-100'
-                  }`}>
-                    <Bot className={`w-6 h-6 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colors.avatarBg}`}>
+                    <Bot className={`w-6 h-6 ${colors.botIcon}`} />
                   </div>
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
                 </div>
@@ -264,16 +292,6 @@ export default function GlobalChatWidget() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button className={`p-2 rounded-full transition-colors ${
-                  isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'
-                }`}>
-                  <Phone className="w-4 h-4" />
-                </button>
-                <button className={`p-2 rounded-full transition-colors ${
-                  isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'
-                }`}>
-                  <Video className="w-4 h-4" />
-                </button>
                 <button 
                   onClick={() => setIsOpen(false)}
                   className={`p-2 rounded-full transition-colors ${
@@ -314,7 +332,7 @@ export default function GlobalChatWidget() {
                       >
                         <div className={`max-w-[80%] relative shadow-sm ${
                           isUser 
-                            ? 'bg-amber-500 text-white rounded-2xl rounded-tr-none' 
+                            ? `${colors.userBubble} text-white rounded-2xl rounded-tr-none` 
                             : isDark 
                               ? 'bg-slate-800 text-slate-200 rounded-2xl rounded-tl-none border border-slate-700' 
                               : 'bg-white text-slate-800 rounded-2xl rounded-tl-none'
@@ -359,12 +377,6 @@ export default function GlobalChatWidget() {
               isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
             }`}>
               <div className="flex items-end gap-2">
-                <button className={`p-3 rounded-full transition-colors ${
-                  isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-400'
-                }`}>
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                
                 <div className={`flex-1 rounded-[20px] px-4 py-2 flex items-center gap-2 border transition-all ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 focus-within:border-slate-600' 
@@ -387,9 +399,6 @@ export default function GlobalChatWidget() {
                     }`}
                     style={{ minHeight: '24px' }}
                   />
-                  <button className={`${isDark ? 'text-slate-400 hover:text-amber-400' : 'text-slate-400 hover:text-amber-500'}`}>
-                    <Smile className="w-5 h-5" />
-                  </button>
                 </div>
 
                 <button 
@@ -398,7 +407,7 @@ export default function GlobalChatWidget() {
                   className={`p-3 rounded-full transition-all shadow-md flex items-center justify-center ${
                     !inputValue.trim() && !isLoading
                       ? isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-200 text-slate-400'
-                      : 'bg-amber-500 text-white hover:bg-amber-600 hover:scale-105 active:scale-95'
+                      : `${colors.sendButton} text-white hover:scale-105 active:scale-95`
                   }`}
                 >
                   <Send className="w-5 h-5 ml-0.5" />
@@ -417,7 +426,7 @@ export default function GlobalChatWidget() {
         className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all relative ${
           isOpen 
             ? isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'
-            : 'bg-amber-500 text-white hover:bg-amber-600'
+            : `${colors.fab} text-white`
         }`}
       >
         <AnimatePresence mode="wait">
