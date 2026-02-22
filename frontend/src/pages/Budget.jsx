@@ -738,7 +738,7 @@ function BudgetPlanning() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1 relative z-10">
                     <p 
                       className={`text-4xl font-black tracking-tight text-${card.color}-500`}
                     >

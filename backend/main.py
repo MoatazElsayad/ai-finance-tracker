@@ -1175,6 +1175,38 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
         if t.amount < 0 and not is_savings(t):
             cat_name = t.category.name if t.category else "Uncategorized"
             transaction_frequency[cat_name] = transaction_frequency.get(cat_name, 0) + 1
+
+    # RECURRING EXPENSE DETECTION (Last 3 Months)
+    # Use simple 90-day lookback for recurring patterns
+    start_date_recurring = date(year, month, 1) - timedelta(days=90)
+    
+    recurring_tx = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.date >= start_date_recurring,
+        Transaction.amount < 0  # Expenses only
+    ).all()
+    
+    # Group by (Merchant Name + Approximate Amount)
+    # We use a simple bucket of 50 EGP to group similar amounts (e.g. 120 and 130 -> same bucket)
+    recurring_map = defaultdict(list)
+    
+    for t in recurring_tx:
+        if not t.description: continue
+        # Normalize: first 15 chars, lowercase
+        merchant_key = t.description.strip().lower()[:15]
+        # Bucket amount to nearest 50
+        amt_bucket = round(abs(t.amount) / 50) * 50
+        if amt_bucket == 0: amt_bucket = 10 # Minimum bucket
+        
+        key = (merchant_key, amt_bucket)
+        recurring_map[key].append(abs(t.amount))
+        
+    recurring_candidates = []
+    for (merchant, bucket), amounts in recurring_map.items():
+        if len(amounts) >= 3:
+            avg_amt = sum(amounts) / len(amounts)
+            # Format nicely: "Uber (approx EGP 150) x4"
+            recurring_candidates.append(f"{merchant.title()} ≈ EGP {avg_amt:.0f} (x{len(amounts)})")
     
     return {
         "current_month": {
@@ -1213,7 +1245,8 @@ def build_rich_financial_context(db: Session, user_id: int, year: int, month: in
             }
             for t in unusual_expenses
         ],
-        "transaction_frequency": transaction_frequency
+        "transaction_frequency": transaction_frequency,
+        "recurring_candidates": recurring_candidates
     }
 
 def build_savings_analysis_context(db: Session, user_id: int):
@@ -1266,7 +1299,8 @@ def build_savings_analysis_context(db: Session, user_id: int):
             {"type": i.type, "amount": i.amount, "buy_price": i.buy_price} 
             for i in investments
         ],
-        "market_context": monthly_stats["trends"]
+        "market_context": monthly_stats["trends"],
+        "recurring_candidates": monthly_stats.get("recurring_candidates", [])
     }
 
 
@@ -1288,7 +1322,7 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
         return
 
     # Format lists for summary prompt
-    goals_summary_list = "\n".join([f"- {g.get('name', 'Goal')}: Target ${g.get('target', 0):,.2f} (by {g.get('date', 'N/A')})" for g in all_time.get('goals', [])[:5]])
+    goals_summary_list = "\n".join([f"- {g.get('name', 'Goal')}: Target EGP {g.get('target', 0):,.2f} (by {g.get('date', 'N/A')})" for g in all_time.get('goals', [])[:5]])
     if not goals_summary_list: goals_summary_list = "- No active savings goals"
 
     investments_summary_list = "\n".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units" for i in all_time.get('investments', [])[:5]])
@@ -1303,20 +1337,25 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
     inventory_summary = ", ".join([item.get('name', 'Item') for item in inventory_data[:5]])
     if not inventory_summary: inventory_summary = "None"
 
+    # Prepare Recurring String
+    recurring_candidates = context.get('recurring_candidates', [])
+    recurring_str = "\n".join([f"- {item}" for item in recurring_candidates])
+    if not recurring_str: recurring_str = "- No clearly recurring expenses detected"
+
     # Build comprehensive prompt including historical data
     prompt_text = f"""You are a professional financial advisor analyzing a user's finances. You have access to their entire financial history. Provide a comprehensive but concise analysis.
 
 📊 CURRENT MONTH ({month}/{year}):
-- Income: ${context['current_month']['income']:,.2f}
-- Expenses: ${context['current_month']['expenses']:,.2f}
-- Net Savings: ${context['current_month']['savings']:,.2f}
+- Income: EGP {context['current_month']['income']:,.2f}
+- Expenses: EGP {context['current_month']['expenses']:,.2f}
+- Net Savings: EGP {context['current_month']['savings']:,.2f}
 - Savings Rate: {context['current_month']['savings_rate']}%
 - Transactions: {context['current_month']['transaction_count']}
 
 🗓️ ALL-TIME OVERVIEW (Since {all_time['overview']['first_transaction_date'] if all_time else 'N/A'}):
-    - Total Income: ${all_time['overview']['total_income']:,.2f}
-    - Total Expenses: ${all_time['overview']['total_expenses']:,.2f}
-    - Net Worth (Approx): ${all_time['overview']['net_savings']:,.2f}
+    - Total Income: EGP {all_time['overview']['total_income']:,.2f}
+    - Total Expenses: EGP {all_time['overview']['total_expenses']:,.2f}
+    - Net Worth (Approx): EGP {all_time['overview']['net_savings']:,.2f}
     - Total Transactions: {all_time['overview']['transaction_count']}
 
     🎯 SAVINGS GOALS:
@@ -1334,19 +1373,22 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 - Savings: {context['trends']['savings_change']:+.1f}%
 
 💰 TOP SPENDING CATEGORIES (This Month):
-{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown'][:5]])}
+{chr(10).join([f"- {cat['name']}: EGP {cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown'][:5]])}
 
 🏆 TOP SPENDING CATEGORIES (All Time):
-{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f}" for cat in all_time['top_categories_all_time'][:5]]) if all_time else 'N/A'}
+{chr(10).join([f"- {cat['name']}: EGP {cat['amount']:,.2f}" for cat in all_time['top_categories_all_time'][:5]]) if all_time else 'N/A'}
+
+🔄 POSSIBLE RECURRING EXPENSES (last 3 months):
+{recurring_str}
 
 🔥 BIGGEST CATEGORY CHANGES (vs Last Month):
-{chr(10).join([f"- {cat['category']}: {cat['change_percent']:+.1f}% (${cat['current']:,.2f} now vs ${cat['previous']:,.2f} before)" for cat in context['category_changes'][:3]])}
+{chr(10).join([f"- {cat['category']}: {cat['change_percent']:+.1f}% (EGP {cat['current']:,.2f} now vs EGP {cat['previous']:,.2f} before)" for cat in context['category_changes'][:3]])}
 
-{'🎯 BUDGET STATUS:' if context['budget_status'] else ''}
-{chr(10).join([f"- {b['category']}: ${b['spent']:,.2f} / ${b['budgeted']:,.2f} ({b['percentage']:.1f}%) - {'⚠️ OVER BUDGET' if b['status'] == 'over' else '✅ On Track' if b['status'] == 'on_track' else '✅ Good'}" for b in context['budget_status']]) if context['budget_status'] else ''}
+{'🎯 BUDGET STATUS:' if context['budget_status'] else '🎯 BUDGET STATUS: No budgets defined this month.'}
+{chr(10).join([f"- {b['category']}: EGP {b['spent']:,.2f} / EGP {b['budgeted']:,.2f} ({b['percentage']:.1f}%) - {'⚠️ OVER BUDGET' if b['status'] == 'over' else '✅ On Track' if b['status'] == 'on_track' else '✅ Good'}" for b in context['budget_status']]) if context['budget_status'] else ''}
 
 🚨 LARGEST EXPENSES (This Month):
-{chr(10).join([f"- ${exp['amount']:,.2f} - {exp['description']} ({exp['category']}) on {exp['date']}" for exp in context['unusual_expenses'][:3]])}
+{chr(10).join([f"- EGP {exp['amount']:,.2f} - {exp['description']} ({exp['category']}) on {exp['date']}" for exp in context['unusual_expenses'][:3]])}
 
 📊 SPENDING FREQUENCY:
 {chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
@@ -1354,8 +1396,8 @@ async def create_ai_progress_generator(db: Session, user_id: int, year: int, mon
 PROVIDE A CONCISE ANALYSIS (150-250 words max):
 1. **Financial Health** (1-2 sentences) - Assess both current month and overall long-term health.
 2. **Key Win** (1 sentence) - One main achievement (current or historical).
-3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget.
-4. **Top 2 Actions** (2 bullet points) - Specific steps based on trends, goals, or investments.
+3. **Budget Performance** (2-4 sentences) - ALWAYS include this. If no budgets exist, suggest setting them. If budgets exist, explicitly state which are OVER budget.
+4. **Top 2 Actions** (2 bullet points) - Specific steps based on trends, goals, or investments. Check recurring expenses!
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
@@ -1496,30 +1538,45 @@ async def create_savings_ai_progress_generator(db: Session, user_id: int):
     # Get savings context
     context = build_savings_analysis_context(db, user_id)
     
+    # Prepare Recurring String
+    recurring_candidates = context.get('recurring_candidates', [])
+    recurring_str = "\n".join([f"- {item}" for item in recurring_candidates])
+    if not recurring_str: recurring_str = "- No clearly recurring expenses detected"
+
     # Build a savings-focused prompt
-    prompt_text = f"""You are a specialized savings and investment advisor. Analyze the user's progress and provide actionable advice.
+    prompt_text = f"""You are a specialized savings and investment advisor for users in Egypt. 
 
-🎯 GOALS:
-- Monthly Savings Target: EGP {context['monthly_goal']:,.2f}
-- Current Monthly Savings: EGP {context['monthly_saved']:,.2f}
-- Monthly Savings Rate: {context['savings_rate']}%
-- Long-term Target: EGP {context['long_term_goal']['target']:,.2f} (by {context['long_term_goal']['date']})
+🎯 GOALS: 
+- Monthly Target: EGP {context['monthly_goal']:,.2f} 
+- This Month Saved: EGP {context['monthly_saved']:,.2f} 
+- Savings Rate: {context['savings_rate']}% 
+- Long-term Goal: EGP {context['long_term_goal']['target']:,.2f} (target date: {context['long_term_goal']['date']}) 
 
-💰 LIQUIDITY & ASSETS:
-- Cash Balance: EGP {context['cash_balance']:,.2f}
-- Investment Count: {context['investment_count']}
-- Asset Allocation: {json.dumps(context['asset_allocation'])}
+💰 ASSETS: 
+- Cash in Savings: EGP {context['cash_balance']:,.2f} 
+- Investments: {context['investment_count']} positions 
+- Allocation: {json.dumps(context['asset_allocation'])} 
 
-📈 MARKET TRENDS:
-- Income Change: {context['market_context']['income_change']:+.1f}%
-- Expense Change: {context['market_context']['expense_change']:+.1f}%
+📈 TRENDS: 
+- Income change: {context['market_context']['income_change']:+.1f}% 
+- Expense change: {context['market_context']['expense_change']:+.1f}% 
 
-PROVIDE A CONCISE ANALYSIS (150-200 words max):
-1. **Savings Performance** (2 sentences) - How close are they to their monthly goal?
-2. **Wealth Building** (2 sentences) - Analysis of their cash vs investments.
-3. **Strategic Advice** (2 bullet points) - Specific steps to reach the long-term goal faster.
+🔄 RECURRING OBLIGATIONS (Impact on Savings):
+{recurring_str}
 
-Be professional, data-driven, and encouraging. Use 1-2 emojis."""
+RULES: 
+- Always use EGP. 
+- Many Egyptians prefer gold or USD holdings over pure cash for long-term value. 
+- Typical middle-income Cairo savings rate benchmark: 10–20%. 
+- If long-term goal is < 24 months away and progress < 40%, treat it as urgent. 
+
+Structure your answer exactly like this (150–220 words max): 
+1. Savings Performance (2 sentences) — closeness to monthly goal + benchmark comparison 
+2. Wealth Building (2 sentences) — cash vs investments balance + gold/USD comment if relevant 
+3. Strategic Advice (exactly 2 bullet points) — concrete, numbered steps to accelerate long-term goal 
+
+Be professional, data-driven, encouraging but honest. Use 1–2 emojis max.
+"""
 
     # AI Model Loop
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -1648,30 +1705,44 @@ async def generate_savings_analysis(
     user = get_current_user(request, authorization, token, db)
     context = build_savings_analysis_context(db, user.id)
     
+    # Prepare Recurring String
+    recurring_candidates = context.get('recurring_candidates', [])
+    recurring_str = "\n".join([f"- {item}" for item in recurring_candidates])
+    if not recurring_str: recurring_str = "- No clearly recurring expenses detected"
+
     # Build a savings-focused prompt
-    prompt_text = f"""You are a specialized savings and investment advisor. Analyze the user's progress and provide actionable advice.
+    prompt_text = f"""You are a specialized savings and investment advisor for users in Egypt. 
 
-🎯 GOALS:
-- Monthly Savings Target: EGP {context['monthly_goal']:,.2f}
-- Current Monthly Savings: EGP {context['monthly_saved']:,.2f}
-- Monthly Savings Rate: {context['savings_rate']}%
-- Long-term Target: EGP {context['long_term_goal']['target']:,.2f} (by {context['long_term_goal']['date']})
+🎯 GOALS: 
+- Monthly Target: EGP {context['monthly_goal']:,.2f} 
+- This Month Saved: EGP {context['monthly_saved']:,.2f} 
+- Savings Rate: {context['savings_rate']}% 
+- Long-term Goal: EGP {context['long_term_goal']['target']:,.2f} (target date: {context['long_term_goal']['date']}) 
 
-💰 LIQUIDITY & ASSETS:
-- Cash Balance: EGP {context['cash_balance']:,.2f}
-- Investment Count: {context['investment_count']}
-- Asset Allocation: {json.dumps(context['asset_allocation'])}
+💰 ASSETS: 
+- Cash in Savings: EGP {context['cash_balance']:,.2f} 
+- Investments: {context['investment_count']} positions 
+- Allocation: {json.dumps(context['asset_allocation'])} 
 
-📈 MARKET TRENDS:
-- Income Change: {context['market_context']['income_change']:+.1f}%
-- Expense Change: {context['market_context']['expense_change']:+.1f}%
+📈 TRENDS: 
+- Income change: {context['market_context']['income_change']:+.1f}% 
+- Expense change: {context['market_context']['expense_change']:+.1f}% 
 
-PROVIDE A CONCISE ANALYSIS (150-200 words max):
-1. **Savings Performance** (2 sentences) - How close are they to their monthly goal?
-2. **Wealth Building** (2 sentences) - Analysis of their cash vs investments.
-3. **Strategic Advice** (2 bullet points) - Specific steps to reach the long-term goal faster.
+🔄 RECURRING OBLIGATIONS (Impact on Savings):
+{recurring_str}
 
-Be professional, data-driven, and encouraging. Use 1-2 emojis."""
+RULES: 
+- Always use EGP. 
+- Many Egyptians prefer gold or USD holdings over pure cash for long-term value. 
+- Typical middle-income Cairo savings rate benchmark: 10–20%. 
+- If long-term goal is < 24 months away and progress < 40%, treat it as urgent. 
+
+Structure your answer exactly like this (150–220 words max): 
+1. Savings Performance (2 sentences) — closeness to monthly goal + benchmark comparison 
+2. Wealth Building (2 sentences) — cash vs investments balance + gold/USD comment if relevant 
+3. Strategic Advice (exactly 2 bullet points) — concrete, numbered steps to accelerate long-term goal 
+
+Be professional, data-driven, encouraging but honest. Use 1–2 emojis max."""
 
     # Re-use the same model selection logic as the dashboard
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -1747,13 +1818,18 @@ async def generate_ai_summary(
     if context["current_month"]["transaction_count"] == 0:
         return {"summary": "You haven't added any transactions yet for this month! Start tracking to get AI insights."}
     
+    # Prepare Recurring String
+    recurring_candidates = context.get('recurring_candidates', [])
+    recurring_str = "\n".join([f"- {item}" for item in recurring_candidates])
+    if not recurring_str: recurring_str = "- No clearly recurring expenses detected"
+
     # Build comprehensive prompt
     prompt_text = f"""You are a professional financial advisor analyzing a user's finances. Provide a comprehensive but concise analysis.
 
 📊 CURRENT MONTH ({month}/{year}):
-- Income: ${context['current_month']['income']:,.2f}
-- Expenses: ${context['current_month']['expenses']:,.2f}
-- Net Savings: ${context['current_month']['savings']:,.2f}
+- Income: EGP {context['current_month']['income']:,.2f}
+- Expenses: EGP {context['current_month']['expenses']:,.2f}
+- Net Savings: EGP {context['current_month']['savings']:,.2f}
 - Savings Rate: {context['current_month']['savings_rate']}%
 - Transactions: {context['current_month']['transaction_count']}
 
@@ -1763,16 +1839,19 @@ async def generate_ai_summary(
 - Savings: {context['trends']['savings_change']:+.1f}%
 
 💰 TOP SPENDING CATEGORIES:
-{chr(10).join([f"- {cat['name']}: ${cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown'][:5]])}
+{chr(10).join([f"- {cat['name']}: EGP {cat['amount']:,.2f} ({cat['percent']:.1f}%)" for cat in context['category_breakdown'][:5]])}
+
+🔄 POSSIBLE RECURRING EXPENSES (last 3 months):
+{recurring_str}
 
 🔥 BIGGEST CATEGORY CHANGES (vs Last Month):
-{chr(10).join([f"- {cat['category']}: {cat['change_percent']:+.1f}% (${cat['current']:,.2f} now vs ${cat['previous']:,.2f} before)" for cat in context['category_changes'][:3]])}
+{chr(10).join([f"- {cat['category']}: {cat['change_percent']:+.1f}% (EGP {cat['current']:,.2f} now vs EGP {cat['previous']:,.2f} before)" for cat in context['category_changes'][:3]])}
 
-{'🎯 BUDGET STATUS:' if context['budget_status'] else ''}
-{chr(10).join([f"- {b['category']}: ${b['spent']:,.2f} / ${b['budgeted']:,.2f} ({b['percentage']:.1f}%) - {'⚠️ OVER BUDGET' if b['status'] == 'over' else '✅ On Track' if b['status'] == 'on_track' else '✅ Good'}" for b in context['budget_status']]) if context['budget_status'] else ''}
+{'🎯 BUDGET STATUS:' if context['budget_status'] else '🎯 BUDGET STATUS: No budgets defined this month.'}
+{chr(10).join([f"- {b['category']}: EGP {b['spent']:,.2f} / EGP {b['budgeted']:,.2f} ({b['percentage']:.1f}%) - {'⚠️ OVER BUDGET' if b['status'] == 'over' else '✅ On Track' if b['status'] == 'on_track' else '✅ Good'}" for b in context['budget_status']]) if context['budget_status'] else ''}
 
 🚨 LARGEST EXPENSES:
-{chr(10).join([f"- ${exp['amount']:,.2f} - {exp['description']} ({exp['category']}) on {exp['date']}" for exp in context['unusual_expenses'][:3]])}
+{chr(10).join([f"- EGP {exp['amount']:,.2f} - {exp['description']} ({exp['category']}) on {exp['date']}" for exp in context['unusual_expenses'][:3]])}
 
 📊 SPENDING FREQUENCY:
 {chr(10).join([f"- {cat}: {count} transactions" for cat, count in sorted(context['transaction_frequency'].items(), key=lambda x: x[1], reverse=True)[:3]])}
@@ -1780,8 +1859,8 @@ async def generate_ai_summary(
 PROVIDE A CONCISE ANALYSIS (150-250 words max):
 1. **Financial Health** (1-2 sentences) - Savings rate assessment
 2. **Key Win** (1 sentence) - One main achievement
-3. **Budget Performance** (2-4 sentences) - MUST list categories with budgets. Explicitly state which are OVER budget and which are UNDER/ON TRACK with specific numbers (e.g., "Food: $500 budget, $600 spent - OVER by $100").
-4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending.
+3. **Budget Performance** (2-4 sentences) - ALWAYS include this. If no budgets exist, suggest setting them. If budgets exist, explicitly state which are OVER.
+4. **Top 2 Actions** (2 bullet points) - Specific, actionable steps to save money or optimize spending (check recurring expenses!).
 
 Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep it SHORT but DETAILED regarding budgets."""
 
@@ -1910,6 +1989,7 @@ def construct_financial_system_prompt(ctx: Dict[str, Any], year: int, month: int
     all_time = ctx.get("all_time") or {}
     summary = ctx.get("summary", {})
     current = summary.get("current_month", {})
+    trends = summary.get("trends", {})
     
     # Calculate derived values safely
     goals = all_time.get('goals', [])
@@ -1921,10 +2001,10 @@ def construct_financial_system_prompt(ctx: Dict[str, Any], year: int, month: int
     total_invested = sum(i.get('amount', 0) for i in investments)
     
     # Format lists for prompt
-    goals_list = "\n    ".join([f"- {g.get('name', 'Goal')}: Target ${g.get('target', 0):,.2f} (by {g.get('date', 'N/A')})" for g in goals[:10]])
+    goals_list = "\n    ".join([f"- {g.get('name', 'Goal')}: Target EGP {g.get('target', 0):,.2f} (by {g.get('date', 'N/A')})" for g in goals[:10]])
     if not goals_list: goals_list = "- No active savings goals"
 
-    investments_list = "\n    ".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units (bought at ${i.get('buy_price', 0):,.2f})" for i in investments[:10]])
+    investments_list = "\n    ".join([f"- {i.get('type', 'Asset')}: {i.get('amount', 0)} units (bought at EGP {i.get('buy_price', 0):,.2f})" for i in investments[:10]])
     if not investments_list: investments_list = "- No active investments"
 
     # NEW DATA: Shopping List, Inventory, Budgets
@@ -1936,44 +2016,112 @@ def construct_financial_system_prompt(ctx: Dict[str, Any], year: int, month: int
     inventory_str = "\n    ".join([f"- {item.get('name', 'Item')} (Qty: {item.get('quantity', 1)})" for item in inventory_data[:15]])
     if not inventory_str: inventory_str = "- No inventory items"
     
-    budgets_data = all_time.get('budgets', [])
-    budgets_str = "\n    ".join([f"- {b.get('category', 'Category')}: ${b.get('amount', 0):,.2f} (Month: {b.get('month')}/{b.get('year')})" for b in budgets_data[:10]])
-    if not budgets_str: budgets_str = "- No active budgets"
+    # Get current month budgets from ctx
+    current_budgets = ctx.get('budgets', [])
+    current_budgets_str = "\n    ".join([f"- {b.get('category', 'Category')}: Limit EGP {b.get('amount', 0):,.2f}" for b in current_budgets])
+    if not current_budgets_str: current_budgets_str = "- No active budgets for this month"
 
-    system_prompt = f"""You are a financial assistant with access to the user's entire financial history.
-    
-    📊 ALL-TIME FINANCIAL OVERVIEW:
-    - Total Income: ${{all_time.get('overview', {{}}).get('total_income', 0):,.2f}}
-    - Total Expenses: ${{all_time.get('overview', {{}}).get('total_expenses', 0):,.2f}}
-    - Net Worth (Approx): ${{all_time.get('overview', {{}}).get('net_savings', 0):,.2f}}
-    - Total Transactions: {{all_time.get('overview', {{}}).get('transaction_count', 0)}}
-    
-    🎯 SAVINGS GOALS:
-    {{goals_list}}
+    # Get category breakdown for spending context
+    category_breakdown = summary.get('category_breakdown', [])
+    top_spending_str = "\n    ".join([f"- {c.get('name')}: EGP {c.get('amount', 0):,.2f} ({c.get('percent', 0):.1f}%)" for c in category_breakdown[:10]])
+    if not top_spending_str: top_spending_str = "- No spending data available"
 
-    📈 INVESTMENTS:
-    {{investments_list}}
-    - Total Invested Value: ${{total_invested:,.2f}}
+    # RECURRING EXPENSES
+    recurring_candidates = summary.get('recurring_candidates', [])
+    recurring_str = "\n    ".join([f"- {item}" for item in recurring_candidates])
+    if not recurring_str: recurring_str = "- No clearly recurring expenses detected"
 
-    🛒 SHOPPING LIST:
-    {{shopping_list_str}}
-    
-    📦 INVENTORY:
-    {{inventory_str}}
-    
-    💰 BUDGETS:
-    {{budgets_str}}
+    system_prompt = f"""You are a very experienced, direct and numbers-oriented personal finance coach for people living in Egypt. 
+ Your communication style is warm but professional, encouraging yet honest — never sugar-coating dangerous financial patterns. 
+ 
+ You ALWAYS follow this exact structure in every answer (unless the user explicitly asks for something else): 
+ 
+ 1. Financial Health Snapshot (2–3 sentences max) 
+    - Current month savings rate + net flow 
+    - Quick comment on whether the situation is improving / stable / deteriorating vs last month 
+    - One sentence on long-term picture (net worth trend / goal progress) 
+ 
+ 2. Budget Performance & Red Flags (ALWAYS include this section — even if no budgets exist this month) 
+    - If no budgets are set this month: write exactly: 'No budgets defined this month — consider setting category limits to gain better control and protect your savings rate.' 
+    - If budgets exist: list EVERY one in format: 'Category: EGP spent / EGP budgeted (X%) → STATUS' 
+    - STATUS must be one of: ⚠️ OVER BUDGET, 🚨 DANGEROUSLY OVER, ✅ On Track, 🟢 Under Budget 
+    - When over budget: ALWAYS write how much over (in EGP and %) + short consequence 
+    - Highlight the 1–2 most concerning items first 
+ 
+ 3. Biggest Wins This Month (1 sentence) 
+    - Choose ONE genuine positive highlight (can be from current month or trend) 
+ 
+ 4. Most Important Warning / Risk (1 sentence) 
+    - If anything looks worrying (recurring overspend, savings rate < 10%, big negative change) say it clearly 
+ 
+ 5. Top 2–3 Concrete Actions (numbered list) 
+    - Very specific, realistic, Egypt-context-aware suggestions 
+    - Include numbers whenever possible ("cut coffee from 1200 to 500 EGP") 
+    - Prioritize highest-leverage actions first (biggest overspend category, recurring subscriptions, savings rate) 
+ 
+ Additional strict rules you MUST follow: 
+ 
+ • Always speak in EGP (never just $) 
+ • Be very aware of Egyptian reality: gold & USD are common savings vehicles, Ramadan & Eid cause predictable spikes, transportation & food delivery are frequent categories 
+ • When you see similar merchants/amounts in the last 3+ months → call them out as possible recurring expenses/subscriptions 
+ • If savings rate < 8% → treat it as urgent (use stronger language) 
+ • If any budget category > 110% → call it a "red flag" or "dangerous pattern" 
+ • Never invent numbers — only use the data provided in the context 
+ • Keep total answer length 180–320 words (concise but detailed on budgets) 
+ • Use at most 3–4 emojis in the whole answer 
+ • If almost no transactions this month → say so honestly and encourage adding data 
+ 
+ Current context data will be provided in every request (current month, previous month comparison, budgets, top categories, unusual expenses, goals, etc.). 
+ Use ALL relevant numbers from the context — do NOT generalize. 
+ 
+ You exist to help the user build wealth safely and realistically in Egypt — not to make them feel good at the cost of truth.
 
-    📅 CURRENT MONTH ({{year}}-{{month:02d}}) STATUS:
-    - Income: ${{current.get('total_income', 0):,.2f}}
-    - Expenses: ${{current.get('total_expenses', 0):,.2f}}
-    - Savings Rate: {{summary.get('savings_rate', 0)}}%
+ =================================================
+ FINANCIAL CONTEXT DATA
+ =================================================
+ 
+ 📅 CURRENT MONTH ({year}-{month:02d}) STATUS:
+ - Income: EGP {current.get('total_income', 0):,.2f}
+ - Expenses: EGP {current.get('total_expenses', 0):,.2f}
+ - Net Savings: EGP {current.get('savings', 0):,.2f}
+ - Savings Rate: {summary.get('savings_rate', 0)}%
+ - Transaction Count: {current.get('transaction_count', 0)}
+ 
+ 📈 TRENDS (vs Last Month):
+ - Income Change: {trends.get('income_change', 0):+.1f}%
+ - Expense Change: {trends.get('expense_change', 0):+.1f}%
+ - Savings Change: {trends.get('savings_change', 0):+.1f}%
+
+ 💰 BUDGET LIMITS (Current Month):
+ {current_budgets_str}
+
+ 🔄 POSSIBLE RECURRING EXPENSES (last 3 months):
+ {recurring_str}
+
+ 💸 SPENDING BY CATEGORY (Actuals):
+ {top_spending_str}
+ 
+ 📊 ALL-TIME FINANCIAL OVERVIEW:
+ - Total Income: EGP {all_time.get('overview', {}).get('total_income', 0):,.2f}
+ - Total Expenses: EGP {all_time.get('overview', {}).get('total_expenses', 0):,.2f}
+ - Net Worth (Approx): EGP {all_time.get('overview', {}).get('net_savings', 0):,.2f}
+ - Total Transactions: {all_time.get('overview', {}).get('transaction_count', 0)}
+ 
+ 🎯 SAVINGS GOALS:
+ {goals_list}
+
+ 📈 INVESTMENTS:
+ {investments_list}
+ - Total Invested Value: EGP {total_invested:,.2f}
+
+ 🛒 SHOPPING LIST:
+ {shopping_list_str}
+ 
+ 📦 INVENTORY:
+ {inventory_str}
     
-    Answer the user's question using this comprehensive data. Be specific, concise, and helpful.
-    If the user asks about "total" or "history", use the All-Time data.
-    If the user asks about "this month" or "recent", use the Current Month data.
-    If the user asks about shopping or inventory, use the respective lists.
-    """
+ Answer the user's question using this comprehensive data. Be specific, concise, and helpful.
+ """
     return system_prompt
 
 async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int, month: int, question: str):
@@ -4007,17 +4155,17 @@ def generate_report(
             random.shuffle(MODELS)
             
             # Build context for report AI
-            spending_text = "\n".join([f"- {c['name']}: ${c['amount']:.2f} ({c['percent']:.1f}%)" for c in cats[:5]])
+            spending_text = "\n".join([f"- {c['name']}: EGP {c['amount']:.2f} ({c['percent']:.1f}%)" for c in cats[:5]])
             budget_text = ""
             if bs:
-                budget_text = "\n".join([f"- {b['category']}: ${b['actual']:.2f} / ${b['budget']:.2f} ({'⚠️ OVER' if b['status'] == 'Over' else '✅ OK'})" for b in bs])
+                budget_text = "\n".join([f"- {b['category']}: EGP {b['actual']:.2f} / EGP {b['budget']:.2f} ({'⚠️ OVER' if b['status'] == 'Over' else '✅ OK'})" for b in bs])
             
             prompt_text = f"""You are a professional financial advisor. Analyze this data for {start.strftime('%B %Y')}:
 
 📊 SUMMARY:
-- Income: ${summary['income']:.2f}
-- Expenses: ${summary['expenses']:.2f}
-- Savings: ${summary['net']:.2f}
+- Income: EGP {summary['income']:.2f}
+- Expenses: EGP {summary['expenses']:.2f}
+- Savings: EGP {summary['net']:.2f}
 - Savings Rate: {summary['savings_rate']:.1f}%
 
 💰 TOP SPENDING:

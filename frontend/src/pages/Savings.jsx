@@ -1336,7 +1336,7 @@ export default function Savings() {
           <Card animate={false} className={`relative overflow-hidden rounded-[2.5rem] border-2 mb-12 animate-in fade-in slide-in-from-top-4 duration-700 ${
             isDark
               ? 'border-blue-500/20 bg-gradient-to-br from-blue-600/20 via-[#0a1837] to-[#0a0e27]'
-              : 'border-blue-200 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700'
+              : 'border-blue-100 bg-gradient-to-br from-white via-blue-50 to-indigo-50 shadow-xl shadow-blue-500/5'
           }`}>
             <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-[90px]" />
             <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-cyan-300/20 blur-[100px]" />
@@ -1344,13 +1344,13 @@ export default function Savings() {
             <div className="relative z-10 p-8 md:p-12">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 mb-10">
                 <div>
-                  <h1 className="text-header-unified !text-white flex items-center gap-4">
-                    <div className="p-3 bg-white/15 rounded-2xl border border-white/20 backdrop-blur-md">
-                      <Landmark className="w-8 h-8 text-white" />
+                  <h1 className={`text-header-unified flex items-center gap-4 ${isDark ? '!text-white' : '!text-slate-900'}`}>
+                    <div className={`p-3 rounded-2xl border backdrop-blur-md ${isDark ? 'bg-white/15 border-white/20' : 'bg-blue-600/10 border-blue-200'}`}>
+                      <Landmark className={`w-8 h-8 ${isDark ? 'text-white' : 'text-blue-600'}`} />
                     </div>
                     Savings Vault
                   </h1>
-                  <p className="mt-3 text-lg font-medium text-blue-100">
+                  <p className={`mt-3 text-lg font-medium ${isDark ? 'text-blue-100' : 'text-slate-500'}`}>
                     Manage your financial future, investments, and long-term goals.
                   </p>
                 </div>
@@ -1361,13 +1361,21 @@ export default function Savings() {
                     size="md"
                     onClick={loadAll}
                     title="Refresh Vault Data"
-                    className="p-4 rounded-2xl transition-all bg-white/10 hover:bg-white/20 border border-white/20 shadow-sm group"
+                    className={`p-4 rounded-2xl transition-all shadow-sm group border ${
+                      isDark 
+                        ? 'bg-white/10 hover:bg-white/20 border-white/20' 
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
                   >
-                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500 text-white`} />
+                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500 ${isDark ? 'text-white' : 'text-slate-600'}`} />
                   </Button>
                   <Button 
                     variant="primary"
-                    className="!px-8 !bg-white !text-blue-700 hover:!bg-blue-50 relative overflow-hidden group border-none" 
+                    className={`!px-8 relative overflow-hidden group border-none ${
+                      isDark 
+                        ? '!bg-white !text-blue-700 hover:!bg-blue-50' 
+                        : '!bg-blue-600 !text-white hover:!bg-blue-700'
+                    }`}
                     onClick={() => {
                       if (showInvestmentForm) {
                         handleFormClose();
@@ -1383,26 +1391,28 @@ export default function Savings() {
               </div>
 
               <div className="mb-10">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/90 mb-2">
+                <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-2 ${isDark ? 'text-blue-100/90' : 'text-slate-500'}`}>
                   Total Net Worth
                 </p>
                 <h2 
                   className={`text-[3rem] md:text-[5rem] leading-none font-black tracking-tight tabular-nums drop-shadow-[0_8px_30px_rgba(0,0,0,0.25)] cursor-help transition-all duration-300 ${
-                    portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-white'
+                    isDark 
+                      ? (portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-white')
+                      : (portfolioProfit > 0 ? 'text-emerald-600' : portfolioProfit < 0 ? 'text-rose-600' : 'text-slate-900')
                   }`}
                   title={portfolioReasoning}
                 >
                   {fmt(animatedNetWorth)}
                 </h2>
                 <div className="flex items-center gap-3 mt-2">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100/80">
+                  <p className={`text-xs font-bold uppercase tracking-[0.2em] ${isDark ? 'text-blue-100/80' : 'text-slate-500'}`}>
                     Live Vault + Portfolio Value
                   </p>
                   {investments.length > 0 && (
                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border backdrop-blur-md ${
                       portfolioProfit >= 0 
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                        : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                        ? (isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-100 border-emerald-200 text-emerald-700')
+                        : (isDark ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-rose-100 border-rose-200 text-rose-700')
                     }`}>
                       {portfolioProfit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                       <span className="text-[10px] font-black tabular-nums">
@@ -1411,14 +1421,22 @@ export default function Savings() {
                     </div>
                   )}
                 </div>
-                <span className="mt-4 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-blue-50 backdrop-blur-sm">
+                <span className={`mt-4 inline-flex items-center rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] backdrop-blur-sm ${
+                  isDark 
+                    ? 'border-white/20 bg-white/10 text-blue-50' 
+                    : 'border-blue-200 bg-blue-50 text-blue-700'
+                }`}>
                   Live count on page load
                 </span>
                 
                 {investments.length > 0 && (
                   <div className="mt-3 animate-in fade-in slide-in-from-left-4 duration-700">
                     <p className={`text-[9px] font-black uppercase tracking-[0.15em] flex items-center gap-2 ${
-                      portfolioProfit > 0 ? 'text-emerald-400' : portfolioProfit < 0 ? 'text-rose-400' : 'text-blue-100/60'
+                      portfolioProfit > 0 
+                        ? (isDark ? 'text-emerald-400' : 'text-emerald-600')
+                        : portfolioProfit < 0 
+                          ? (isDark ? 'text-rose-400' : 'text-rose-600')
+                          : (isDark ? 'text-blue-100/60' : 'text-slate-400')
                     }`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                       <span className="opacity-70">{portfolioProfit > 0 ? 'PROFIT: ' : portfolioProfit < 0 ? 'LOSS: ' : 'STABLE: '}</span>
@@ -1429,17 +1447,17 @@ export default function Savings() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="!p-4 !bg-white/10 !border-white/20 backdrop-blur-md">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-100/80">Vault Cash</p>
-                  <p className="text-lg font-black text-white">{fmt(savings?.cash_balance || 0)}</p>
+                <Card className={`!p-4 backdrop-blur-md ${isDark ? '!bg-white/10 !border-white/20' : '!bg-white/60 !border-blue-100 shadow-sm'}`}>
+                  <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-100/80' : 'text-slate-500'}`}>Vault Cash</p>
+                  <p className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(savings?.cash_balance || 0)}</p>
                 </Card>
-                <Card className="!p-4 !bg-white/10 !border-white/20 backdrop-blur-md">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-100/80">Investments</p>
-                  <p className="text-lg font-black text-white">{fmt(totalInvestmentsValue)}</p>
+                <Card className={`!p-4 backdrop-blur-md ${isDark ? '!bg-white/10 !border-white/20' : '!bg-white/60 !border-blue-100 shadow-sm'}`}>
+                  <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-100/80' : 'text-slate-500'}`}>Investments</p>
+                  <p className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{fmt(totalInvestmentsValue)}</p>
                 </Card>
-                <Card className="!p-4 !bg-white/10 !border-white/20 backdrop-blur-md">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-100/80">Monthly Goal</p>
-                  <p className="text-lg font-black text-white">{Math.round(monthlyProgress)}%</p>
+                <Card className={`!p-4 backdrop-blur-md ${isDark ? '!bg-white/10 !border-white/20' : '!bg-white/60 !border-blue-100 shadow-sm'}`}>
+                  <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-blue-100/80' : 'text-slate-500'}`}>Monthly Goal</p>
+                  <p className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{Math.round(monthlyProgress)}%</p>
                 </Card>
               </div>
             </div>

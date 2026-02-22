@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { getModelInfo } from '../pages/DashboardUtils';
 import { askAIQuestion } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -278,17 +279,40 @@ export default function GlobalChatWidget() {
                   </div>
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
                 </div>
-                <div className="flex flex-col">
-                  <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <div className="flex flex-col justify-center min-w-0">
+                  <span className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     Finance AI
                   </span>
-                  <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {isLoading && tryingModel 
-                      ? `Trying ${tryingModel}...` 
-                      : isLoading 
-                        ? 'Typing...' 
-                        : 'Online'}
-                  </span>
+                  <div className={`text-xs flex items-center gap-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {isLoading ? (
+                      tryingModel ? (
+                        (() => {
+                          const info = getModelInfo(tryingModel);
+                          return (
+                            <div className="flex items-center gap-1.5 animate-pulse">
+                              {info.logo.startsWith('http') ? (
+                                <img 
+                                  src={info.logo} 
+                                  alt={info.name} 
+                                  className="w-3.5 h-3.5 object-contain"
+                                />
+                              ) : (
+                                <span className="text-xs">{info.logo}</span>
+                              )}
+                              <span className="font-medium">{info.name}</span>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        'Typing...'
+                      )
+                    ) : (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Online
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-1">
