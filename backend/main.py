@@ -264,6 +264,26 @@ class InvestmentCreate(BaseModel):
     amount: float
     buy_price: float | None = None
     buy_date: str | None = None  # Format: "2026-01-15"
+    
+    @validator('type')
+    def validate_type(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Investment type cannot be empty')
+        return sanitize_string(str(v), max_length=20)
+    
+    @validator('amount')
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError('Investment amount must be positive')
+        if v > 999999:
+            raise ValueError('Investment amount is too large')
+        return v
+    
+    @validator('buy_price')
+    def validate_buy_price(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('Buy price must be positive if provided')
+        return v
 
 class SavingsGoalUpdate(BaseModel):
     monthly_goal: float
@@ -271,6 +291,22 @@ class SavingsGoalUpdate(BaseModel):
 class SavingsGoalLongTerm(BaseModel):
     target_amount: float
     target_date: str
+    
+    @validator('target_amount')
+    def validate_target_amount(cls, v):
+        if v <= 0:
+            raise ValueError('Target amount must be positive')
+        if v > 999999999:
+            raise ValueError('Target amount is too large')
+        return v
+    
+    @validator('target_date')
+    def validate_target_date(cls, v):
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError('Target date must be in YYYY-MM-DD format')
+        return v
 
 class ShoppingStatePayload(BaseModel):
     inventory_items: List[Dict[str, Any]] = []
@@ -1453,9 +1489,15 @@ Be direct, encouraging, and specific with numbers. Use 2-3 emojis maximum. Keep 
                     result = response.json()
                     if 'choices' in result and len(result['choices']) > 0:
                         summary = result['choices'][0]['message']['content']
-                        # Send success event
-                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
-                        return
+                        # Check if summary is empty or whitespace-only
+                        if summary and summary.strip():
+                            # Send success event
+                            yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                            return
+                        else:
+                            print(f"⚠️ Model {model_id} returned empty/whitespace summary: {result}")
+                            yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_answer'})}\n\n"
+                            continue
                     else:
                         print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
                         yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_response'})}\n\n"
@@ -1503,14 +1545,15 @@ async def ai_progress_stream(
     """Server-Sent Events endpoint for real-time AI model progress"""
     print(f"🎯 SSE REQUEST RECEIVED: year={year}, month={month}, token_provided={bool(token or (authorization and authorization.credentials))}")
 
-    try:
-        user = get_current_user(request, authorization, token, db)
-        print(f"✅ SSE: Authenticated user {user.id}")
-    except Exception as e:
-        print(f"❌ SSE: Authentication failed: {e}")
-        return {"error": "Authentication failed"}
-
     async def safe_generator():
+        try:
+            user = get_current_user(request, authorization, token, db)
+            print(f"✅ SSE: Authenticated user {user.id}")
+        except Exception as e:
+            print(f"❌ SSE: Authentication failed: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Authentication failed. Please log in again.'})}\n\n"
+            return
+        
         try:
             async for event in create_ai_progress_generator(db, user.id, year, month):
                 yield event
@@ -1629,9 +1672,15 @@ Tone: professional, data-driven, encouraging but honest. Use 1–2 emojis maximu
                     result = response.json()
                     if 'choices' in result and len(result['choices']) > 0:
                         summary = result['choices'][0]['message']['content']
-                        # Send success event
-                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
-                        return
+                        # Check if summary is empty or whitespace-only
+                        if summary and summary.strip():
+                            # Send success event
+                            yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'summary': summary, 'context': context})}\n\n"
+                            return
+                        else:
+                            print(f"⚠️ Model {model_id} returned empty/whitespace summary: {result}")
+                            yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_answer'})}\n\n"
+                            continue
                     else:
                         print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
                         yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_response'})}\n\n"
@@ -1670,12 +1719,13 @@ async def ai_savings_progress_stream(
     db: Session = Depends(get_db)
 ):
     """Server-Sent Events endpoint for real-time Savings AI model progress"""
-    try:
-        user = get_current_user(request, authorization, token, db)
-    except Exception:
-        return {"error": "Authentication failed"}
-
     async def safe_generator():
+        try:
+            user = get_current_user(request, authorization, token, db)
+        except Exception:
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Authentication failed. Please log in again.'})}\n\n"
+            return
+        
         try:
             async for event in create_savings_ai_progress_generator(db, user.id):
                 yield event
@@ -2177,8 +2227,14 @@ async def create_ai_chat_progress_generator(db: Session, user_id: int, year: int
                     result = response.json()
                     if 'choices' in result and len(result['choices']) > 0:
                         answer = result["choices"][0]["message"]["content"]
-                        yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'answer': answer})}\n\n"
-                        return
+                        # Check if answer is empty or whitespace-only
+                        if answer and answer.strip():
+                            yield f"data: {json.dumps({'type': 'success', 'model': model_id, 'answer': answer})}\n\n"
+                            return
+                        else:
+                            print(f"⚠️ Model {model_id} returned empty/whitespace answer: {result}")
+                            yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_answer'})}\n\n"
+                            continue
                     else:
                         print(f"⚠️ Model {model_id} returned 200 but no choices: {result}")
                         yield f"data: {json.dumps({'type': 'model_failed', 'model': model_id, 'reason': 'empty_response'})}\n\n"
@@ -2218,11 +2274,13 @@ async def ai_chat_progress_stream(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    try:
-        user = get_current_user(request, authorization, token, db)
-    except Exception:
-        return {"error": "Authentication failed"}
     async def safe_generator():
+        try:
+            user = get_current_user(request, authorization, token, db)
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Authentication failed. Please log in again.'})}\n\n"
+            return
+        
         try:
             async for event in create_ai_chat_progress_generator(db, user.id, year, month, question):
                 yield event
@@ -2923,6 +2981,32 @@ class BudgetCreate(BaseModel):
     amount: float
     month: int
     year: int
+    
+    @validator('category_id')
+    def validate_category_id(cls, v):
+        if v <= 0:
+            raise ValueError('Category ID must be positive')
+        return v
+    
+    @validator('amount')
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError('Budget amount must be positive')
+        if v > 999999999:
+            raise ValueError('Budget amount is too large')
+        return v
+    
+    @validator('month')
+    def validate_month(cls, v):
+        if v < 1 or v > 12:
+            raise ValueError('Month must be between 1 and 12')
+        return v
+    
+    @validator('year')
+    def validate_year(cls, v):
+        if v < 2000 or v > 2100:
+            raise ValueError('Year must be between 2000 and 2100')
+        return v
 
 class GoalCreate(BaseModel):
     name: str
@@ -2930,6 +3014,36 @@ class GoalCreate(BaseModel):
     current_amount: float = 0.0
     target_date: str
     category_ids: List[int] = []
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Goal name cannot be empty')
+        return sanitize_string(str(v), max_length=100)
+    
+    @validator('target_amount')
+    def validate_target_amount(cls, v):
+        if v <= 0:
+            raise ValueError('Target amount must be positive')
+        if v > 999999999:
+            raise ValueError('Target amount is too large')
+        return v
+    
+    @validator('current_amount')
+    def validate_current_amount(cls, v):
+        if v < 0:
+            raise ValueError('Current amount cannot be negative')
+        if v > 999999999:
+            raise ValueError('Current amount is too large')
+        return v
+    
+    @validator('target_date')
+    def validate_target_date(cls, v):
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError('Target date must be in YYYY-MM-DD format')
+        return v
 
 class GoalUpdate(BaseModel):
     name: Optional[str] = None
@@ -2937,6 +3051,41 @@ class GoalUpdate(BaseModel):
     current_amount: Optional[float] = None
     target_date: Optional[str] = None
     category_ids: Optional[List[int]] = None
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None:
+            if not v or not v.strip():
+                raise ValueError('Goal name cannot be empty')
+            return sanitize_string(str(v), max_length=100)
+        return v
+    
+    @validator('target_amount')
+    def validate_target_amount(cls, v):
+        if v is not None:
+            if v <= 0:
+                raise ValueError('Target amount must be positive')
+            if v > 999999999:
+                raise ValueError('Target amount is too large')
+        return v
+    
+    @validator('current_amount')
+    def validate_current_amount(cls, v):
+        if v is not None:
+            if v < 0:
+                raise ValueError('Current amount cannot be negative')
+            if v > 999999999:
+                raise ValueError('Current amount is too large')
+        return v
+    
+    @validator('target_date')
+    def validate_target_date(cls, v):
+        if v is not None:
+            try:
+                datetime.strptime(v, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError('Target date must be in YYYY-MM-DD format')
+        return v
 
 @app.get("/budgets")
 def get_budgets(

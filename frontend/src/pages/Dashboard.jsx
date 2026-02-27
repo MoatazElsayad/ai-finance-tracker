@@ -184,10 +184,13 @@ function Dashboard() {
 
       const fallbackToRegularChat = async () => {
         try {
+          console.log('[ChatWidget Fallback] Calling non-streaming /ai/chat endpoint');
           const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, question);
+          console.log('[ChatWidget Fallback] Got response:', result);
           setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: result.answer }]);
           setChatWidgetModelUsed(result.model_used || null);
-        } catch {
+        } catch (err) {
+          console.error('[ChatWidget Fallback Error]', err);
           setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: 'Unable to connect to AI services. Please try again later.' }]);
         } finally {
           setChatWidgetLoading(false);
@@ -199,6 +202,7 @@ function Dashboard() {
         clearTimeout(timeout);
         try {
           const data = JSON.parse(event.data);
+          console.log('[ChatWidget SSE Event]', data.type, data);
           switch (data.type) {
             case 'trying_model':
               setChatWidgetTryingModel(data.model);
@@ -210,17 +214,22 @@ function Dashboard() {
               eventSource.close();
               break;
             case 'error':
+              console.error('[ChatWidget Error]', data.message);
               setChatWidgetMessages(prev => [...prev, { role: 'assistant', text: `All Models Busy\n\n${data.message}\n\nPlease try again in a few minutes.` }]);
               setChatWidgetLoading(false);
               eventSource.close();
               break;
           }
-        } catch {}
+        } catch (e) {
+          console.error('[ChatWidget Parse Error]', e, 'Raw event data:', event.data);
+        }
       };
 
       eventSource.onerror = () => {
+        console.error('[ChatWidget EventSource Error]', 'Failed to receive stream');
         clearTimeout(timeout);
         if (!hasReceivedMessage) {
+          console.log('[ChatWidget Fallback] Falling back to non-streaming API');
           fallbackToRegularChat();
         } else {
           setChatWidgetLoading(false);
@@ -403,10 +412,13 @@ function Dashboard() {
 
       const fallbackToRegularAPI = async () => {
         try {
+          console.log('[AI Summary Fallback] Calling non-streaming /ai/summary endpoint');
           const result = await generateAISummary(selectedMonth.year, selectedMonth.month);
+          console.log('[AI Summary Fallback] Got response:', result);
           setAiSummary(result.summary);
           setAiModelUsed(result.model_used || null);
         } catch (fallbackError) {
+          console.error('[AI Summary Fallback Error]', fallbackError);
           alert(fallbackError.message);
         } finally {
           setAiLoading(false);
@@ -418,6 +430,7 @@ function Dashboard() {
         clearTimeout(timeout);
         try {
           const data = JSON.parse(event.data);
+          console.log('[AI Summary SSE Event]', data.type, data);
           switch (data.type) {
             case 'trying_model':
               setCurrentTryingModel(data.model);
@@ -433,17 +446,22 @@ function Dashboard() {
               setCurrentTryingModel(`Failed: ${data.model}. Trying next...`);
               break;
             case 'error':
+              console.error('[AI Summary Error]', data.message);
               setAiSummary(`**All Models Busy**\n\n${data.message || 'The AI service is currently experiencing high traffic.'}\n\nPlease try again in a few minutes.`);
               setAiLoading(false);
               eventSource.close();
               break;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('[AI Summary Parse Error]', e, 'Raw event data:', event.data);
+        }
       };
 
       eventSource.onerror = () => {
+        console.error('[AI Summary EventSource Error]', 'Failed to receive stream');
         clearTimeout(timeout);
         if (!hasReceivedMessage) {
+          console.log('[AI Summary Fallback] Falling back to non-streaming API');
           fallbackToRegularAPI();
         } else {
           setAiLoading(false);
@@ -495,10 +513,13 @@ function Dashboard() {
 
       const fallbackToRegularChat = async () => {
         try {
+          console.log('[Chat Fallback] Calling non-streaming /ai/chat endpoint');
           const result = await askAIQuestion(selectedMonth.year, selectedMonth.month, question);
+          console.log('[Chat Fallback] Got response:', result);
           setChatMessages(prev => [...prev, { role: 'assistant', text: result.answer }]);
           setChatModelUsed(result.model_used || null);
         } catch (err) {
+          console.error('[Chat Fallback Error]', err);
           setChatMessages(prev => [...prev, { role: 'assistant', text: 'Unable to connect to AI services. Please try again later.' }]);
         } finally {
           setChatLoading(false);
@@ -510,6 +531,7 @@ function Dashboard() {
         clearTimeout(timeout);
         try {
           const data = JSON.parse(event.data);
+          console.log('[Chat SSE Event]', data.type, data);
           switch (data.type) {
             case 'trying_model':
               setChatTryingModel(data.model);
@@ -525,17 +547,22 @@ function Dashboard() {
               setChatTryingModel(`Failed: ${data.model}. Trying next...`);
               break;
             case 'error':
+              console.error('[Chat Error]', data.message);
               setChatMessages(prev => [...prev, { role: 'assistant', text: `**All AI Models Busy**\n\n${data.message || 'I am currently unable to process your request.'}\n\nPlease try again in a minute.` }]);
               setChatLoading(false);
               eventSource.close();
               break;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('[Chat Parse Error]', e, 'Raw event data:', event.data);
+        }
       };
 
       eventSource.onerror = () => {
+        console.error('[EventSource Error]', 'Failed to receive stream');
         clearTimeout(timeout);
         if (!hasReceivedMessage) {
+          console.log('[Chat Fallback] Falling back to non-streaming API');
           fallbackToRegularChat();
         } else {
           setChatLoading(false);

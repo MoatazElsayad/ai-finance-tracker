@@ -19,6 +19,11 @@ import {
   TrendingUp,
   Trash2,
   X,
+  TrendingDown,
+  Calendar,
+  DollarSign,
+  Upload,
+  BarChart3,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { Card, Button } from "../components/UI";
@@ -26,6 +31,7 @@ import { Card, Button } from "../components/UI";
 const INVENTORY_KEY = "shopping_inventory_items_v1";
 const SHOPPING_KEY = "shopping_list_items_v1";
 const SHOPPING_AI_INSIGHTS_KEY = "shopping_ai_insights_v2";
+const PRICE_HISTORY_KEY = "shopping_price_history_v1";
 
 const CATEGORIES = ["Food", "Household", "Personal Care", "Electronics", "Wishlist", "Other"];
 const UNITS = ["g", "kg", "ml", "L", "pieces", "packs", "boxes", "tubes", "bottles"];
@@ -64,7 +70,156 @@ const EMPTY_FORM = {
   priceEstimate: "",
   link: "",
   priority: "Medium",
+  priceHistory: [],
 };
+
+// Price history tracking helpers
+const addPriceHistory = (item, newPrice) => {
+  const history = item.priceHistory || [];
+  return {
+    ...item,
+    priceHistory: [
+      ...history,
+      { price: newPrice, date: new Date().toISOString() }
+    ].slice(-12) // Keep last 12 prices
+  };
+};
+
+const getAveragePriceHistory = (item) => {
+  const history = item.priceHistory || [];
+  if (history.length === 0) return item.priceEstimate || 0;
+  const sum = history.reduce((acc, h) => acc + (h.price || 0), 0);
+  return Math.round((sum / history.length) * 100) / 100;
+};
+
+const getPriceChange = (item) => {
+  const history = item.priceHistory || [];
+  if (history.length < 2) return 0;
+  const oldPrice = history[0].price;
+  const newPrice = history[history.length - 1].price;
+  return newPrice - oldPrice;
+};
+
+function ReceiptUploadModal({ open, isDark, onClose, onUploadSuccess }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = async (file) => {
+    if (!file) return;
+    setError("");
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${apiUrl}/ocr/upload-receipt`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        onUploadSuccess(data.extracted_data);
+        onClose();
+      } else {
+        setError(data.error || "Failed to process receipt");
+      }
+    } catch (err) {
+      setError(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999]">
+      <div
+        className={`absolute inset-0 ${isDark ? "bg-slate-950/85" : "bg-slate-900/65"} backdrop-blur-sm`}
+        onClick={onClose}
+      />
+      <div className="relative h-full flex items-center justify-center p-3 md:p-6">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`w-full max-w-md rounded-3xl border overflow-hidden shadow-2xl ${
+            isDark ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+          }`}
+        >
+          <div className={`px-5 md:px-7 py-4 border-b flex items-center justify-between ${isDark ? "border-slate-700" : "border-slate-200"}`}>
+            <h3 className={`text-lg font-black ${isDark ? "text-white" : "text-slate-900"}`}>Upload Receipt</h3>
+            <Button
+              variant="secondary"
+              onClick={onClose}
+              className={`!p-2 !rounded-xl ${isDark ? "hover:!bg-slate-800 !text-slate-400" : "hover:!bg-slate-100 !text-slate-500"}`}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          <div className="p-5 md:p-7 space-y-4">
+            <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+              Upload a receipt photo to automatically extract item details
+            </p>
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+                isDark
+                  ? "border-slate-600 hover:border-emerald-500 hover:bg-slate-800/50"
+                  : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50"
+              }`}
+            >
+              <Upload className="w-8 h-8 mx-auto mb-2 text-emerald-600" />
+              <p className={`font-semibold ${isDark ? "text-white" : "text-slate-900"}`}>
+                Click to upload or drag & drop
+              </p>
+              <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
+                PNG, JPG, WebP up to 10MB
+              </p>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => handleFileSelect(e.target.files?.[0])}
+            />
+
+            {error && (
+              <div className={`p-3 rounded-lg ${isDark ? "bg-red-900/20 text-red-400" : "bg-red-50 text-red-600"}`}>
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                disabled={uploading}
+                className={`flex-1 !py-3 !rounded-2xl !text-xs !font-black !uppercase ${
+                  isDark ? "!bg-slate-800 !text-slate-300" : "!bg-slate-100 !text-slate-700"
+                }`}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function ItemModal({ open, initial, isDark, onClose, onSubmit }) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -241,6 +396,9 @@ export default function Shopping() {
     date: new Date().toISOString().split("T")[0],
     description: "",
   });
+  const [receiptUploadOpen, setReceiptUploadOpen] = useState(false);
+  const [priceHistory, setPriceHistory] = useState({});
+  const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
   const hasHydratedStorage = useRef(false);
 
   // Load from localStorage
@@ -323,6 +481,23 @@ export default function Shopping() {
     () => shoppingItems.reduce((sum, item) => sum + toNumber(item.priceEstimate, 0) * toNumber(item.quantity, 0), 0),
     [shoppingItems]
   );
+
+  // **Feature 9: Category-based Shopping Totals**
+  const categoryBreakdown = useMemo(() => {
+    const breakdown = {};
+    shoppingItems.forEach((item) => {
+      const cat = item.category || "Other";
+      if (!breakdown[cat]) breakdown[cat] = { total: 0, count: 0 };
+      breakdown[cat].total += toNumber(item.priceEstimate, 0) * toNumber(item.quantity, 0);
+      breakdown[cat].count += 1;
+    });
+    return Object.entries(breakdown).map(([name, data]) => ({
+      name,
+      total: data.total,
+      count: data.count,
+      percent: (data.total / (shoppingTotal || 1)) * 100,
+    })).sort((a, b) => b.total - a.total);
+  }, [shoppingItems, shoppingTotal]);
 
   const lowCount = useMemo(() => inventoryItems.filter((i) => getStatus(i) === "low").length, [inventoryItems]);
   const outCount = useMemo(() => inventoryItems.filter((i) => getStatus(i) === "out").length, [inventoryItems]);
@@ -605,6 +780,80 @@ export default function Shopping() {
   const deleteInventory = (id) => setInventoryItems((prev) => prev.filter((i) => i.id !== id));
   const deleteShopping = (id) => setShoppingItems((prev) => prev.filter((i) => i.id !== id));
 
+  // **Feature 2: Auto-populate from low-stock items**
+  const populateLowItems = () => {
+    const lowItems = inventoryItems.filter((i) => getStatus(i) === "low" || getStatus(i) === "out");
+    let addedCount = 0;
+
+    lowItems.forEach((item) => {
+      const existing = shoppingItems.find(
+        (s) => s.name.toLowerCase() === item.name.toLowerCase() && s.unit === item.unit
+      );
+      if (!existing) {
+        setShoppingItems((prev) => [
+          {
+            id: uid(),
+            name: item.name,
+            category: item.category,
+            quantity: getDefaultRestockQty(item.unit),
+            unit: item.unit,
+            lowThreshold: item.lowThreshold || 0,
+            priceEstimate: getAveragePriceHistory(item) || 0,
+            link: "",
+            priority: getStatus(item) === "out" ? "High" : "Medium",
+            priceHistory: item.priceHistory || [],
+          },
+          ...prev,
+        ]);
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      setTimeout(() => confetti({ particleCount: 50, spread: 60 }), 200);
+    }
+  };
+
+  // **Feature 4: Track price history and detect price changes**
+  const updateItemPrice = (itemId, newPrice, mode = "shopping") => {
+    const items = mode === "shopping" ? shoppingItems : inventoryItems;
+    const setItems = mode === "shopping" ? setShoppingItems : setInventoryItems;
+
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id === itemId) {
+          const history = item.priceHistory || [];
+          return {
+            ...item,
+            priceEstimate: newPrice,
+            priceHistory: [...history, { price: newPrice, date: new Date().toISOString() }].slice(-12),
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  // **Feature 7: Handle receipt upload**
+  const handleReceiptUpload = (extractedData) => {
+    const { merchant, amount, category, date } = extractedData;
+    const newItem = {
+      id: uid(),
+      name: merchant || "Receipt Item",
+      category: category || "Food",
+      quantity: 1,
+      unit: "pieces",
+      lowThreshold: 0,
+      priceEstimate: amount || 0,
+      priority: "Medium",
+      link: "",
+      priceHistory: [{ price: amount || 0, date }],
+      updatedAt: new Date().toISOString(),
+    };
+    setShoppingItems((prev) => [newItem, ...prev]);
+    setReceiptUploadOpen(false);
+  };
+
   const addRestockToShopping = (item) => {
     const restockQty = getDefaultRestockQty(item.unit);
     const existing = shoppingItems.find((s) => s.name.toLowerCase() === item.name.toLowerCase() && s.unit === item.unit);
@@ -812,6 +1061,73 @@ export default function Shopping() {
               AI Insights
             </Button>
           </div>
+
+          {/* Action Buttons for Features */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            {activeTab === "shopping" && (
+              <>
+                <Button
+                  onClick={() => setReceiptUploadOpen(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="!rounded-xl !text-xs !font-black !uppercase"
+                  icon={Upload}
+                >
+                  Upload Receipt
+                </Button>
+              </>
+            )}
+            {activeTab === "inventory" && lowCount > 0 && (
+              <Button
+                onClick={populateLowItems}
+                variant="secondary"
+                size="sm"
+                className="!rounded-xl !text-xs !font-black !uppercase"
+                icon={TrendingDown}
+              >
+                Populate Low Items
+              </Button>
+            )}
+            {activeTab === "shopping" && categoryBreakdown.length > 0 && (
+              <Button
+                onClick={() => setShowCategoryBreakdown((s) => !s)}
+                variant="secondary"
+                size="sm"
+                className="!rounded-xl !text-xs !font-black !uppercase"
+                icon={BarChart3}
+              >
+                View Breakdown
+              </Button>
+            )}
+          </div>
+
+          {/* Category Breakdown (Feature 9) */}
+          {activeTab === "shopping" && showCategoryBreakdown && categoryBreakdown.length > 0 && (
+            <Card className="mb-8 p-6 !rounded-2xl">
+              <h3 className="text-lg font-black mb-4 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" /> Spending by Category
+              </h3>
+              <div className="space-y-3">
+                {categoryBreakdown.map((cat) => (
+                  <div key={cat.name}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold">{cat.name}</span>
+                      <span className={`text-sm font-black ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
+                        {formatEGP(cat.total)} ({cat.count} items)
+                      </span>
+                    </div>
+                    <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? "bg-slate-700" : "bg-slate-200"}`}>
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                        style={{ width: `${Math.min(cat.percent, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-xs mt-1 text-slate-500">{cat.percent.toFixed(1)}% of total</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Category Filters */}
           <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
@@ -1203,8 +1519,9 @@ export default function Shopping() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modals */}
       <ItemModal open={modalOpen} initial={modalInitial} isDark={isDark} onClose={() => setModalOpen(false)} onSubmit={upsertItem} />
+      <ReceiptUploadModal open={receiptUploadOpen} isDark={isDark} onClose={() => setReceiptUploadOpen(false)} onUploadSuccess={handleReceiptUpload} />
 
       {buyConfirmOpen && buyConfirmItem && (
         <div className="fixed inset-0 z-[10000]">

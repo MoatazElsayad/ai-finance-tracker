@@ -956,8 +956,17 @@ export const AIInsightsSection = memo(({
                       }
 
                       return (
-                        <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
-                          <div className={`max-w-[85%] p-5 rounded-[2rem] ${
+                        <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'} items-end gap-3`}>
+                          {isAssistant && modelInfo && (
+                            <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg">
+                              {modelInfo.logo.startsWith('http') ? (
+                                <img src={modelInfo.logo} alt={modelInfo.name} className="w-7 h-7 object-contain" />
+                              ) : (
+                                <span className="text-xl">{modelInfo.logo}</span>
+                              )}
+                            </div>
+                          )}
+                          <div className={`max-w-[75%] p-5 rounded-[2rem] ${
                             isAssistant 
                               ? (isDark ? 'bg-slate-800/80 border border-slate-700/50 text-slate-100' : 'bg-slate-100 border border-slate-200 text-slate-800') 
                               : 'bg-amber-500 text-white shadow-lg'
@@ -974,6 +983,13 @@ export const AIInsightsSection = memo(({
                             )}
                             <div className="text-sm whitespace-pre-wrap leading-relaxed font-bold">{m.text}</div>
                           </div>
+                          {!isAssistant && (
+                            <img 
+                              src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(user?.avatar_seed || user?.email || 'user')}&scale=80`}
+                              alt="You"
+                              className="w-9 h-9 rounded-full object-cover shadow-lg flex-shrink-0"
+                            />
+                          )}
                         </div>
                       );
                     })}
@@ -1249,15 +1265,39 @@ export const ChatWidgetPopup = ({
       <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
         {Array.isArray(chatWidgetMessages) && chatWidgetMessages.map((m, idx) => {
           const isAssistant = m.role === 'assistant';
+          let modelInfo = null;
+          if (isAssistant && (chatWidgetModelUsed || chatWidgetTryingModel)) {
+            try {
+              modelInfo = getModelInfo(chatWidgetModelUsed || chatWidgetTryingModel);
+            } catch (e) {
+              console.error("Error getting model info:", e);
+            }
+          }
           return (
-            <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
-              <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed ${
+            <div key={idx} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'} items-end gap-2`}>
+              {isAssistant && modelInfo && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 shadow-md">
+                  {modelInfo.logo.startsWith('http') ? (
+                    <img src={modelInfo.logo} alt={modelInfo.name} className="w-6 h-6 object-contain" />
+                  ) : (
+                    <span className="text-lg">{modelInfo.logo}</span>
+                  )}
+                </div>
+              )}
+              <div className={`max-w-[70%] p-4 rounded-2xl text-sm font-medium leading-relaxed ${
                 isAssistant 
                   ? (isDark ? 'bg-slate-800/80 border border-slate-700/50 text-slate-100' : 'bg-slate-50 border border-slate-200 text-slate-800') 
                   : 'bg-amber-500 text-white shadow-lg'
               }`}>
                 {m.text}
               </div>
+              {!isAssistant && (
+                <img 
+                  src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(user?.avatar_seed || user?.email || 'user')}&scale=80`}
+                  alt="You"
+                  className="w-8 h-8 rounded-full object-cover shadow-md flex-shrink-0"
+                />
+              )}
             </div>
           );
         })}
